@@ -1,0 +1,8 @@
+{
+  "extends": "../browser-host/tsconfig.json",
+  "include": [
+    ".",
+    "../headless",
+    "../bootstrap"
+  ]
+}

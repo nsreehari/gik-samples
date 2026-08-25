@@ -1,0 +1,12 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "portfolio-tracker-mock",
+  "cases": [
+    {
+      "id": "opens",
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "portfolio-tracker-mock" }
+      ]
+    }
+  ]
+}

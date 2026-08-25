@@ -1,0 +1,19 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "portfolio-tracker-new",
+  "cases": [
+    {
+      "id": "opens-with-mock-services",
+      "context": {
+        "ai": "foundry",
+        "intelligence-model": "simple",
+        "market-prices": "mock",
+        "semantic": "simple-markdown",
+        "view": "desktop"
+      },
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "portfolio-tracker-new" }
+      ]
+    }
+  ]
+}

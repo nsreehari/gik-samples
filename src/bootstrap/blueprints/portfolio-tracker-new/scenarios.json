@@ -1,0 +1,125 @@
+{
+  "format": "gik-scenarios/1",
+  "blueprint": "portfolio-tracker-new",
+  "contextPresets": {
+    "simple-desktop": {
+      "label": "Simple intelligence, desktop",
+      "context": { "intelligence-model": "simple", "market-prices": "mock", "view": "desktop" }
+    },
+    "simple-mobile": {
+      "label": "Simple intelligence, mobile",
+      "context": { "intelligence-model": "simple", "market-prices": "mock", "view": "mobile" }
+    },
+    "mock-desktop": {
+      "label": "Mock intelligence, desktop",
+      "context": { "intelligence-model": "mock", "market-prices": "mock", "view": "desktop" }
+    },
+    "mock-mobile": {
+      "label": "Mock intelligence, mobile",
+      "context": { "intelligence-model": "mock", "market-prices": "mock", "view": "mobile" }
+    },
+    "semantic-desktop": {
+      "label": "Semantic intelligence, desktop",
+      "context": { "intelligence-model": "semantic", "market-prices": "mock", "view": "desktop" }
+    },
+    "semantic-mobile": {
+      "label": "Semantic intelligence, mobile",
+      "context": { "intelligence-model": "semantic", "market-prices": "mock", "view": "mobile" }
+    },
+    "live-market-desktop": {
+      "label": "Simple intelligence, live market, desktop",
+      "context": { "intelligence-model": "simple", "market-prices": "live", "view": "desktop", "ai": "foundry" }
+    },
+    "live-market-copilot-desktop": {
+      "label": "Copilot intelligence, live market, desktop",
+      "context": { "intelligence-model": "simple", "market-prices": "live", "view": "desktop", "ai": "copilot" }
+    }
+  },
+  "scenarios": [
+    {
+      "id": "replace-holdings",
+      "title": "Add GOOG and observe its market price",
+      "description": "Adds GOOG, waits for market pricing and valuation, then records the resulting portfolio intelligence.",
+      "contextPreset": "mock-desktop",
+      "applicableContexts": ["simple-desktop", "simple-mobile", "mock-desktop", "mock-mobile", "semantic-desktop", "semantic-mobile", "live-market-desktop", "live-market-copilot-desktop"],
+      "resetAtStart": true,
+      "steps": [
+        {
+          "id": "replace-positions",
+          "title": "Add and value GOOG",
+          "acts": [
+            {
+              "id": "save-holdings",
+              "title": "Add 10 shares of GOOG",
+              "description": "Retain the sample MSFT and NVDA positions and add GOOG at a 150 cost basis.",
+              "event": {
+                "node": "portfolio-holdings--primary--in-holdings",
+                "name": "save",
+                "payload": {
+                  "rows": [
+                    { "ticker": "MSFT", "quantity": 10, "costBasis": 400 },
+                    { "ticker": "NVDA", "quantity": 4, "costBasis": 180 },
+                    { "ticker": "GOOG", "quantity": 10, "costBasis": 150 }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "wait-for-goog-price",
+              "title": "Wait for the GOOG market price",
+              "description": "Continue when the selected market-data provider returns a GOOG quote.",
+              "wait": {
+                "when": "$exists($state.portfolio.stockQuotes.GOOG.price)"
+              }
+            },
+            {
+              "id": "wait-for-goog-valuation",
+              "title": "Wait for GOOG valuation",
+              "description": "Continue when the portfolio value includes the GOOG position.",
+              "wait": {
+                "when": "$exists($state.portfolio.value.positions.GOOG.value)"
+              }
+            },
+            {
+              "id": "observe-goog-valuation",
+              "title": "Record the GOOG valuation",
+              "description": "Capture the settled quote, GOOG position value, and total portfolio market value.",
+              "observe": {
+                "select": {
+                  "googQuote": "$state.portfolio.stockQuotes.GOOG.price",
+                  "googPositionValue": "$state.portfolio.value.positions.GOOG.value",
+                  "portfolioMarketValue": "$state.portfolio.value.summary.marketValue"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "review-intelligence",
+          "title": "Review portfolio intelligence",
+          "acts": [
+            {
+              "id": "wait-for-portfolio-intelligence",
+              "title": "Wait for portfolio intelligence",
+              "description": "Continue when the selected intelligence provider returns a non-empty report.",
+              "wait": {
+                "when": "$trim($string($state.portfolio.intelligence.markdown)) != ''"
+              }
+            },
+            {
+              "id": "observe-goog-intelligence",
+              "title": "Record the portfolio intelligence",
+              "description": "Capture the provider and generated report after GOOG has been incorporated.",
+              "observe": {
+                "select": {
+                  "provider": "$state.portfolio.intelligence.provider",
+                  "report": "$state.portfolio.intelligence.markdown"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

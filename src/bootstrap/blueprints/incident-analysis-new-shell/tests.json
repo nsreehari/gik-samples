@@ -1,0 +1,14 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "incident-analysis-new-shell",
+  "cases": [
+    {
+      "id": "opens-with-semantic-model",
+      "context": { "model": "semantic" },
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "incident-analysis-new-shell" },
+        { "path": "state.incident", "exists": true }
+      ]
+    }
+  ]
+}

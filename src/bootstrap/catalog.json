@@ -1,0 +1,73 @@
+{
+  "format": "gik-bootstrap-catalog/1",
+  "id": "gik-samples",
+  "defaultLaunch": "portfolio-tracker-new",
+  "entries": [
+    {
+      "id": "ai-agent",
+      "artifact": "blueprints/ai-agent/blueprint.json",
+      "tests": "blueprints/ai-agent/tests.json",
+      "launch": {
+        "id": "ai-agent",
+        "label": "AI Agent",
+        "description": "Run the AI agent Blueprint experience.",
+        "order": 40
+      }
+    },
+    {
+      "id": "blueprint-studio",
+      "artifact": "blueprints/blueprint-studio/blueprint.json",
+      "tests": "blueprints/blueprint-studio/tests.json",
+      "launch": {
+        "id": "blueprint-studio",
+        "label": "Blueprint Studio",
+        "description": "Create, inspect, and manage Blueprint definitions.",
+        "order": 10
+      }
+    },
+    {
+      "id": "blueprint-studio-crud",
+      "artifact": "blueprints/blueprint-studio-crud/blueprint.json",
+      "tests": "blueprints/blueprint-studio-crud/tests.json"
+    },
+    {
+      "id": "incident-analysis-assets",
+      "artifact": "blueprints/incident-analysis-assets/blueprint.json",
+      "bootstrapAssets": "blueprints/incident-analysis-assets/bootstrap-assets/catalog.json",
+      "tests": "blueprints/incident-analysis-assets/tests.json"
+    },
+    {
+      "id": "incident-analysis-new-shell",
+      "artifact": "blueprints/incident-analysis-new-shell/blueprint.json",
+      "tests": "blueprints/incident-analysis-new-shell/tests.json",
+      "launch": {
+        "id": "incident-analysis-new-shell",
+        "label": "Incident Analysis",
+        "description": "Explore the incident analysis experience.",
+        "order": 30
+      }
+    },
+    {
+      "id": "portfolio-intelligence-assets",
+      "artifact": "blueprints/portfolio-intelligence-assets/blueprint.json",
+      "tests": "blueprints/portfolio-intelligence-assets/tests.json"
+    },
+    {
+      "id": "portfolio-tracker-mock",
+      "artifact": "blueprints/portfolio-tracker-mock/blueprint.json",
+      "tests": "blueprints/portfolio-tracker-mock/tests.json"
+    },
+    {
+      "id": "portfolio-tracker-new",
+      "artifact": "blueprints/portfolio-tracker-new/blueprint.json",
+      "scenarios": "blueprints/portfolio-tracker-new/scenarios.json",
+      "tests": "blueprints/portfolio-tracker-new/tests.json",
+      "launch": {
+        "id": "portfolio-tracker-new",
+        "label": "Portfolio Tracker",
+        "description": "Track a portfolio with market and intelligence services.",
+        "order": 20
+      }
+    }
+  ]
+}

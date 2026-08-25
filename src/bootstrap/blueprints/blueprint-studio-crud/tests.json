@@ -1,0 +1,12 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "blueprint-studio-crud",
+  "cases": [
+    {
+      "id": "opens",
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "blueprint-studio-crud" }
+      ]
+    }
+  ]
+}

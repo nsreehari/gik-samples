@@ -1,0 +1,55 @@
+{
+  "name": "gik-samples",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --dev",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p packages/components/tsconfig.json --noEmit && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fluentui/react-components": "^9.74.3",
+    "@fluentui/react-icons": "^2.0.312",
+    "@gik/agentface": "file:../gik-fresh/packages/agentface",
+    "@gik/agent-lifecycle-exp": "file:../gik-fresh/packages/agent-lifecycle-exp",
+    "@gik/blueprint": "file:../gik-fresh/packages/blueprint",
+    "@gik/blueprint-agent-host": "file:../gik-fresh/packages/blueprint-agent-host",
+    "@gik/controlface": "file:../gik-fresh/packages/controlface",
+    "@gik/durable-runtime": "file:../gik-fresh/packages/durable-runtime",
+    "@gik/evaluators": "file:../gik-fresh/packages/evaluators",
+    "@gik/kernel": "file:../gik-fresh/packages/kernel",
+    "@gik/provider-blueprint-authoring": "file:../gik-fresh/packages/provider-blueprint-authoring",
+    "@gik/provider-step-orchestrator": "file:../gik-fresh/packages/provider-step-orchestrator",
+    "@gik/react": "file:../gik-fresh/packages/react",
+    "@gik/transport-http-sse": "file:../gik-fresh/packages/transport-http-sse",
+    "@gik/transport-mcp-http": "file:../gik-fresh/packages/transport-mcp-http",
+    "@xyflow/react": "^12.11.2",
+    "mermaid": "^11.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@storybook/addon-a11y": "10.5.4",
+    "@storybook/addon-docs": "10.5.4",
+    "@storybook/react-vite": "10.5.4",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/react-test-renderer": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "fake-indexeddb": "^6.2.5",
+    "react-test-renderer": "^18.3.1",
+    "sirv": "^3.0.2",
+    "storybook": "10.5.4",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^6.3.5",
+    "vitest": "^4.1.10"
+  }
+}

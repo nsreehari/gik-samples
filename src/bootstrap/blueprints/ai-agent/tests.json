@@ -1,0 +1,12 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "ai-agent",
+  "cases": [
+    {
+      "id": "opens",
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "ai-agent" }
+      ]
+    }
+  ]
+}

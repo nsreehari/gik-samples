@@ -1,0 +1,12 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "incident-analysis-assets",
+  "cases": [
+    {
+      "id": "opens",
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "incident-analysis-assets" }
+      ]
+    }
+  ]
+}

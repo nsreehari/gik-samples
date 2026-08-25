@@ -1,0 +1,1227 @@
+{
+  "gik": "0.1",
+  "type": "blueprint",
+  "payload": {
+    "id": "blueprint-studio",
+    "kind": "blueprint-studio",
+    "version": "1.0.0",
+    "structureMode": "fixed",
+    "serviceTiers": [
+      {
+        "id": "runtime-document",
+        "kind": "runtime-document"
+      }
+    ],
+    "serviceRecipes": [],
+    "projectionTiers": [
+      {
+        "id": "studio-composition",
+        "kind": "studio-composition",
+        "description": "The authored Studio composition, before an external presentation mode selects a manifestation.",
+        "capabilities": []
+      },
+      {
+        "id": "runtime-document",
+        "kind": "runtime-document",
+        "capabilities": []
+      }
+    ],
+    "projectionRecipes": [
+      {
+        "id": "studio-composition-to-runtime",
+        "from": "studio-composition",
+        "to": "runtime-document",
+        "fallback": "normal",
+        "representations": [
+          {
+            "id": "normal"
+          },
+          {
+            "id": "embedded",
+            "when": "externalContext.mode = 'embedded'",
+            "removeViews": {
+              "blueprint-preview": [
+                "primary"
+              ]
+            },
+            "views": {
+              "blueprint-preview": {
+                "embeddedPreview": {
+                  "capability": "gik:blueprint",
+                  "bindings": {
+                    "blueprint": {
+                      "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? {'$ref':studio.selected.draft.ref} : {'$ref':studio.selectedBlueprintRef}"
+                    },
+                    "externalContext": {
+                      "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.draftPreviewExternalContext : studio.previewExternalContext"
+                    },
+                    "instanceKey": {
+                      "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.selected.draft.ref & ':' & studio.selected.draft.revision & ':' & $string(studio.draftPreviewExternalContext) : studio.selectedBlueprintRef & ':' & $string(studio.previewExternalContext)"
+                    }
+                  },
+                  "visibility": "(studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null) or (studio.blueprintPreviewVersion != 'draft' and studio.selected.artifact != null)",
+                  "region": "workspace-preview"
+                }
+              }
+            },
+            "presentation": {
+              "slots": [
+                "studio",
+                {
+                  "id": "studio-header",
+                  "region": "studio"
+                },
+                {
+                  "id": "studio-body",
+                  "region": "studio"
+                },
+                {
+                  "id": "catalog",
+                  "region": "studio-body"
+                },
+                {
+                  "id": "catalog-actions",
+                  "region": "catalog"
+                },
+                {
+                  "id": "catalog-list",
+                  "region": "catalog"
+                },
+                {
+                  "id": "workspace",
+                  "region": "studio-body"
+                },
+                {
+                  "id": "workspace-tabs",
+                  "region": "workspace"
+                },
+                {
+                  "id": "workspace-editor",
+                  "region": "workspace"
+                },
+                {
+                  "id": "workspace-actions",
+                  "region": "workspace"
+                },
+                {
+                  "id": "workspace-preview",
+                  "region": "workspace"
+                }
+              ],
+              "root": "studio",
+              "layout": {
+                "studio": {
+                  "direction": "column",
+                  "gap": "m"
+                },
+                "studio-body": {
+                  "direction": "row",
+                  "gap": "l",
+                  "align": "stretch"
+                },
+                "catalog": {
+                  "direction": "column",
+                  "gap": "s"
+                },
+                "workspace": {
+                  "direction": "column",
+                  "gap": "m"
+                }
+              },
+              "exportedRegions": [
+                {
+                  "name": "blueprint-catalog",
+                  "slot": "catalog-list",
+                  "description": "Blueprint list for placement in a host shell."
+                },
+                {
+                  "name": "blueprint-preview",
+                  "slot": "workspace-preview",
+                  "description": "Live preview of the Blueprint selected in the blueprint-catalog region."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "contextFormSpec": {
+      "fields": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "title": "Presentation mode",
+            "enum": [
+              "normal",
+              "embedded"
+            ],
+            "enumNames": [
+              "Normal",
+              "Embedded regions"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": true
+      },
+      "initialValue": {
+        "mode": "normal"
+      },
+      "saveLabel": "Apply context",
+      "discardLabel": "Discard"
+    },
+    "services": {
+      "blueprint-studio-data": {
+        "blueprint": {
+          "$ref": "blueprint:blueprint-studio-crud@1.0.0"
+        },
+        "version": "1",
+        "operations": {
+          "listBlueprints": {
+            "operation": "list-blueprints",
+            "contract": "blueprint-studio-list/v1",
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          },
+          "fetchBlueprint": {
+            "operation": "fetch-blueprint",
+            "contract": "blueprint-studio-record/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':input.id}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          },
+          "createDraft": {
+            "operation": "create-draft",
+            "contract": "blueprint-studio-create-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':studio.selectedBlueprintId}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selected','value':response.blueprint},{'op':'set','path':'studio.blueprintJsonVersion','value':'draft'},{'op':'set','path':'studio.blueprintPreviewVersion','value':'draft'},{'op':'set','path':'studio.activeTab','value':'blueprint-json'}]} : {'ops':[]}"
+              }
+            }
+          },
+          "createBlueprintDraft": {
+            "operation": "create-blueprint-draft",
+            "contract": "blueprint-studio-create-blueprint-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "($id := $trim(input.values.id); {'id':$id,'blueprint':{'gik':'0.1','type':'blueprint','payload':{'id':$id,'kind':input.values.kind,'version':input.values.version,'structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document'}],'projectionRecipes':[],'runtime':{'state':{}},'cells':{}}}})"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selectedBlueprintId','value':response.blueprint.id},{'op':'set','path':'studio.selected','value':response.blueprint},{'op':'set','path':'studio.blueprintListRefreshStamp','value':'create:' & $now()},{'op':'set','path':'studio.blueprintJsonVersion','value':'draft'},{'op':'set','path':'studio.blueprintPreviewVersion','value':'draft'},{'op':'set','path':'studio.activeTab','value':'blueprint-json'},{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':''}]} : {'ops':[{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':response.error ? response.error : 'Unable to create the Blueprint.'}]}"
+              }
+            },
+            "failureSettlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':error.message}]}"
+              }
+            }
+          },
+          "cloneBlueprintDraft": {
+            "operation": "clone-blueprint-draft",
+            "contract": "blueprint-studio-clone-blueprint-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'sourceId':input.values.cloneFrom,'id':$trim(input.values.id),'kind':input.values.kind,'version':input.values.version}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selectedBlueprintId','value':response.blueprint.id},{'op':'set','path':'studio.selected','value':response.blueprint},{'op':'set','path':'studio.blueprintListRefreshStamp','value':'clone:' & $now()},{'op':'set','path':'studio.blueprintJsonVersion','value':'draft'},{'op':'set','path':'studio.blueprintPreviewVersion','value':'draft'},{'op':'set','path':'studio.activeTab','value':'blueprint-json'},{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':''}]} : {'ops':[{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':response.error ? response.error : 'Unable to clone the Blueprint.'}]}"
+              }
+            },
+            "failureSettlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[{'op':'set','path':'studio.blueprintCreateSaving','value':false},{'op':'set','path':'studio.blueprintCreateError','value':error.message}]}"
+              }
+            }
+          },
+          "saveDraft": {
+            "operation": "save-draft",
+            "contract": "blueprint-studio-save-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':studio.selectedBlueprintId,'blueprint':input.values}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selected','value':response.blueprint}]} : {'ops':[]}"
+              }
+            }
+          },
+          "deleteDraft": {
+            "operation": "delete-draft",
+            "contract": "blueprint-studio-delete-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':studio.selectedBlueprintId}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selected','value':response.blueprint},{'op':'set','path':'studio.blueprintJsonVersion','value':'current'},{'op':'set','path':'studio.blueprintPreviewVersion','value':'current'},{'op':'set','path':'studio.activeTab','value':'blueprint-json'}]} : {'ops':[]}"
+              }
+            }
+          },
+          "promoteDraft": {
+            "operation": "promote-draft",
+            "contract": "blueprint-studio-promote-draft/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':studio.selectedBlueprintId}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.blueprint ? {'ops':[{'op':'set','path':'studio.selected','value':response.blueprint},{'op':'set','path':'studio.blueprintListRefreshStamp','value':'promote:' & $now()},{'op':'set','path':'studio.selectedBlueprintRef','value':response.blueprint.ref},{'op':'set','path':'studio.previewBlueprintRef','value':response.blueprint.ref},{'op':'set','path':'studio.blueprintJsonVersion','value':'current'},{'op':'set','path':'studio.blueprintPreviewVersion','value':'current'},{'op':'set','path':'studio.activeTab','value':'overview'}]} : {'ops':[]}"
+              }
+            }
+          },
+          "deleteBlueprint": {
+            "operation": "delete-blueprint",
+            "contract": "blueprint-studio-delete/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'id':studio.selectedBlueprintId}"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "response.deleted ? {'ops':[{'op':'set','path':'studio.selectedBlueprintId','value':null},{'op':'set','path':'studio.selected','value':null},{'op':'set','path':'studio.blueprintListRefreshStamp','value':'delete:' & $now()},{'op':'set','path':'studio.activeTab','value':'overview'}]} : {'ops':[]}"
+              }
+            }
+          }
+        },
+        "scope": "per-blueprint"
+      }
+    },
+    "runtime": {
+      "externals": {
+        "projectionViews": {
+          "fluent": {
+            "from": "fluent",
+            "use": [
+              "button",
+              "list",
+              "spinner",
+              "switch",
+              "tab-bar",
+              "text"
+            ]
+          },
+          "primitive": {
+            "from": "primitive",
+            "use": [
+              "container",
+              "form",
+              "markdown",
+              "pane-with-trigger"
+            ]
+          }
+        }
+      },
+      "state": {
+        "studio": {
+          "selectedBlueprintId": null,
+          "activeTab": "overview",
+          "blueprintJsonVersion": "current",
+          "blueprintPreviewVersion": "current",
+          "blueprints": [],
+          "blueprintOptions": [],
+          "selected": null,
+          "overviewMarkdown": "",
+          "previewContextFormSpec": null,
+          "previewBlueprintRef": "",
+          "previewExternalContext": {},
+          "draftPreviewExternalContext": {},
+          "blueprintListRefreshStamp": "initial",
+          "selectedBlueprintDraftId": "",
+          "blueprintCreateSaving": false,
+          "blueprintCreateError": ""
+        }
+      }
+    },
+    "cells": {
+      "blueprint-studio": {
+        "id": "blueprint-studio",
+        "events": {
+          "select": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "select": [
+              {
+                "do": "assign",
+                "target": "studio.activeTab",
+                "args": {
+                  "from": "$event.value"
+                }
+              }
+            ]
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "fluent:text",
+            "props": {
+              "value": "Blueprint Studio",
+              "as": "h1",
+              "variant": "title",
+              "block": true
+            },
+            "after": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "Browse, inspect, edit, and preview governed Blueprints.",
+                  "variant": "caption",
+                  "block": true
+                }
+              }
+            ],
+            "region": "studio-header"
+          },
+          "workspaceTabs": {
+            "capability": "fluent:tab-bar",
+            "props": {
+              "ariaLabel": "Blueprint workspace views",
+              "tabs": [
+                {
+                  "value": "overview",
+                  "headerLabel": "Overview"
+                },
+                {
+                  "value": "blueprint-json",
+                  "headerLabel": "Blueprint JSON"
+                },
+                {
+                  "value": "preview",
+                  "headerLabel": "Preview"
+                }
+              ]
+            },
+            "bindings": {
+              "active": {
+                "from": "studio.activeTab"
+              }
+            },
+            "visibility": "studio.selected != null",
+            "region": "workspace-tabs"
+          },
+          "emptyState": {
+            "capability": "fluent:text",
+            "props": {
+              "value": "Select a Blueprint",
+              "as": "h2",
+              "variant": "subtitle",
+              "block": true
+            },
+            "visibility": "studio.selected = null",
+            "after": [
+              {
+                "capability": "primitive:markdown",
+                "props": {
+                  "value": "Choose a Blueprint from the catalog to review its overview, edit its JSON draft, preview it in the browser, or create a new draft."
+                },
+                "visibility": "studio.selected = null"
+              }
+            ],
+            "region": "workspace-editor"
+          }
+        }
+      },
+      "blueprint-list": {
+        "id": "blueprint-list",
+        "metadata": {
+          "namedEffects": []
+        },
+        "systemInputs": [
+          "numSourcesRunning"
+        ],
+        "inputs": [
+          {
+            "token": "blueprintListRefreshStamp",
+            "as": "blueprintListRefreshStamp",
+            "required": false
+          }
+        ],
+        "sources": [
+          {
+            "id": "list-blueprints",
+            "service": "blueprint-studio-data",
+            "operation": "listBlueprints",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'refresh':$exists(inputs.blueprintListRefreshStamp) ? inputs.blueprintListRefreshStamp : 'initial'}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "blueprint-records",
+            "expression": "sources.`list-blueprints`.refresh = ($exists(inputs.blueprintListRefreshStamp) ? inputs.blueprintListRefreshStamp : 'initial') ? sources.`list-blueprints`.blueprints : []",
+            "assign": "studio.blueprints",
+            "dependencies": [
+              "sources.list-blueprints"
+            ]
+          },
+          {
+            "id": "blueprint-options",
+            "expression": "sources.`list-blueprints`.refresh = ($exists(inputs.blueprintListRefreshStamp) ? inputs.blueprintListRefreshStamp : 'initial') ? sources.`list-blueprints`.blueprints.{'value':id,'label':label & ' · ' & version} : []",
+            "assign": "studio.blueprintOptions",
+            "dependencies": [
+              "sources.list-blueprints"
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "token": "blueprintList",
+            "from": "computed.studio.blueprints",
+            "when": "$exists(computed.studio.blueprints)"
+          },
+          {
+            "token": "selectedBlueprintId",
+            "from": "studio.selectedBlueprintId"
+          }
+        ],
+        "behavior": {
+          "on": {
+            "select": [
+              {
+                "do": "assign",
+                "target": "studio.selectedBlueprintId",
+                "args": {
+                  "from": "$event.values[0]"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "select": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "fluent:list",
+            "props": {
+              "variant": "vertical-cards",
+              "selectionMode": "single",
+              "ariaLabel": "Blueprints"
+            },
+            "bindings": {
+              "items": {
+                "from": "studio.blueprintOptions"
+              },
+              "selectedValues": {
+                "expression": "studio.selectedBlueprintId != null and studio.selectedBlueprintId != '' ? [studio.selectedBlueprintId] : []"
+              }
+            },
+            "before": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "Blueprints",
+                  "as": "h2",
+                  "variant": "subtitle",
+                  "block": true
+                }
+              },
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "Select a Blueprint to inspect it, or start a new draft.",
+                  "variant": "caption",
+                  "block": true
+                }
+              },
+              {
+                "capability": "fluent:spinner",
+                "props": {
+                  "label": "Loading Blueprints",
+                  "size": "medium"
+                },
+                "visibility": "systemInputs.numSourcesRunning > 0"
+              }
+            ],
+            "after": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "No Blueprints are available yet. Create a new draft to get started.",
+                  "variant": "caption",
+                  "block": true
+                },
+                "visibility": "systemInputs.numSourcesRunning = 0 and $count(studio.blueprintOptions) = 0"
+              }
+            ],
+            "region": "catalog-list"
+          }
+        }
+      },
+      "blueprint-create": {
+        "id": "blueprint-create",
+        "metadata": {
+          "namedEffects": [
+            "create-blueprint-draft",
+            "clone-blueprint-draft"
+          ]
+        },
+        "outputs": [
+          {
+            "token": "blueprintListRefreshStamp",
+            "from": "studio.blueprintListRefreshStamp"
+          },
+          {
+            "token": "selectedBlueprintId",
+            "from": "studio.selectedBlueprintId"
+          }
+        ],
+        "behavior": {
+          "on": {
+            "save": [
+              {
+                "do": "assign",
+                "target": "studio.blueprintCreateSaving",
+                "args": { "value": true }
+              },
+              {
+                "do": "assign",
+                "target": "studio.blueprintCreateError",
+                "args": { "value": "" }
+              },
+              {
+                "do": "invoke",
+                "guard": "$not($exists($event.values.cloneFrom)) or $event.values.cloneFrom = ''",
+                "control": {
+                  "tool": "createBlueprintDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              },
+              {
+                "do": "invoke",
+                "guard": "$exists($event.values.cloneFrom) and $event.values.cloneFrom != ''",
+                "control": {
+                  "tool": "cloneBlueprintDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "save": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "primitive:form",
+            "props": {
+              "fields": {
+                "properties": {
+                  "cloneFrom": {
+                    "title": "Clone from",
+                    "type": "string",
+                    "enum": [
+                      ""
+                    ],
+                    "enumNames": [
+                      "Blank Blueprint"
+                    ],
+                    "span": 12
+                  },
+                  "id": {
+                    "title": "New Blueprint ID",
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9._\\\\/\\\\-]*[a-z0-9])?$",
+                    "span": 12
+                  },
+                  "kind": {
+                    "title": "Kind",
+                    "type": "string",
+                    "span": 12
+                  },
+                  "version": {
+                    "title": "Initial version",
+                    "type": "string",
+                    "span": 12
+                  }
+                },
+                "required": [
+                  "id",
+                  "kind",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              "value": {
+                "cloneFrom": "",
+                "id": "",
+                "kind": "runtime-blueprint",
+                "version": "1.0.0"
+              },
+              "saveLabel": "Create draft",
+              "discardLabel": "Reset",
+              "savingLabel": "Creating draft…"
+            },
+            "bindings": {
+              "fields": {
+                "expression": "{'properties':{'cloneFrom':{'title':'Clone from','type':'string','enum':$append([''], studio.blueprints[source = 'repo' or published = true].id),'enumNames':$append(['Blank Blueprint'], studio.blueprints[source = 'repo' or published = true].(label & ' · ' & version)),'span':12},'id':{'title':'New Blueprint ID','type':'string','pattern':'^[a-z0-9](?:[a-z0-9._\\\\/\\\\-]*[a-z0-9])?$','span':12},'kind':{'title':'Kind','type':'string','span':12},'version':{'title':'Initial version','type':'string','span':12}},'required':['id','kind','version'],'additionalProperties':false}"
+              },
+              "saving": {
+                "from": "studio.blueprintCreateSaving"
+              },
+              "saveError": {
+                "from": "studio.blueprintCreateError"
+              }
+            },
+            "wrap": [
+              {
+                "capability": "primitive:pane-with-trigger",
+                "props": {
+                  "variant": "dialog-modal",
+                  "title": "New Blueprint",
+                  "triggerLabel": "New Blueprint",
+                  "triggerAppearance": "primary",
+                  "closeLabel": "Close"
+                }
+              }
+            ],
+            "region": "catalog-actions"
+          }
+        }
+      },
+      "blueprint-delete": {
+        "id": "blueprint-delete",
+        "metadata": {
+          "namedEffects": [
+            "delete-blueprint"
+          ]
+        },
+        "inputs": [
+          {
+            "token": "selectedBlueprintId",
+            "as": "selectedBlueprintId",
+            "required": true
+          }
+        ],
+        "outputs": [
+          {
+            "token": "blueprintListRefreshStamp",
+            "from": "studio.blueprintListRefreshStamp"
+          },
+          {
+            "token": "selectedBlueprintId",
+            "from": "studio.selectedBlueprintId"
+          }
+        ],
+        "behavior": {
+          "on": {
+            "press": [
+              {
+                "do": "invoke",
+                "control": {
+                  "tool": "deleteBlueprint",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "press": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "fluent:button",
+            "props": {
+              "label": "Delete Blueprint",
+              "appearance": "subtle"
+            },
+            "visibility": "studio.selected != null and studio.selected.readonly = false and studio.activeTab != 'preview'",
+            "region": "workspace-actions"
+          }
+        }
+      },
+      "blueprint-rw": {
+        "id": "blueprint-rw",
+        "metadata": {
+          "namedEffects": [
+            "create-draft",
+            "save-draft",
+            "delete-draft"
+          ]
+        },
+        "inputs": [
+          {
+            "token": "selectedBlueprintId",
+            "as": "selectedBlueprintId",
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "fetch-blueprint",
+            "service": "blueprint-studio-data",
+            "operation": "fetchBlueprint",
+            "when": "$exists(inputs.selectedBlueprintId) and inputs.selectedBlueprintId != null and inputs.selectedBlueprintId != ''",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'id':inputs.selectedBlueprintId}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "selected-blueprint",
+            "expression": "sources.`fetch-blueprint`",
+            "assign": "studio.selected",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-json-version",
+            "expression": "sources.`fetch-blueprint`.draft != null ? 'draft' : 'current'",
+            "assign": "studio.blueprintJsonVersion",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-preview-version",
+            "expression": "sources.`fetch-blueprint`.draft != null ? 'draft' : 'current'",
+            "assign": "studio.blueprintPreviewVersion",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-overview",
+            "expression": "($bp := sources.`fetch-blueprint`; $bp.artifact ? '# ' & $bp.id & '\\n\\n- **Version:** ' & $bp.version & '\\n- **Kind:** ' & $bp.kind & '\\n- **Source:** ' & ($bp.readonly ? 'Repository bootstrap' : 'User workspace') & '\\n- **Service tiers:** ' & $join($bp.artifact.payload.serviceTiers.id, ', ') & '\\n- **Service recipes:** ' & $string($count($bp.artifact.payload.serviceRecipes)) & '\\n- **Projection tiers:** ' & $join($bp.artifact.payload.projectionTiers.id, ', ') & '\\n- **Projection recipes:** ' & $string($count($bp.artifact.payload.projectionRecipes)) : $bp ? '# ' & $bp.id & '\\n\\nDraft only; promote the draft to create the first published version.' : '')",
+            "assign": "studio.overviewMarkdown",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-context-form",
+            "expression": "sources.`fetch-blueprint`.artifact.payload.contextFormSpec",
+            "assign": "studio.previewContextFormSpec",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-reference",
+            "expression": "($bp := sources.`fetch-blueprint`.artifact.payload; $bp ? 'blueprint:' & $bp.id & '@' & $bp.version : '')",
+            "assign": "studio.selectedBlueprintRef",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-initial-context",
+            "expression": "($spec := sources.`fetch-blueprint`.artifact.payload.contextFormSpec; $spec ? $merge([$merge($keys($spec.fields.properties).($name := $; $field := $lookup($spec.fields.properties, $name); $exists($field.default) ? {$name:$field.default} : {})), $spec.initialValue ? $spec.initialValue : {}]) : {})",
+            "assign": "studio.previewExternalContext",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-draft-initial-context",
+            "expression": "($spec := sources.`fetch-blueprint`.draft.artifact.payload.contextFormSpec; $spec ? $merge([$merge($keys($spec.fields.properties).($name := $; $field := $lookup($spec.fields.properties, $name); $exists($field.default) ? {$name:$field.default} : {})), $spec.initialValue ? $spec.initialValue : {}]) : {})",
+            "assign": "studio.draftPreviewExternalContext",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          },
+          {
+            "id": "selected-blueprint-draft-id",
+            "expression": "sources.`fetch-blueprint`.draft != null ? sources.`fetch-blueprint`.draft.id : ''",
+            "assign": "studio.selectedBlueprintDraftId",
+            "dependencies": [
+              "sources.fetch-blueprint"
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "token": "selectedBlueprintDraftId",
+            "from": "computed.studio.selectedBlueprintDraftId",
+            "when": "$exists(computed.studio.selectedBlueprintDraftId)"
+          }
+        ],
+        "behavior": {
+          "on": {
+            "save": [
+              {
+                "do": "invoke",
+                "guard": "studio.selected.draft = null",
+                "control": {
+                  "tool": "createDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              },
+              {
+                "do": "invoke",
+                "guard": "studio.selected.draft != null",
+                "control": {
+                  "tool": "saveDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              }
+            ],
+            "delete-draft": [
+              {
+                "do": "invoke",
+                "control": {
+                  "tool": "deleteDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "save": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          },
+          "delete-draft": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "primitive:form",
+            "props": {
+              "fields": {
+                "properties": {
+                  "gik": {
+                    "title": "GIK version",
+                    "type": "string",
+                    "readOnly": true,
+                    "span": 6
+                  },
+                  "type": {
+                    "title": "Document type",
+                    "type": "string",
+                    "readOnly": true,
+                    "span": 6
+                  },
+                  "payload": {
+                    "title": "Blueprint payload",
+                    "type": "json",
+                    "format": "json",
+                    "rows": 24,
+                    "span": 12
+                  }
+                },
+                "required": [
+                  "gik",
+                  "type",
+                  "payload"
+                ],
+                "additionalProperties": false,
+                "validators": [
+                  {
+                    "kind": "blueprint",
+                    "code": "blueprint-draft",
+                    "message": "The draft Blueprint is invalid"
+                  }
+                ]
+              },
+              "saveLabel": "Save draft",
+              "discardLabel": "Discard changes",
+              "initiallyDirty": false
+            },
+            "bindings": {
+              "value": {
+                "expression": "studio.blueprintJsonVersion = 'draft' and studio.selected.draft != null ? studio.selected.draft.artifact : studio.selected.artifact"
+              },
+              "readOnly": {
+                "expression": "studio.blueprintJsonVersion != 'draft' or studio.selected.draft = null"
+              }
+            },
+            "visibility": "studio.selected != null and (studio.selected.artifact != null or studio.selected.draft != null) and studio.activeTab = 'blueprint-json'",
+            "before": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "as": "h2",
+                  "variant": "subtitle",
+                  "block": true
+                },
+                "bindings": {
+                  "value": {
+                    "expression": "studio.selected ? studio.selected.id : 'Select a Blueprint'"
+                  }
+                },
+                "visibility": "studio.selected != null and studio.activeTab = 'overview'"
+              },
+              {
+                "capability": "primitive:markdown",
+                "bindings": {
+                  "value": {
+                    "from": "studio.overviewMarkdown"
+                  }
+                },
+                "visibility": "studio.selected != null and studio.activeTab = 'overview'"
+              }
+            ],
+            "region": "workspace-editor"
+          }
+        }
+      },
+      "blueprint-preview": {
+        "id": "blueprint-preview",
+        "metadata": {
+          "namedEffects": [
+            "promote-draft"
+          ]
+        },
+        "inputs": [
+          {
+            "token": "selectedBlueprintId",
+            "as": "selectedBlueprintId",
+            "required": true
+          },
+          {
+            "token": "selectedBlueprintDraftId",
+            "as": "selectedBlueprintDraftId"
+          }
+        ],
+        "outputs": [
+          {
+            "token": "blueprintListRefreshStamp",
+            "from": "studio.blueprintListRefreshStamp"
+          }
+        ],
+        "behavior": {
+          "on": {
+            "press": [
+              {
+                "do": "invoke",
+                "control": {
+                  "tool": "promoteDraft",
+                  "serviceRef": "blueprint-studio-data"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "press": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "potentialViews": {
+          "primary": {
+            "capability": "fluent:button",
+            "props": {
+              "label": "Promote draft",
+              "appearance": "primary"
+            },
+            "visibility": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null and studio.activeTab = 'preview'",
+            "before": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "as": "h2",
+                  "variant": "subtitle",
+                  "block": true
+                },
+                "bindings": {
+                  "value": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? 'Draft preview' : 'Published preview'"
+                  }
+                },
+                "visibility": "studio.selected != null and studio.activeTab = 'preview'"
+              }
+            ],
+            "after": [
+              {
+                "capability": "primitive:form",
+                "props": {
+                  "initiallyDirty": false
+                },
+                "bindings": {
+                  "fields": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.selected.draft.artifact.payload.contextFormSpec.fields : studio.previewContextFormSpec.fields"
+                  },
+                  "value": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.draftPreviewExternalContext : studio.previewExternalContext"
+                  },
+                  "readOnly": {
+                    "expression": "true"
+                  }
+                },
+                "visibility": "studio.activeTab = 'preview' and ((studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null and studio.selected.draft.artifact.payload.contextFormSpec != null) or (studio.blueprintPreviewVersion != 'draft' and studio.previewContextFormSpec != null))"
+              },
+              {
+                "capability": "gik:blueprint",
+                "bindings": {
+                  "blueprint": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? {'$ref':studio.selected.draft.ref} : {'$ref':studio.selectedBlueprintRef}"
+                  },
+                  "externalContext": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.draftPreviewExternalContext : studio.previewExternalContext"
+                  },
+                  "instanceKey": {
+                    "expression": "studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null ? studio.selected.draft.ref & ':' & studio.selected.draft.revision & ':' & $string(studio.draftPreviewExternalContext) : studio.selectedBlueprintRef & ':' & $string(studio.previewExternalContext)"
+                  }
+                },
+                "visibility": "studio.activeTab = 'preview' and ((studio.blueprintPreviewVersion = 'draft' and studio.selected.draft != null) or (studio.blueprintPreviewVersion != 'draft' and studio.selected.artifact != null))"
+              }
+            ],
+            "region": "workspace-preview"
+          }
+        }
+      }
+    },
+    "presentation": {
+      "slots": [
+        "studio",
+        {
+          "id": "studio-header",
+          "region": "studio"
+        },
+        {
+          "id": "studio-body",
+          "region": "studio"
+        },
+        {
+          "id": "catalog",
+          "region": "studio-body"
+        },
+        {
+          "id": "catalog-actions",
+          "region": "catalog"
+        },
+        {
+          "id": "catalog-list",
+          "region": "catalog"
+        },
+        {
+          "id": "workspace",
+          "region": "studio-body"
+        },
+        {
+          "id": "workspace-tabs",
+          "region": "workspace"
+        },
+        {
+          "id": "workspace-editor",
+          "region": "workspace"
+        },
+        {
+          "id": "workspace-actions",
+          "region": "workspace"
+        },
+        {
+          "id": "workspace-preview",
+          "region": "workspace"
+        }
+      ],
+      "root": "studio",
+      "layout": {
+        "studio": {
+          "direction": "column",
+          "gap": "m"
+        },
+        "studio-body": {
+          "direction": "row",
+          "gap": "l",
+          "align": "stretch"
+        },
+        "catalog": {
+          "direction": "column",
+          "gap": "s"
+        },
+        "workspace": {
+          "direction": "column",
+          "gap": "m"
+        }
+      },
+      "allowedCapabilities": [
+        "fluent:button",
+        "fluent:list",
+        "fluent:spinner",
+        "fluent:tab-bar",
+        "fluent:text",
+        "gik:blueprint",
+        "primitive:form",
+        "primitive:markdown",
+        "primitive:pane-with-trigger"
+      ]
+    }
+  }
+}

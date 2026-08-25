@@ -1,0 +1,13 @@
+{
+  "format": "gik-blueprint-tests/1",
+  "blueprint": "blueprint-studio",
+  "cases": [
+    {
+      "id": "opens",
+      "assertions": [
+        { "path": "runtime.blueprintId", "equals": "blueprint-studio" },
+        { "path": "state.studio", "exists": true }
+      ]
+    }
+  ]
+}
