@@ -3,3 +3,4 @@ dist/
 storybook-static/
 coverage/
 *.tgz
+!vendor/gik-packages/*.tgz
