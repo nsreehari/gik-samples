@@ -26,18 +26,31 @@ async function start(rootElement: HTMLElement): Promise<void> {
   const root = createRoot(rootElement);
   root.render(<HostThemeProvider>{loadingShell()}</HostThemeProvider>);
 
-  const [catalogModule, hostModule] = await Promise.all([
-    import("../../bootstrap/catalog/blueprint-catalog"),
-    import("./Host"),
-  ]);
-  catalogModule.installSampleBlueprintCatalog(await catalogModule.bootstrapSampleBlueprintCatalog());
+  const catalogModule = await import("../../bootstrap/catalog/blueprint-catalog");
+  const hostModulePromise = import("./Host");
+  let resolveSeedReady!: () => void;
+  let rejectSeedReady!: (reason?: unknown) => void;
+  const seedReady = new Promise<void>((resolve, reject) => {
+    resolveSeedReady = resolve;
+    rejectSeedReady = reject;
+  });
+  const catalogPromise = catalogModule.bootstrapSampleBlueprintCatalog({
+    onSeedReady(snapshot) {
+      catalogModule.installSampleBlueprintCatalog(snapshot);
+      resolveSeedReady();
+    },
+  });
+  void catalogPromise.catch(rejectSeedReady);
+  const [, hostModule] = await Promise.all([seedReady, hostModulePromise]);
 
   const { Host } = hostModule;
-  root.render(
-    <HostThemeProvider>
-      <Host />
-    </HostThemeProvider>
+  const renderHost = () => root.render(
+    <HostThemeProvider><Host /></HostThemeProvider>
   );
+  renderHost();
+
+  catalogModule.installSampleBlueprintCatalog(await catalogPromise);
+  renderHost();
 }
 
 void start(el);

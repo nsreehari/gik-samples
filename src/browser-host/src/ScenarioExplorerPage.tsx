@@ -9,6 +9,7 @@ import {
   Popover,
   PopoverSurface,
   PopoverTrigger,
+  Spinner,
   Subtitle1,
   Tab,
   TabList,
@@ -61,8 +62,6 @@ import {
   type ScenarioDocument,
 } from "../../scenarios/scenario-document";
 import { jsonValuesEqual } from "../../shared/json-path";
-import { BlueprintSnapshotView } from "./BlueprintSnapshotView";
-import { ScenarioDataFlowCanvas } from "./ScenarioDataFlowCanvas";
 import { useBlueprintHostSetup } from "./blueprint-host-setup";
 import {
   writeBlueprintQuery,
@@ -70,6 +69,15 @@ import {
 import {
   resolveCapabilityDescriptors,
 } from "./runtime/provider-registry";
+
+const BlueprintSnapshotView = React.lazy(async () => {
+  const module = await import("./BlueprintSnapshotView");
+  return { default: module.BlueprintSnapshotView };
+});
+const ScenarioDataFlowCanvas = React.lazy(async () => {
+  const module = await import("./ScenarioDataFlowCanvas");
+  return { default: module.ScenarioDataFlowCanvas };
+});
 
 interface ScenarioEntry {
   document: ScenarioDocument;
@@ -228,6 +236,14 @@ const useStyles = makeStyles({
     minWidth: 0,
     minHeight: 0,
     backgroundColor: tokens.colorNeutralBackground1,
+  },
+  surfaceLoading: {
+    display: "grid",
+    placeItems: "center",
+    width: "100%",
+    height: "100%",
+    minWidth: 0,
+    minHeight: 0,
   },
   presentationSurface: {
     height: "100%",
@@ -726,22 +742,24 @@ function ScenarioWorkspace({
   return (
     <>
       <section className={styles.surface} aria-label="Scenario Blueprint">
-        {leftTab === "presentation" && hasPresentation ? (
-          <div className={styles.presentationSurface}>
-            <BlueprintSnapshotView
-              materializedBlueprint={materializedBlueprint}
-              state={blueprintState}
-              native={native}
-              onEvent={(event) => running ? undefined : transition(event)}
+        <React.Suspense fallback={<div className={styles.surfaceLoading}><Spinner label="Loading surface..." size="small" /></div>}>
+          {leftTab === "presentation" && hasPresentation ? (
+            <div className={styles.presentationSurface}>
+              <BlueprintSnapshotView
+                materializedBlueprint={materializedBlueprint}
+                state={blueprintState}
+                native={native}
+                onEvent={(event) => running ? undefined : transition(event)}
+              />
+            </div>
+          ) : (
+            <ScenarioDataFlowCanvas
+              blueprintId={entry.document.blueprint}
+              scenarioTitle={entry.scenario.title}
+              model={dataFlow}
             />
-          </div>
-        ) : (
-          <ScenarioDataFlowCanvas
-            blueprintId={entry.document.blueprint}
-            scenarioTitle={entry.scenario.title}
-            model={dataFlow}
-          />
-        )}
+          )}
+        </React.Suspense>
       </section>
       {hasPresentation ? (
         <Button

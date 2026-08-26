@@ -421,6 +421,7 @@ export async function bootstrapSampleBlueprintCatalog(options: {
   databaseName?: string;
   fetch?: typeof globalThis.fetch;
   indexedDB?: IDBFactory;
+  onSeedReady?: (snapshot: BlueprintCatalogSnapshot) => void;
 } = {}): Promise<BlueprintCatalogSnapshot> {
   const fetchSeed = options.fetch ?? globalThis.fetch;
   const response = await fetchSeed(
@@ -440,10 +441,14 @@ export async function bootstrapSampleBlueprintCatalog(options: {
     },
   ));
   await verifyBlueprintCatalogBundle(bundle);
+  const seedSnapshot = createBlueprintCatalogSnapshot(bundle);
+  options.onSeedReady?.(seedSnapshot);
   const store = createIndexedDbBlueprintCatalogStore(options);
   try {
-    const seed = await store.admitSeed(bundle);
-    const users = await store.readUserArtifacts();
+    const [seed, users] = await Promise.all([
+      store.admitSeed(bundle),
+      store.readUserArtifacts(),
+    ]);
     return withUserBlueprints(seed, users.blueprints);
   } finally {
     await store.close();
