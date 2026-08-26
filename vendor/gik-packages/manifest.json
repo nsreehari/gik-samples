@@ -1,0 +1,67 @@
+{
+  "format": "gik-vendored-packages/1",
+  "sourceRepository": "https://github.com/nsreehari/generative-interaction-kernel.git",
+  "sourceCommit": "77f84cc54dd3d9ea6c558084e36d12bae068fd69",
+  "excluded": [
+    "source map files",
+    "sourceMappingURL comments"
+  ],
+  "packages": [
+    {
+      "name": "@gik/agent-lifecycle-exp",
+      "version": "0.1.0",
+      "file": "gik-agent-lifecycle-exp-0.1.0.tgz",
+      "bytes": 23862,
+      "sha256": "b84aa5e9eca123107fcd8d6116b6d53d680551405ef8048a790b0fc5e600af4f"
+    },
+    {
+      "name": "@gik/blueprint",
+      "version": "0.2.1-next.0",
+      "file": "gik-blueprint-0.2.1-next.0.tgz",
+      "bytes": 40176,
+      "sha256": "506573b521db54097ca8eb202fd50cf98f7bff7645d2480fdaadb28e59074faf"
+    },
+    {
+      "name": "@gik/blueprint-agent-host",
+      "version": "0.1.0",
+      "file": "gik-blueprint-agent-host-0.1.0.tgz",
+      "bytes": 5397,
+      "sha256": "774b12d9351cd38fa0e86dc6e81378c78f37fb38d42e86a51a792c90eb5a59fb"
+    },
+    {
+      "name": "@gik/controlface",
+      "version": "0.1.5-next.0",
+      "file": "gik-controlface-0.1.5-next.0.tgz",
+      "bytes": 314545,
+      "sha256": "9f1e8379bfd884e4cbc3696525e389d93ec309683129c47fec721c1343946bac"
+    },
+    {
+      "name": "@gik/durable-runtime",
+      "version": "0.8.1-next.0",
+      "file": "gik-durable-runtime-0.8.1-next.0.tgz",
+      "bytes": 39281,
+      "sha256": "f8df04c6804e8cf6bce4cb20c9a331827a54cbe33aaf88bfe6b09aaf3b09658f"
+    },
+    {
+      "name": "@gik/evaluators",
+      "version": "0.1.2-next.0",
+      "file": "gik-evaluators-0.1.2-next.0.tgz",
+      "bytes": 81833,
+      "sha256": "b062db518debebde057f6d9afba806c359fc4a042ad8f909bebb7c769c26b3f6"
+    },
+    {
+      "name": "@gik/kernel",
+      "version": "0.1.2-next.0",
+      "file": "gik-kernel-0.1.2-next.0.tgz",
+      "bytes": 124017,
+      "sha256": "a60222b84f53d4344982f1fec41ef498679d38a7a5a74891a26887282c7b021d"
+    },
+    {
+      "name": "@gik/react",
+      "version": "0.3.1-next.0",
+      "file": "gik-react-0.3.1-next.0.tgz",
+      "bytes": 25123,
+      "sha256": "12046ac805710a5ca1eb127b8445e93771946094f8dedff76734fa0ef8dec234"
+    }
+  ]
+}

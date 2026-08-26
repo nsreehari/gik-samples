@@ -19,6 +19,7 @@ function run(command, args) {
 await Promise.all([
   run(process.execPath, [npmCli, "run", "build", "--workspace", "@gik/components"]),
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
+  run(process.execPath, ["scripts/validate-vendored-packages.mjs"]),
 ]);
 if (!dev) {
   await run(process.execPath, [
