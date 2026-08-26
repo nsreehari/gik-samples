@@ -1,6 +1,6 @@
 import type { BlueprintArtifact, ExternalContext } from "@gik/blueprint";
 import { deriveCellEventOwners } from "@gik/blueprint";
-import { evalAsyncJsonata } from "@gik/evaluators";
+import { evalAsyncJsonata, validateJsonataExpression } from "@gik/evaluators";
 import { validateJsonValue, type GIKEvent, type Json } from "@gik/kernel";
 
 import { isRecord } from "../shared/json-path";
@@ -73,11 +73,63 @@ export type FlatScenarioAct = ScenarioAct & {
   isStepEnd: boolean;
 };
 
+function strictRecord(
+  value: unknown,
+  field: string,
+  allowedKeys: readonly string[],
+): Record<string, unknown> {
+  if (!isRecord(value)) throw new Error(`Scenario '${field}' must be an object.`);
+  const unknownKeys = Object.keys(value).filter((key) => !allowedKeys.includes(key));
+  if (unknownKeys.length > 0) {
+    throw new Error(`Scenario '${field}' contains unknown field(s): ${unknownKeys.join(", ")}.`);
+  }
+  return value;
+}
+
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`Scenario '${field}' must be a non-empty string.`);
   }
   return value;
+}
+
+function expressionString(value: unknown, field: string): string {
+  const expression = requiredString(value, field);
+  const validation = validateJsonataExpression(expression, { mode: "full" });
+  if (!validation.ok) {
+    throw new Error(
+      `Scenario '${field}' must be a valid JSONata expression: ${validation.error ?? "invalid expression"}.`,
+    );
+  }
+  return expression;
+}
+
+function assertJsonValue(value: unknown, field: string, ancestors = new Set<object>()): asserts value is Json {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) return;
+    throw new Error(`Scenario '${field}' must contain JSON values.`);
+  }
+  if (typeof value !== "object") {
+    throw new Error(`Scenario '${field}' must contain JSON values.`);
+  }
+  if (ancestors.has(value)) {
+    throw new Error(`Scenario '${field}' must not contain circular values.`);
+  }
+  const nestedAncestors = new Set(ancestors).add(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertJsonValue(item, `${field}.${index}`, nestedAncestors));
+    return;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    assertJsonValue(child, `${field}.${key}`, nestedAncestors);
+  }
+}
+
+function jsonRecord(value: unknown, field: string): Record<string, Json> {
+  if (!isRecord(value)) throw new Error(`Scenario '${field}' must be an object.`);
+  assertJsonValue(value, field);
+  return structuredClone(value) as Record<string, Json>;
 }
 
 function stringArray(value: unknown, field: string): string[] {
@@ -96,58 +148,61 @@ function optionalDescription(value: unknown, field: string): { description?: str
 }
 
 function parseEvent(value: unknown, field: string): GIKEvent {
-  if (!isRecord(value)) throw new Error(`Scenario '${field}' must be a GIK event object.`);
-  const payload = value.payload;
-  if (payload !== undefined && !isRecord(payload)) {
-    throw new Error(`Scenario '${field}.payload' must be an object.`);
-  }
-  if (value.actorId !== undefined && typeof value.actorId !== "string") {
+  const event = strictRecord(value, field, ["node", "name", "payload", "actorId"]);
+  const payload = event.payload;
+  if (event.actorId !== undefined && typeof event.actorId !== "string") {
     throw new Error(`Scenario '${field}.actorId' must be a string.`);
   }
   return {
-    node: requiredString(value.node, `${field}.node`),
-    name: requiredString(value.name, `${field}.name`),
+    node: requiredString(event.node, `${field}.node`),
+    name: requiredString(event.name, `${field}.name`),
     ...(payload === undefined
       ? {}
-      : { payload: structuredClone(payload) as Record<string, Json> }),
-    ...(value.actorId === undefined
+      : { payload: jsonRecord(payload, `${field}.payload`) }),
+    ...(event.actorId === undefined
       ? {}
-      : { actorId: requiredString(value.actorId, `${field}.actorId`) }),
+      : { actorId: requiredString(event.actorId, `${field}.actorId`) }),
   };
 }
 
 function parseAct(value: unknown, field: string): ScenarioAct {
-  if (!isRecord(value)) throw new Error(`Scenario '${field}' must be an object.`);
-  const hasEvent = Object.prototype.hasOwnProperty.call(value, "event");
-  const hasWait = Object.prototype.hasOwnProperty.call(value, "wait");
-  const hasObservation = Object.prototype.hasOwnProperty.call(value, "observe");
+  const act = strictRecord(value, field, [
+    "id",
+    "title",
+    "description",
+    "event",
+    "wait",
+    "observe",
+  ]);
+  const hasEvent = Object.prototype.hasOwnProperty.call(act, "event");
+  const hasWait = Object.prototype.hasOwnProperty.call(act, "wait");
+  const hasObservation = Object.prototype.hasOwnProperty.call(act, "observe");
   if (Number(hasEvent) + Number(hasWait) + Number(hasObservation) !== 1) {
     throw new Error(`Scenario '${field}' must contain exactly one event, wait, or observation.`);
   }
   const base = {
-    id: requiredString(value.id, `${field}.id`),
-    title: requiredString(value.title, `${field}.title`),
-    ...optionalDescription(value.description, `${field}.description`),
+    id: requiredString(act.id, `${field}.id`),
+    title: requiredString(act.title, `${field}.title`),
+    ...optionalDescription(act.description, `${field}.description`),
   };
-  if (hasEvent) return { ...base, event: parseEvent(value.event, `${field}.event`) };
+  if (hasEvent) return { ...base, event: parseEvent(act.event, `${field}.event`) };
   if (hasWait) {
-    if (!isRecord(value.wait)) {
-      throw new Error(`Scenario '${field}.wait' must contain a condition.`);
-    }
+    const wait = strictRecord(act.wait, `${field}.wait`, ["when"]);
     return {
       ...base,
       wait: {
-        when: requiredString(value.wait.when, `${field}.wait.when`),
+        when: expressionString(wait.when, `${field}.wait.when`),
       },
     };
   }
-  if (!isRecord(value.observe) || !isRecord(value.observe.select)) {
+  const observe = strictRecord(act.observe, `${field}.observe`, ["select"]);
+  if (!isRecord(observe.select)) {
     throw new Error(`Scenario '${field}.observe' must contain a non-empty select map.`);
   }
   const select = Object.fromEntries(
-    Object.entries(value.observe.select).map(([name, expression]) => [
+    Object.entries(observe.select).map(([name, expression]) => [
       requiredString(name, `${field}.observe.select.name`),
-      requiredString(expression, `${field}.observe.select.${name}`),
+      expressionString(expression, `${field}.observe.select.${name}`),
     ]),
   );
   if (Object.keys(select).length === 0) {
@@ -160,17 +215,18 @@ function parseAct(value: unknown, field: string): ScenarioAct {
 }
 
 function parseStep(value: unknown, field: string): ScenarioStep {
-  if (!isRecord(value) || !Array.isArray(value.acts) || value.acts.length === 0) {
+  const step = strictRecord(value, field, ["id", "title", "description", "acts"]);
+  if (!Array.isArray(step.acts) || step.acts.length === 0) {
     throw new Error(`Scenario '${field}' must contain a non-empty acts array.`);
   }
-  const acts = value.acts.map((act, index) => parseAct(act, `${field}.acts.${index}`));
+  const acts = step.acts.map((act, index) => parseAct(act, `${field}.acts.${index}`));
   if (new Set(acts.map(({ id }) => id)).size !== acts.length) {
     throw new Error(`Scenario '${field}' contains duplicate act IDs.`);
   }
   return {
-    id: requiredString(value.id, `${field}.id`),
-    title: requiredString(value.title, `${field}.title`),
-    ...optionalDescription(value.description, `${field}.description`),
+    id: requiredString(step.id, `${field}.id`),
+    title: requiredString(step.title, `${field}.title`),
+    ...optionalDescription(step.description, `${field}.description`),
     acts,
   };
 }
@@ -179,54 +235,71 @@ export function parseScenarioDocument(value: unknown): ScenarioDocument {
   if (!isRecord(value) || value.format !== "gik-scenarios/1") {
     throw new Error("Unsupported scenario document format.");
   }
-  const blueprint = requiredString(value.blueprint, "blueprint");
-  if (!isRecord(value.contextPresets)) {
+  const document = strictRecord(value, "document", [
+    "format",
+    "blueprint",
+    "contextPresets",
+    "scenarios",
+  ]);
+  const blueprint = requiredString(document.blueprint, "blueprint");
+  if (!isRecord(document.contextPresets)) {
     throw new Error(`Scenario document for '${blueprint}' contextPresets must be an object.`);
   }
   const contextPresets = Object.fromEntries(
-    Object.entries(value.contextPresets).map(([id, preset]) => {
-      if (!isRecord(preset) || !isRecord(preset.context)) {
-        throw new Error(`Scenario context preset '${id}' is invalid.`);
-      }
+    Object.entries(document.contextPresets).map(([id, preset]) => {
+      const parsedPreset = strictRecord(preset, `contextPresets.${id}`, ["label", "context"]);
       return [
         requiredString(id, "contextPresets.id"),
         {
-          label: requiredString(preset.label, `contextPresets.${id}.label`),
-          context: structuredClone(preset.context) as ExternalContext,
+          label: requiredString(parsedPreset.label, `contextPresets.${id}.label`),
+          context: jsonRecord(parsedPreset.context, `contextPresets.${id}.context`) as ExternalContext,
         },
       ];
     }),
   );
-  if (!Array.isArray(value.scenarios) || value.scenarios.length === 0) {
+  if (!Array.isArray(document.scenarios) || document.scenarios.length === 0) {
     throw new Error(`Scenario document for '${blueprint}' must define scenarios.`);
   }
-  const scenarios = value.scenarios.map((candidate, index): ScenarioDefinition => {
-    if (!isRecord(candidate) || !Array.isArray(candidate.steps) || candidate.steps.length === 0) {
+  const scenarios = document.scenarios.map((candidate, index): ScenarioDefinition => {
+    const definition = strictRecord(candidate, `scenarios.${index}`, [
+      "id",
+      "title",
+      "description",
+      "contextPreset",
+      "applicableContexts",
+      "resetAtStart",
+      "steps",
+    ]);
+    if (!Array.isArray(definition.steps) || definition.steps.length === 0) {
       throw new Error(`Scenario definition ${index} for '${blueprint}' is invalid.`);
     }
-    const id = requiredString(candidate.id, `scenarios.${index}.id`);
-    const steps = candidate.steps.map((step, stepIndex) =>
+    const id = requiredString(definition.id, `scenarios.${index}.id`);
+    const steps = definition.steps.map((step, stepIndex) =>
       parseStep(step, `scenarios.${id}.steps.${stepIndex}`));
     if (new Set(steps.map((step) => step.id)).size !== steps.length) {
       throw new Error(`Scenario '${id}' contains duplicate step IDs.`);
     }
-    const applicableContexts = candidate.applicableContexts === undefined
+    const actIds = steps.flatMap((step) => step.acts.map((act) => act.id));
+    if (new Set(actIds).size !== actIds.length) {
+      throw new Error(`Scenario '${id}' contains duplicate act IDs.`);
+    }
+    const applicableContexts = definition.applicableContexts === undefined
       ? undefined
-      : stringArray(candidate.applicableContexts, `scenarios.${id}.applicableContexts`);
-    const contextPreset = candidate.contextPreset === undefined
+      : stringArray(definition.applicableContexts, `scenarios.${id}.applicableContexts`);
+    const contextPreset = definition.contextPreset === undefined
       ? undefined
-      : requiredString(candidate.contextPreset, `scenarios.${id}.contextPreset`);
+      : requiredString(definition.contextPreset, `scenarios.${id}.contextPreset`);
     return {
       id,
-      title: requiredString(candidate.title, `scenarios.${id}.title`),
-      ...optionalDescription(candidate.description, `scenarios.${id}.description`),
+      title: requiredString(definition.title, `scenarios.${id}.title`),
+      ...optionalDescription(definition.description, `scenarios.${id}.description`),
       ...(contextPreset === undefined ? {} : { contextPreset }),
       ...(applicableContexts === undefined ? {} : { applicableContexts }),
-      ...(candidate.resetAtStart === undefined
+      ...(definition.resetAtStart === undefined
         ? {}
         : {
-            resetAtStart: typeof candidate.resetAtStart === "boolean"
-              ? candidate.resetAtStart
+            resetAtStart: typeof definition.resetAtStart === "boolean"
+              ? definition.resetAtStart
               : (() => { throw new Error(`Scenario '${id}' resetAtStart must be boolean.`); })(),
           }),
       steps,
@@ -243,6 +316,12 @@ export function parseScenarioDocument(value: unknown): ScenarioDocument {
       if (!contextPresets[contextId]) {
         throw new Error(`Scenario '${scenario.id}' references unknown context preset '${contextId}'.`);
       }
+    }
+    if (scenario.contextPreset && scenario.applicableContexts
+      && !scenario.applicableContexts.includes(scenario.contextPreset)) {
+      throw new Error(
+        `Scenario '${scenario.id}' contextPreset '${scenario.contextPreset}' must be applicable.`,
+      );
     }
   }
   return {

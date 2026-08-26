@@ -131,8 +131,73 @@ test("semantic process progress variant renders accessible status dashes", () =>
   const markup = renderToStaticMarkup(<Process node={trial} emit={() => {}} children={undefined} />);
 
   assert.match(markup, /aria-label="Response process"/);
+  assert.match(markup, />Investigate<\/span>/);
+  assert.match(markup, /class="fui-Icon/);
   assert.match(markup, /Detect: done/);
   assert.match(markup, /aria-current="step"/);
+});
+
+test("semantic process progress uses its process heading before start and after completion", () => {
+  for (const [status, stateLabel] of [["queued", "Not started"], ["done", "Completed"]] as const) {
+    const trial = materializeProcessTrial();
+    trial.props.variant = "progress";
+    const spec = trial.props.spec as { toneMap: Record<string, string> };
+    spec.toneMap.queued = "upcoming";
+    trial.props.items = (trial.props.items as Array<Record<string, unknown>>)
+      .map((item) => ({ ...item, state: status }));
+
+    const markup = renderToStaticMarkup(<Process node={trial} emit={() => {}} children={undefined} />);
+
+    assert.match(markup, />Response process<\/span>/);
+    assert.match(markup, new RegExp(`aria-label="${stateLabel}"`));
+  }
+});
+
+test("semantic process renders authored item icons across variants", () => {
+  for (const variant of ["flow", "stages", "progress"] as const) {
+    const trial = materializeProcessTrial();
+    trial.props.variant = variant;
+
+    assert.equal(processDefinition.validate(trial.props).ok, true);
+    const markup = renderToStaticMarkup(<Process node={trial} emit={() => {}} children={undefined} />);
+    assert.match(markup, /class="fui-Icon/, variant);
+  }
+});
+
+test("semantic process flow and stages use distinct information layouts", () => {
+  const flow = materializeProcessTrial();
+  flow.props.variant = "flow";
+  const flowMarkup = renderToStaticMarkup(<Process node={flow} emit={() => {}} children={undefined} />);
+
+  const stages = materializeProcessTrial();
+  stages.props.variant = "stages";
+  const stagesMarkup = renderToStaticMarkup(<Process node={stages} emit={() => {}} children={undefined} />);
+
+  assert.match(flowMarkup, /Signal identified/);
+  assert.match(flowMarkup, /Evidence under review/);
+  assert.doesNotMatch(stagesMarkup, /Signal identified/);
+  assert.doesNotMatch(stagesMarkup, /Evidence under review/);
+  assert.match(stagesMarkup, /<li[^>]*>.*Detect.*>1<.*<\/li>/s);
+  assert.match(stagesMarkup, /aria-current="step"/);
+});
+
+test("semantic process text uses ASCII status markers without visual icons", () => {
+  const trial = materializeProcessTrial();
+  trial.props.variant = "text";
+
+  const markup = renderToStaticMarkup(<Process node={trial} emit={() => {}} children={undefined} />);
+
+  assert.match(markup, /aria-label="Completed"/);
+  assert.match(markup, /aria-label="In progress"/);
+  assert.match(markup, /aria-current="step"/);
+  assert.match(markup, />o<\/span>/);
+  assert.match(markup, />•<\/span>/);
+  assert.match(markup, /aria-hidden="true">\|<\/span>/);
+  assert.match(markup, />Detect<\/span>/);
+  assert.match(markup, />Signal identified<\/span>/);
+  assert.doesNotMatch(markup, /class="fui-Icon/);
+  assert.doesNotMatch(markup, /title="event"/);
+  assert.doesNotMatch(markup, /title="observe"/);
 });
 
 test("canonical semantic variants share one invariant authored data payload", () => {
@@ -426,8 +491,12 @@ test("timer button exposes a closed countdown action contract", () => {
   const autoOnlyMarkup = renderToStaticMarkup(<TimerButton node={trial} emit={() => {}} children={undefined} />);
   assert.doesNotMatch(autoOnlyMarkup, /Automatically trigger when the countdown ends/);
   assert.match(autoOnlyMarkup, /5 seconds remaining/);
-  assert.equal(formatTimerButtonCountdown(59), "59");
-  assert.equal(formatTimerButtonCountdown(300), "5:00");
+  assert.equal(formatTimerButtonCountdown(59), "00:59");
+  assert.equal(formatTimerButtonCountdown(300), "05:00");
+  trial.props.countdownOnly = true;
+  const countdownOnlyMarkup = renderToStaticMarkup(<TimerButton node={trial} emit={() => {}} children={undefined} />);
+  assert.doesNotMatch(countdownOnlyMarkup, />Continue</);
+  assert.match(countdownOnlyMarkup, />00:05</);
 });
 
 test("timer button triggers immediately once for each active reset key", async () => {

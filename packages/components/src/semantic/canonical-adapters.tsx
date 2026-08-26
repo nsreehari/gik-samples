@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Text } from "@fluentui/react-components";
+import { Card, Text, makeStyles, tokens } from "@fluentui/react-components";
 import type { Json } from "@gik/kernel";
 import { runDeclarativeValidators } from "@gik/evaluators";
 import type { ProjectionView, ProjectionViewProps } from "@gik/react";
@@ -87,16 +87,85 @@ export const eventSeriesDefinition = definition(eventSeriesDescription, EventSer
 export const PROCESS_VARIANTS = ["flow", "stages", "progress", "text"] as const;
 const processSchema = canonicalSchema(getSequenceSchema(), PROCESS_VARIANTS);
 const processMap: VariantMap = { flow: "standard", stages: "compact", progress: "progress" };
-export const Process: ProjectionView = ({ node, emit }) => canonicalVariant(node.props, "flow") === "text"
-  ? textItems(node, "items", String((node.props.spec as any).fields.title), (node.props.spec as any).fields.detail)
-  : delegate(Sequence, node, emit, mappedVariant(node.props, processMap, "flow"));
+const useProcessTextStyles = makeStyles({
+  root: {
+    display: "grid",
+    gap: tokens.spacingVerticalM,
+    fontFamily: "monospace",
+  },
+  list: { display: "grid", margin: 0, padding: 0, listStyle: "none" },
+  item: {
+    display: "grid",
+    gridTemplateColumns: "3ch minmax(0, 1fr)",
+    minWidth: 0,
+  },
+  status: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 1,
+    color: tokens.colorNeutralForeground2,
+  },
+  line: {
+    display: "grid",
+    gap: tokens.spacingVerticalXXS,
+    minWidth: 0,
+    paddingBottom: tokens.spacingVerticalXS,
+  },
+  title: { minWidth: 0, fontFamily: "inherit" },
+  detail: { minWidth: 0, color: tokens.colorNeutralForeground3, fontFamily: "inherit" },
+  connector: {
+    gridColumn: 1,
+    display: "inline-flex",
+    justifyContent: "center",
+    minHeight: "1em",
+    color: tokens.colorNeutralForeground3,
+    lineHeight: 1,
+  },
+});
+export const Process: ProjectionView = ({ node, emit }) => {
+  if (canonicalVariant(node.props, "flow") !== "text") {
+    return delegate(Sequence, node, emit, mappedVariant(node.props, processMap, "flow"));
+  }
+  const styles = useProcessTextStyles();
+  const spec = (node.props.spec ?? {}) as Record<string, any>;
+  const fields = spec.fields as { title: string; detail?: string; status?: string };
+  const items = records(node.props.items);
+  if (items.length === 0) return <Text {...componentRootProps(node)}>{spec.emptyText ?? "No data available."}</Text>;
+  return <section {...componentRootProps(node, styles.root)}>
+    {spec.title ? <Text block weight="semibold">{spec.title}</Text> : null}
+    <ol className={styles.list}>
+      {items.map((item, index) => {
+        const title = textAt(item, fields.title);
+        const detail = fields.detail ? textAt(item, fields.detail) : "";
+        const status = fields.status ? textAt(item, fields.status) : "";
+        const token = spec.toneMap?.[status] as string | undefined;
+        const marker = token === "complete" ? "o" : token === "current" ? "•" : token === "blocked" ? "x" : token === "skipped" ? "-" : "·";
+        const markerLabel = token === "complete" ? "Completed" : token === "current" ? "In progress" : token === "blocked" ? "Blocked" : token === "skipped" ? "Skipped" : "Pending";
+        return <li
+          className={styles.item}
+          key={`${title}-${index}`}
+          aria-current={token === "current" ? "step" : undefined}
+          title={status ? `${title}: ${status}` : title}
+        >
+          <span className={styles.status} aria-label={markerLabel}>{marker}</span>
+          <span className={styles.line}>
+            <Text className={styles.title}>{title}</Text>
+            {detail ? <Text className={styles.detail}>{detail}</Text> : null}
+          </span>
+          {index < items.length - 1 ? <span className={styles.connector} aria-hidden="true">|</span> : null}
+        </li>;
+      })}
+    </ol>
+  </section>;
+};
 const processDescription: ComponentDescription = { capability: "semantic:process", summary: "Presents ordered process steps as a flow, stages, compact progress, or text.", dataProp: "items", events: [], semanticTokens: SEQUENCE_SEMANTIC_TOKENS, defaultVariant: "flow", variants: [
   { value: "flow", summary: "Detailed connected process flow.", useWhen: ["Step labels and details are part of the primary reading path"] },
   { value: "stages", summary: "Compact labeled process stages.", useWhen: ["The process needs labels in a supporting surface"] },
   { value: "progress", summary: "Minimal dash-based process progress.", useWhen: ["Only completed, current, and upcoming progression needs to remain visible"] },
   { value: "text", summary: "Complete linear text projection.", useWhen: ["Visual layout is unavailable or inappropriate"] },
-], authoring: { useWhen: ["Records are ordered procedural steps"], avoidWhen: ["Timestamps are the primary ordering relationship"], rules: ["Use the existing sequence field and orientation contract", "Use progress only when surrounding content provides the current step detail", "Put density and orientation in spec"] } };
-export function materializeProcessTrial() { return trialNode("semantic:process", { variant: "flow", items: [{ key: "s1", order: 1, label: "Detect", state: "done", detail: "Signal identified" }, { key: "s2", order: 2, label: "Investigate", state: "active", detail: "Evidence under review" }], spec: { title: "Response process", density: "comfortable", orientation: "horizontal", fields: { id: "key", title: "label", order: "order", detail: "detail", status: "state" }, toneMap: { done: "complete", active: "current" } } }); }
+], authoring: { useWhen: ["Records are ordered procedural steps"], avoidWhen: ["Timestamps are the primary ordering relationship"], rules: ["Use the existing sequence field and orientation contract", "Map optional item icons through fields.icon using step, event, wait, or observe", "Use progress for a compact current-item summary", "Put density and orientation in spec"] } };
+export function materializeProcessTrial() { return trialNode("semantic:process", { variant: "flow", items: [{ key: "s1", order: 1, label: "Detect", state: "done", detail: "Signal identified", icon: "event" }, { key: "s2", order: 2, label: "Investigate", state: "active", detail: "Evidence under review", icon: "observe" }], spec: { title: "Response process", density: "comfortable", orientation: "horizontal", fields: { id: "key", title: "label", order: "order", detail: "detail", status: "state", icon: "icon" }, toneMap: { done: "complete", active: "current" } } }); }
 export const processDefinition = definition(processDescription, Process, processSchema, (props) => validateCanonical("semantic:process", processSchema, props, (value) => delegatedProps(value, canonicalVariant(value, "flow") === "text" ? "compact" : mappedVariant(value, processMap, "flow")), validateSequence), materializeProcessTrial);
 
 export const ENTITY_SET_VARIANTS = ["clusters", "matrix", "list", "text"] as const;

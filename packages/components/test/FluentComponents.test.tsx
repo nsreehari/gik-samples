@@ -91,11 +91,20 @@ test("moved Fluent input controls retain their rendering contracts", () => {
   assert.match(switchMarkup, /checked=""/);
 
   const toggleTrial = fluentToggleDefinition.materializeTrial();
+  toggleTrial.props.onIcon = "acts";
+  toggleTrial.props.offIcon = "steps";
+  toggleTrial.props.onTitle = "Automatic mode · switch to manual";
+  toggleTrial.props.offTitle = "Manual mode · switch to automatic";
+  toggleTrial.props.ariaLabel = "Change journal mode";
   const ToggleComponent = fluentToggleDefinition.component;
   const toggleMarkup = renderToStaticMarkup(
     <ToggleComponent node={toggleTrial} emit={() => undefined} children={undefined} />,
   );
   assert.match(toggleMarkup, /aria-pressed="true"/);
+  assert.match(toggleMarkup, /aria-label="Change journal mode"/);
+  assert.match(toggleMarkup, /title="Automatic mode · switch to manual"/);
+  assert.match(toggleMarkup, /class="fui-Icon/);
+  assert.doesNotMatch(toggleMarkup, />Auto<\/button>/);
   assert.equal(fluentToggleDefinition.validate({ minWidth: 72 }).ok, false);
 });
 
@@ -282,6 +291,10 @@ test("FluentList vertical-cards is a full selection variant with controlled sele
   const trial = fluentListDefinition.materializeTrial();
   trial.props.variant = "vertical-cards";
   trial.props.selectedValues = ["open"];
+  trial.props.items = [
+    { value: "open", label: "Open", description: "Investigation is active." },
+    { value: "closed", label: "Closed", description: "Investigation is complete." },
+  ];
   trial.props.className = "callsite-list";
   const Component = fluentListDefinition.component;
   const markup = renderToStaticMarkup(
@@ -297,6 +310,7 @@ test("FluentList vertical-cards is a full selection variant with controlled sele
   assert.match(markup, /class="[^"]*callsite-list/);
   assert.match(markup, /role="listbox"/);
   assert.match(markup, /aria-selected="true"[^>]*>.*Open/);
+  assert.match(markup, /Investigation is active/);
   assert.doesNotMatch(markup, /type="checkbox"/);
   assert.deepEqual(description.eventContracts?.select.payloadSchema, {
     type: "object",

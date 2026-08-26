@@ -1,25 +1,42 @@
 import React from "react";
 import {
-  Badge,
   Body1,
   Button,
   Caption1,
   Dropdown,
   Label,
   Option,
+  Popover,
+  PopoverSurface,
+  PopoverTrigger,
   Subtitle1,
   Tab,
   TabList,
+  ToggleButton,
   makeStyles,
+  mergeClasses,
   tokens,
   type SelectTabData,
   type SelectTabEvent,
 } from "@fluentui/react-components";
 import {
+  ArrowResetRegular,
+  ClipboardEditRegular,
+  ClockRegular,
   DataTrendingRegular,
+  PauseRegular,
+  PlayRegular,
+  PresenterRegular,
+  SparkleRegular,
+  TimerRegular,
   WindowRegular,
 } from "@fluentui/react-icons";
-import { GikComponent } from "@gik/components";
+import {
+  GikComponent,
+  PaneWithTriggerBody,
+  PaneWithTriggerFooter,
+  PaneWithTriggerHeader,
+} from "@gik/components";
 import {
   materializeBlueprint,
   parseBlueprintReference,
@@ -32,6 +49,7 @@ import { buildCapabilityCatalogFromExternals, type BundleNative } from "@gik/rea
 
 import {
   getSampleBlueprintCatalog,
+  resolveSampleLaunchExternalContext,
 } from "../../bootstrap/catalog/blueprint-catalog";
 import { createScenarioDataFlowModel } from "../../scenarios/scenario-data-flow";
 import {
@@ -42,11 +60,12 @@ import {
   type ScenarioDefinition,
   type ScenarioDocument,
 } from "../../scenarios/scenario-document";
+import { jsonValuesEqual } from "../../shared/json-path";
 import { BlueprintSnapshotView } from "./BlueprintSnapshotView";
+import { ScenarioDataFlowCanvas } from "./ScenarioDataFlowCanvas";
 import { useBlueprintHostSetup } from "./blueprint-host-setup";
 import {
-  readScenarioQuery,
-  writeScenarioQuery,
+  writeBlueprintQuery,
 } from "./host-query";
 import {
   resolveCapabilityDescriptors,
@@ -55,6 +74,12 @@ import {
 interface ScenarioEntry {
   document: ScenarioDocument;
   scenario: ScenarioDefinition;
+  authored: boolean;
+}
+
+interface ScenarioBlueprintChoice {
+  id: string;
+  label: string;
 }
 
 type ActStatus = "pending" | "running" | "waiting" | "completed" | "failed";
@@ -86,60 +111,116 @@ const useStyles = makeStyles({
   },
   runnerIntro: {
     display: "grid",
-    gap: tokens.spacingVerticalXS,
+    gap: tokens.spacingVerticalM,
   },
   progressSummary: {
     display: "grid",
     gap: tokens.spacingVerticalS,
-    padding: tokens.spacingVerticalM,
-    borderRadius: tokens.borderRadiusLarge,
-    backgroundColor: tokens.colorNeutralBackground2,
+    paddingBottom: tokens.spacingVerticalS,
   },
-  progressHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: tokens.spacingHorizontalS,
+  passiveHeader: {
+    fontSize: tokens.fontSizeBase400,
+    lineHeight: tokens.lineHeightBase400,
   },
   progressDetail: {
     display: "grid",
     gap: tokens.spacingVerticalXXS,
   },
   timerControls: {
-    display: "grid",
-    gap: tokens.spacingVerticalM,
-    paddingTop: tokens.spacingVerticalS,
-    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: tokens.spacingHorizontalS,
   },
   timerAction: {
     display: "flex",
     alignItems: "center",
-    gap: tokens.spacingHorizontalS,
-    flexWrap: "wrap",
+    gap: 0,
   },
-  observations: {
+  paceToggle: {
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderRightWidth: 0,
+  },
+  timerUtilities: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalXS,
+  },
+  journalContent: {
     display: "grid",
     gap: tokens.spacingVerticalS,
+    paddingRight: tokens.spacingHorizontalXS,
+    paddingBottom: tokens.spacingVerticalM,
   },
-  observation: {
+  journalList: {
+    display: "grid",
+    gap: tokens.spacingVerticalS,
+    margin: 0,
+    padding: 0,
+    listStyle: "none",
+  },
+  journalCard: {
+    position: "relative",
     display: "grid",
     gap: tokens.spacingVerticalXS,
-    padding: tokens.spacingVerticalS,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalXXL} ${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    border: `${tokens.strokeWidthThin} solid ${tokens.colorNeutralStroke2}`,
     borderRadius: tokens.borderRadiusMedium,
     backgroundColor: tokens.colorNeutralBackground1,
   },
-  observationValues: {
+  journalCardCurrent: {
+    backgroundColor: tokens.colorBrandBackground2,
+    boxShadow: `inset 0 0 0 ${tokens.strokeWidthThin} ${tokens.colorBrandStroke1}`,
+  },
+  journalCardHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: tokens.spacingHorizontalS,
+  },
+  journalCardCopy: {
+    display: "grid",
+    gap: tokens.spacingVerticalXXS,
+    minWidth: 0,
+  },
+  journalCardDescription: { color: tokens.colorNeutralForeground3 },
+  journalCardIndex: {
+    position: "absolute",
+    right: tokens.spacingHorizontalM,
+    bottom: tokens.spacingVerticalS,
+    color: tokens.colorNeutralForegroundDisabled,
+    fontSize: tokens.fontSizeBase400,
+    lineHeight: tokens.lineHeightBase400,
+    fontVariantNumeric: "tabular-nums",
+    userSelect: "none",
+  },
+  actDetail: {
+    maxWidth: "260px",
     margin: 0,
     whiteSpace: "pre-wrap",
     overflowWrap: "anywhere",
     fontFamily: tokens.fontFamilyMonospace,
     fontSize: tokens.fontSizeBase200,
   },
-  actions: {
+  actRail: {
+    display: "grid",
+    gap: tokens.spacingVerticalXS,
+    margin: `${tokens.spacingVerticalXS} 0 0`,
+    padding: `0 0 0 ${tokens.spacingHorizontalM}`,
+    borderLeft: `${tokens.strokeWidthThick} solid ${tokens.colorNeutralStroke2}`,
+    listStyle: "none",
+  },
+  actRailItem: {
     display: "flex",
     alignItems: "center",
     gap: tokens.spacingHorizontalS,
-    flexWrap: "wrap",
+    minWidth: 0,
+    fontSize: tokens.fontSizeBase200,
+  },
+  actRailIcon: {
+    flexShrink: 0,
+    color: tokens.colorNeutralForeground3,
   },
   surface: {
     position: "absolute",
@@ -161,30 +242,100 @@ const useStyles = makeStyles({
     zIndex: 1030,
     boxShadow: tokens.shadow16,
   },
-  drawer: { display: "grid", gridTemplateRows: "auto minmax(0, 1fr)", minHeight: 0, height: "100%" },
+  drawerBody: {
+    display: "grid",
+    gridTemplateRows: "auto minmax(0, 1fr)",
+    minHeight: 0,
+    height: "100%",
+  },
   drawerTabs: { marginBottom: tokens.spacingVerticalM },
-  drawerPanel: { minHeight: 0, overflow: "auto", paddingRight: tokens.spacingHorizontalXS },
+  drawerPanel: { minHeight: 0, overflow: "hidden" },
   context: {
     display: "grid",
     alignContent: "start",
     gap: tokens.spacingVerticalM,
+    height: "100%",
+    overflow: "auto",
+    paddingRight: tokens.spacingHorizontalXS,
+  },
+  pickerContainer: {
+    padding: tokens.spacingVerticalM,
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  scenarioEmptyState: {
+    padding: tokens.spacingVerticalM,
+    borderRadius: tokens.borderRadiusMedium,
+    color: tokens.colorNeutralForeground2,
+    backgroundColor: tokens.colorNeutralBackground2,
   },
   error: { color: tokens.colorPaletteRedForeground1 },
   presentation: { minHeight: "100%", minWidth: 0 },
 });
 
-function defaultContextId(entry: ScenarioEntry, requested?: string): string {
+function defaultContextId(entry: ScenarioEntry): string {
   const applicable = entry.scenario.applicableContexts
     ?? Object.keys(entry.document.contextPresets);
-  if (requested && applicable.includes(requested)) return requested;
   return entry.scenario.contextPreset ?? applicable[0] ?? "";
 }
 
-function contextMatches(
-  context: ExternalContext,
-  preset: ExternalContext,
-): boolean {
-  return JSON.stringify(context) === JSON.stringify(preset);
+function blueprintLabel(id: string): string {
+  return id
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function actKind(act: FlatScenarioAct): "event" | "wait" | "observe" {
+  if ("event" in act) return "event";
+  if ("wait" in act) return "wait";
+  return "observe";
+}
+
+function actIcon(act: FlatScenarioAct): React.ReactElement {
+  if ("event" in act) return <SparkleRegular />;
+  if ("wait" in act) return <ClockRegular />;
+  return <ClipboardEditRegular />;
+}
+
+function actDetail(
+  act: FlatScenarioAct,
+  observation?: Record<string, Json>,
+): Record<string, Json> {
+  if ("event" in act) return act.event as unknown as Record<string, Json>;
+  if ("wait" in act) return act.wait as unknown as Record<string, Json>;
+  return observation ?? act.observe as unknown as Record<string, Json>;
+}
+
+function ActDetailPopover({
+  act,
+  observation,
+}: {
+  act: FlatScenarioAct;
+  observation?: Record<string, Json>;
+}): React.ReactElement {
+  const styles = useStyles();
+  const kind = actKind(act);
+  return (
+    <Popover positioning="below-end">
+      <PopoverTrigger disableButtonEnhancement>
+        <Button
+          appearance="subtle"
+          size="small"
+          shape="circular"
+          icon={actIcon(act)}
+          aria-label={`Inspect ${kind} act details`}
+          title={`${kind[0]?.toUpperCase()}${kind.slice(1)} act`}
+        />
+      </PopoverTrigger>
+      <PopoverSurface>
+        <pre className={styles.actDetail}>
+          {JSON.stringify(actDetail(act, observation), null, 2)}
+        </pre>
+      </PopoverSurface>
+    </Popover>
+  );
 }
 
 function transitionOrchestrator(
@@ -197,21 +348,68 @@ function transitionOrchestrator(
 
 export function ScenarioExplorerPage(): React.ReactElement {
   const styles = useStyles();
+  const catalog = React.useMemo(() => getSampleBlueprintCatalog(), []);
   const entries = React.useMemo(
-    () => Object.values(getSampleBlueprintCatalog().scenarios).flatMap((document) =>
-      document.scenarios.map((scenario) => ({ document, scenario }))),
-    [],
+    () => catalog.blueprints.flatMap((blueprintId) => {
+      const authoredDocument = catalog.scenarios[blueprintId];
+      if (authoredDocument?.scenarios.length) {
+        return authoredDocument.scenarios.map((scenario) => ({
+          document: authoredDocument,
+          scenario,
+          authored: true,
+        }));
+      }
+      const defaultContextId = "default";
+      const document: ScenarioDocument = {
+        format: "gik-scenarios/1",
+        blueprint: blueprintId,
+        contextPresets: {
+          [defaultContextId]: {
+            label: "Default",
+            context: resolveSampleLaunchExternalContext(blueprintId) ?? {},
+          },
+        },
+        scenarios: [{
+          id: "blueprint-overview",
+          title: blueprintLabel(blueprintId),
+          description: "This Blueprint does not define an authored Scenario.",
+          contextPreset: defaultContextId,
+          steps: [],
+        }],
+      };
+      return [{ document, scenario: document.scenarios[0], authored: false }];
+    }),
+    [catalog.blueprints, catalog.scenarios],
+  );
+  const blueprintChoices = React.useMemo<ScenarioBlueprintChoice[]>(
+    () => catalog.blueprints.map((id) => ({
+      id,
+      label: blueprintLabel(id),
+    })),
+    [catalog.blueprints],
   );
   if (entries.length === 0) throw new Error("The Scenario Explorer requires at least one scenario.");
-  const initialQuery = React.useMemo(
-    () => typeof window === "undefined" ? {} : readScenarioQuery(window.location.search),
+  const initialBlueprintId = React.useMemo(
+    () => typeof window === "undefined"
+      ? undefined
+      : new URLSearchParams(window.location.search).get("b")?.trim() || undefined,
     [],
   );
-  const initialSelection = Math.max(0, entries.findIndex(({ document, scenario }) =>
-    document.blueprint === initialQuery.blueprintId
-    && scenario.id === initialQuery.scenarioId));
+  const requestedSelection = entries.findIndex(({ document }) =>
+    document.blueprint === initialBlueprintId);
+  const authoredScenarioSelection = entries.findIndex(({ document }) =>
+    Boolean(catalog.scenarios[document.blueprint]?.scenarios.length));
+  const initialSelection = Math.max(
+    0,
+    requestedSelection >= 0 ? requestedSelection : authoredScenarioSelection,
+  );
   const [selection, setSelection] = React.useState(initialSelection);
   const entry = entries[selection] ?? entries[0];
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !initialBlueprintId) return;
+    const url = writeBlueprintQuery(window.location.href, initialBlueprintId);
+    if (url !== window.location.href) window.history.replaceState(null, "", url);
+  }, [initialBlueprintId]);
 
   return (
     <main className={styles.page}>
@@ -219,9 +417,9 @@ export function ScenarioExplorerPage(): React.ReactElement {
         key={`${entry.document.blueprint}:${entry.scenario.id}`}
         entry={entry}
         entries={entries}
+        blueprintChoices={blueprintChoices}
         selection={selection}
         onSelection={setSelection}
-        requestedContextId={initialQuery.contextId}
       />
     </main>
   );
@@ -230,18 +428,18 @@ export function ScenarioExplorerPage(): React.ReactElement {
 function ScenarioWorkspace({
   entry,
   entries,
+  blueprintChoices,
   selection,
   onSelection,
-  requestedContextId,
 }: {
   entry: ScenarioEntry;
   entries: ScenarioEntry[];
+  blueprintChoices: ScenarioBlueprintChoice[];
   selection: number;
   onSelection(value: number): void;
-  requestedContextId?: string;
 }): React.ReactElement {
   const styles = useStyles();
-  const initialContextId = defaultContextId(entry, requestedContextId);
+  const initialContextId = defaultContextId(entry);
   const initialContext = structuredClone(
     entry.document.contextPresets[initialContextId]?.context ?? {},
   );
@@ -251,7 +449,7 @@ function ScenarioWorkspace({
   const [draftContextId, setDraftContextId] = React.useState<string | undefined>(initialContextId || undefined);
   const [runnerMode, setRunnerMode] = React.useState<RunnerMode>("steps");
   const [timerPace, setTimerPace] = React.useState<TimerPace>("automatic");
-  const [rightTab, setRightTab] = React.useState("steps");
+  const [rightTab, setRightTab] = React.useState(() => entry.authored ? "journal" : "context");
   const setup = useBlueprintHostSetup({
     id: entry.document.blueprint,
     durableEnabled: false,
@@ -320,16 +518,6 @@ function ScenarioWorkspace({
   const runningRef = React.useRef(false);
   const runTokenRef = React.useRef(0);
   const currentAct = acts[cursor];
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const url = writeScenarioQuery(window.location.href, {
-      blueprintId: entry.document.blueprint,
-      scenarioId: entry.scenario.id,
-      ...(appliedContextId ? { contextId: appliedContextId } : {}),
-    });
-    if (url !== window.location.href) window.history.replaceState(null, "", url);
-  }, [appliedContextId, entry.document.blueprint, entry.scenario.id]);
 
   const runTransition = React.useCallback(async (event: GIKEvent): Promise<Record<string, Json>> => {
     const currentMaterialization = materializedRef.current;
@@ -440,7 +628,7 @@ function ScenarioWorkspace({
   const applyContext = (values: ExternalContext) => {
     if (running) return;
     const presetId = Object.entries(entry.document.contextPresets)
-      .find(([, preset]) => contextMatches(values, preset.context))?.[0];
+      .find(([, preset]) => jsonValuesEqual(values, preset.context))?.[0];
     const next = structuredClone(values);
     setContextDraft(next);
     setAppliedContext(next);
@@ -466,6 +654,7 @@ function ScenarioWorkspace({
   const contextFormSpec = setup.blueprint.payload.contextFormSpec;
   const currentStepIndex = currentAct?.stepIndex ?? entry.scenario.steps.length;
   const currentStep = entry.scenario.steps[currentStepIndex];
+  const scenarioStarted = actStatuses.some((status) => status !== "pending");
   const timerDurationMs = TIMER_PACE_MS[timerPace];
   const timerLabel = currentAct && "wait" in currentAct
     ? "Check condition"
@@ -480,21 +669,58 @@ function ScenarioWorkspace({
       id: step.id,
       order: stepIndex,
       title: step.title,
+      icon: "step",
       status: statuses.includes("failed")
         ? "failed"
         : stepIndex < currentStepIndex
           ? "completed"
-          : stepIndex === currentStepIndex && executionStatus !== "completed"
+          : scenarioStarted && stepIndex === currentStepIndex && executionStatus !== "completed"
             ? "current"
             : "upcoming",
     };
   });
-  const onTab = (setter: (value: string) => void) =>
-    (_: SelectTabEvent, data: SelectTabData) => setter(String(data.value));
-  const selectControlTab = (_: SelectTabEvent, data: SelectTabData) => {
-    const value = String(data.value);
-    setRightTab(value);
-    if (value === "steps" || value === "acts") setRunnerMode(value);
+  const actProgressItems = acts.map((act) => ({
+    id: act.id,
+    order: act.globalIndex,
+    title: act.title,
+    icon: actKind(act),
+    status: actStatuses[act.globalIndex] === "failed"
+      ? "failed"
+      : act.globalIndex < cursor || actStatuses[act.globalIndex] === "completed"
+        ? "completed"
+        : scenarioStarted && act.globalIndex === cursor && executionStatus !== "completed"
+          ? "current"
+          : "upcoming",
+  }));
+  const progressItems = runnerMode === "steps" ? stepProgressItems : actProgressItems;
+  const scenarioEntries = entries
+    .map((candidate, index) => ({ candidate, index }))
+    .filter(({ candidate }) => candidate.document.blueprint === entry.document.blueprint);
+  const scenarioOptions = scenarioEntries.map(({ candidate, index }) => ({
+    value: String(index),
+    label: candidate.scenario.title,
+    ...(candidate.scenario.description ? { description: candidate.scenario.description } : {}),
+    disabled: running,
+  }));
+  const visibleActs = cursor >= acts.length ? acts : acts.slice(0, cursor + 1);
+  const visibleStepCount = executionStatus === "completed"
+    ? entry.scenario.steps.length
+    : Math.min(currentStepIndex + 1, entry.scenario.steps.length);
+  const visibleSteps = entry.scenario.steps.slice(0, visibleStepCount);
+  const selectControlTab = (_: SelectTabEvent, data: SelectTabData) =>
+    setRightTab(String(data.value));
+  const toggleTimerPace = () => {
+    setTimerPace((current) => current === "automatic" ? "presenter" : "automatic");
+    setTimerPaused(false);
+  };
+  const chooseBlueprint = (blueprintId: string) => {
+    const nextIndex = entries.findIndex(({ document }) => document.blueprint === blueprintId);
+    if (running) return;
+    if (typeof window === "undefined") {
+      if (nextIndex >= 0) onSelection(nextIndex);
+      return;
+    }
+    window.location.assign(writeBlueprintQuery(window.location.href, blueprintId));
   };
 
   return (
@@ -510,19 +736,10 @@ function ScenarioWorkspace({
             />
           </div>
         ) : (
-          <GikComponent
-            kind="primitive:infinite-canvas"
-            id={`scenario-data-flow:${entry.document.blueprint}`}
-            componentProps={{
-              stateKey: `scenario-data-flow:${entry.document.blueprint}`,
-              nodes: dataFlow.nodes as unknown as Json,
-              nodePorts: dataFlow.nodePorts as unknown as Json,
-              height: "100%",
-              controls: true,
-              miniMap: true,
-              selectionOnDrag: false,
-              ariaLabel: `${entry.scenario.title} Blueprint Cell data flow`,
-            }}
+          <ScenarioDataFlowCanvas
+            blueprintId={entry.document.blueprint}
+            scenarioTitle={entry.scenario.title}
+            model={dataFlow}
           />
         )}
       </section>
@@ -550,174 +767,193 @@ function ScenarioWorkspace({
           openLabel: "Open scenario controls",
           closeLabel: "Close scenario controls",
           panelWidthPx: 320,
-          style: { top: "50px", bottom: "50px" },
         }}
       >
-        <div className={styles.drawer}>
-          <div className={styles.runnerIntro}>
-            <Subtitle1>{entry.scenario.title}</Subtitle1>
-            <Caption1>{entry.scenario.description ?? "Run Blueprint events against the current materialization."}</Caption1>
-            <div className={styles.field}>
-              <Label htmlFor="scenario-select">Scenario</Label>
-              <Dropdown
-                id="scenario-select"
-                value={entry.scenario.title}
-                selectedOptions={[String(selection)]}
-                disabled={running}
-                onOptionSelect={(_, data) => onSelection(Number(data.optionValue))}
-              >
-                {entries.map((candidate, index) => (
-                  <Option key={`${candidate.document.blueprint}:${candidate.scenario.id}`} value={String(index)}>
-                    {candidate.scenario.title}
-                  </Option>
-                ))}
-              </Dropdown>
-            </div>
-          </div>
-          <TabList className={styles.drawerTabs} selectedValue={rightTab} onTabSelect={selectControlTab}>
-            <Tab value="steps">Steps</Tab>
-            <Tab value="acts">Acts</Tab>
-            <Tab value="context">Context</Tab>
-          </TabList>
-          <div className={styles.drawerPanel}>
-          {rightTab === "steps" || rightTab === "acts" ? (
-            <div className={styles.runner}>
-              <div className={styles.progressSummary} aria-live="polite">
-                <div className={styles.progressHeader}>
-                  <strong>
-                    {executionStatus === "completed"
-                      ? "Scenario complete"
-                      : rightTab === "steps"
-                        ? `Step ${currentStepIndex + 1} of ${entry.scenario.steps.length}`
-                        : `Act ${cursor + 1} of ${acts.length}`}
-                  </strong>
-                  <Badge color={executionStatus === "failed" ? "danger" : executionStatus === "completed" ? "success" : "informative"}>
-                    {executionStatus}
-                  </Badge>
-                </div>
-                <GikComponent
-                  kind="semantic:process"
-                  id="scenario-step-progress"
-                  data={stepProgressItems as unknown as Json}
-                  variant="progress"
-                  componentProps={{
-                    spec: {
-                      fields: {
-                        id: "id",
-                        title: "title",
-                        order: "order",
-                        status: "status",
-                      },
-                      toneMap: {
-                        completed: "complete",
-                        current: "current",
-                        upcoming: "upcoming",
-                        failed: "blocked",
-                      },
+        <PaneWithTriggerHeader>
+          {entry.authored ? (
+            <div className={styles.progressSummary} aria-live="polite">
+              <GikComponent
+                kind="semantic:process"
+                id="scenario-step-progress"
+                data={progressItems as unknown as Json}
+                variant="progress"
+                componentProps={{
+                  spec: {
+                    title: entry.scenario.title,
+                    fields: {
+                      id: "id",
+                      title: "title",
+                      order: "order",
+                      status: "status",
+                      icon: "icon",
                     },
+                    toneMap: {
+                      completed: "complete",
+                      current: "current",
+                      upcoming: "upcoming",
+                      failed: "blocked",
+                    },
+                  },
+                }}
+              />
+            </div>
+          ) : (
+            <span className={styles.passiveHeader}>{blueprintLabel(entry.document.blueprint)}</span>
+          )}
+        </PaneWithTriggerHeader>
+        <PaneWithTriggerBody>
+          <div className={styles.drawerBody}>
+            <TabList className={styles.drawerTabs} selectedValue={rightTab} onTabSelect={selectControlTab}>
+            {entry.authored
+              ? <Tab value="journal">{runnerMode === "steps" ? "Steps" : "Acts"}</Tab>
+              : null}
+            <Tab value="context">Context</Tab>
+            <Tab value="scenarios">Scenarios</Tab>
+            </TabList>
+            <div className={styles.drawerPanel}>
+          {rightTab === "scenarios" ? (
+            <div className={mergeClasses(styles.runnerIntro, styles.context)}>
+              <div
+                className={mergeClasses(styles.field, styles.pickerContainer)}
+                aria-label="Blueprint selection"
+              >
+                <Label htmlFor="scenario-blueprint-select">Blueprint</Label>
+                <Dropdown
+                  id="scenario-blueprint-select"
+                  value={blueprintChoices.find(({ id }) => id === entry.document.blueprint)?.label
+                    ?? blueprintLabel(entry.document.blueprint)}
+                  selectedOptions={[entry.document.blueprint]}
+                  disabled={running}
+                  onOptionSelect={(_, data) => chooseBlueprint(String(data.optionValue))}
+                >
+                  {blueprintChoices.map((choice) => (
+                    <Option key={choice.id} value={choice.id}>
+                      {choice.label}
+                    </Option>
+                  ))}
+                </Dropdown>
+              </div>
+              {entry.authored ? (
+                <GikComponent
+                  kind="fluent:list"
+                  id="scenario-list"
+                  data={scenarioOptions as unknown as Json}
+                  variant="vertical-cards"
+                  componentProps={{
+                    ariaLabel: "Scenarios",
+                    selectionMode: "single",
+                    selectedValues: [String(selection)],
+                  }}
+                  onEvent={(event) => {
+                    if (event.name !== "select" || running) return;
+                    const values = event.payload.values;
+                    const nextIndex = Array.isArray(values) ? Number(values[0]) : Number.NaN;
+                    if (Number.isInteger(nextIndex) && scenarioEntries.some(({ index }) => index === nextIndex)) {
+                      onSelection(nextIndex);
+                    }
                   }}
                 />
-                {executionStatus !== "completed" ? (
-                  <div className={styles.progressDetail}>
-                    <strong>{rightTab === "steps" ? currentStep?.title : currentAct?.title}</strong>
-                    {rightTab === "steps" ? (
-                      currentStep?.description ? <Caption1>{currentStep.description}</Caption1> : null
-                    ) : (
-                      <>
-                        <Caption1>{running ? "Running" : "Next"} in {currentAct?.stepTitle}</Caption1>
-                        {currentAct && "event" in currentAct ? (
-                          <Caption1>{currentAct.event.node} / {currentAct.event.name}</Caption1>
-                        ) : currentAct && "wait" in currentAct ? (
-                          <Caption1>
-                            Check until true: {currentAct.wait.when}
-                          </Caption1>
-                        ) : currentAct ? (
-                          <Caption1>
-                            Observe {Object.keys(currentAct.observe.select).join(", ")}
-                          </Caption1>
-                        ) : null}
-                        {currentAct?.description ? <Caption1>{currentAct.description}</Caption1> : null}
-                      </>
-                    )}
-                  </div>
-                ) : null}
-                {rightTab === "acts" && Object.keys(actObservations).length > 0 ? (
-                  <div className={styles.observations}>
-                    {Object.entries(actObservations).map(([index, values]) => (
-                      <div className={styles.observation} key={index}>
-                        <strong>{acts[Number(index)]?.title}</strong>
-                        <pre className={styles.observationValues}>{JSON.stringify(values, null, 2)}</pre>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <div className={styles.timerControls}>
-                <div className={styles.field}>
-                  <Label htmlFor="runner-pace">Timer pace</Label>
-                  <Dropdown
-                    id="runner-pace"
-                    value={timerPace === "automatic" ? "Automatic · 2 seconds" : "Presenter · 2 minutes"}
-                    selectedOptions={[timerPace]}
-                    disabled={running}
-                    onOptionSelect={(_, data) => {
-                      const value = String(data.optionValue);
-                      if (value === "automatic" || value === "presenter") {
-                        setTimerPace(value);
-                        setTimerPaused(false);
-                      }
-                    }}
-                  >
-                    <Option value="automatic">Automatic · 2 seconds</Option>
-                    <Option value="presenter">Presenter · 2 minutes</Option>
-                  </Dropdown>
-                  <Caption1>
-                    The presenter pace still advances automatically, but leaves time to trigger the action directly.
-                  </Caption1>
-                </div>
-                <div className={styles.timerAction}>
-                  <GikComponent
-                    kind="primitive:timer-button"
-                    id="scenario-run-timer"
-                    componentProps={{
-                      label: timerLabel,
-                      ariaLabel: `${timerLabel} now`,
-                      variant: "auto-only",
-                      durationMs: timerDurationMs,
-                      autoStart: !timerPaused,
-                      triggerImmediately: Boolean(currentAct && ("wait" in currentAct || "observe" in currentAct)),
-                      repeat: Boolean(currentAct && "wait" in currentAct),
-                      showCountdown: true,
-                      resetKey: `${cursor}:${timerPace}:${timerEpoch}`,
-                      disabled: running || cursor >= acts.length,
-                      appearance: "primary",
-                    }}
-                    onEvent={(event) => {
-                      if (event.name === "press") void runCurrentAct();
-                    }}
-                  />
-                  {timerPaused ? (
-                    <Button
-                      disabled={running || cursor >= acts.length}
-                      onClick={() => setTimerPaused(false)}
-                    >
-                      Resume timer
-                    </Button>
-                  ) : (
-                    <Button disabled={cursor >= acts.length} onClick={stop}>Stop</Button>
-                  )}
-                </div>
-                <div className={styles.actions}>
-                  <Button disabled={running} onClick={reset}>Reset</Button>
-                </div>
-              </div>
-              {error ? <Body1 className={styles.error}>{error}</Body1> : null}
+              ) : (
+                <Body1 className={styles.scenarioEmptyState}>
+                  This Blueprint does not define any authored Scenarios.
+                </Body1>
+              )}
             </div>
+          ) : rightTab === "journal" ? (
+            <GikComponent
+              kind="primitive:growing-container"
+              id="scenario-journal"
+              componentProps={{
+                followEnd: "when-at-end",
+                ariaLabel: "Scenario journal",
+                style: { height: "100%" },
+              }}
+            >
+              <div className={styles.journalContent}>
+                {runnerMode === "acts" ? (
+                  <ol className={styles.journalList} aria-label="Act journal">
+                    {visibleActs.map((act) => (
+                      <li
+                        className={mergeClasses(
+                          styles.journalCard,
+                          act.globalIndex === cursor
+                            && executionStatus !== "completed"
+                            && styles.journalCardCurrent,
+                        )}
+                        key={act.id}
+                      >
+                        <div className={styles.journalCardHeader}>
+                          <div className={styles.journalCardCopy}>
+                            <strong>{act.title}</strong>
+                            {act.description
+                              ? <Caption1 className={styles.journalCardDescription}>{act.description}</Caption1>
+                              : null}
+                          </div>
+                          <ActDetailPopover
+                            act={act}
+                            observation={actObservations[act.globalIndex]}
+                          />
+                        </div>
+                        <span className={styles.journalCardIndex} aria-hidden="true">
+                          {act.globalIndex + 1}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <ol className={styles.journalList} aria-label="Step journal">
+                    {visibleSteps.map((step, stepIndex) => {
+                      const stepActs = visibleActs.filter((act) => act.stepIndex === stepIndex);
+                      return (
+                        <li
+                          className={mergeClasses(
+                            styles.journalCard,
+                            stepIndex === currentStepIndex
+                              && executionStatus !== "completed"
+                              && styles.journalCardCurrent,
+                          )}
+                          key={step.id}
+                        >
+                          <div className={styles.journalCardCopy}>
+                            <strong>{step.title}</strong>
+                            {step.description
+                              ? <Caption1 className={styles.journalCardDescription}>{step.description}</Caption1>
+                              : null}
+                          </div>
+                          {stepActs.length > 0 ? (
+                            <ol className={styles.actRail} aria-label={`${step.title} acts`}>
+                              {stepActs.map((act) => (
+                                <li className={styles.actRailItem} key={act.id}>
+                                  <span className={styles.actRailIcon}>
+                                    <ActDetailPopover
+                                      act={act}
+                                      observation={actObservations[act.globalIndex]}
+                                    />
+                                  </span>
+                                  <span>{act.title}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          ) : null}
+                          <span className={styles.journalCardIndex} aria-hidden="true">
+                            {stepIndex + 1}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+                {error ? <Body1 className={styles.error}>{error}</Body1> : null}
+              </div>
+            </GikComponent>
           ) : rightTab === "context" ? (
             <div className={styles.context}>
               {applicableContextIds.length > 0 ? (
-                <div className={styles.field}>
-                  <Label htmlFor="scenario-context-select">Preset quick-fill</Label>
+                <div
+                  className={mergeClasses(styles.field, styles.pickerContainer)}
+                  aria-label="Sample Contexts"
+                >
+                  <Label htmlFor="scenario-context-select">Sample Contexts</Label>
                   <Dropdown
                     id="scenario-context-select"
                     value={draftContextId
@@ -761,13 +997,94 @@ function ScenarioWorkspace({
               ) : (
                 <Body1>This Blueprint does not declare a context form.</Body1>
               )}
-              <Caption1>
-                Applying context rematerializes the Blueprint while preserving state and runner position.
-              </Caption1>
             </div>
           ) : null}
+            </div>
           </div>
-        </div>
+        </PaneWithTriggerBody>
+        {entry.authored ? <PaneWithTriggerFooter>
+          <div className={styles.timerControls}>
+            <div className={styles.timerAction}>
+              <ToggleButton
+                className={styles.paceToggle}
+                checked={timerPace === "presenter"}
+                disabled={running}
+                icon={timerPace === "presenter" ? <PresenterRegular /> : <TimerRegular />}
+                aria-label={timerPace === "presenter"
+                  ? "Use automatic pace"
+                  : "Use presenter pace"}
+                title={timerPace === "presenter"
+                  ? "Presenter pace · 02:00"
+                  : "Automatic pace · 00:02"}
+                onClick={toggleTimerPace}
+              />
+              <GikComponent
+                kind="primitive:timer-button"
+                id="scenario-run-timer"
+                componentProps={{
+                  label: timerLabel,
+                  ariaLabel: `${timerLabel} now`,
+                  variant: "auto-only",
+                  durationMs: cursor >= acts.length ? 0 : timerDurationMs,
+                  autoStart: !timerPaused,
+                  triggerImmediately: runnerMode === "steps"
+                    && Boolean(currentAct && ("wait" in currentAct || "observe" in currentAct)),
+                  repeat: Boolean(currentAct && "wait" in currentAct),
+                  showCountdown: true,
+                  countdownOnly: true,
+                  resetKey: `${cursor}:${timerPace}:${timerEpoch}`,
+                  disabled: running || cursor >= acts.length,
+                  appearance: "primary",
+                }}
+                onEvent={(event) => {
+                  if (event.name === "press") void runCurrentAct();
+                }}
+              />
+            </div>
+            <div className={styles.timerUtilities}>
+              <GikComponent
+                kind="fluent:toggle"
+                id="scenario-journal-mode"
+                componentProps={{
+                  value: runnerMode,
+                  onValue: "acts",
+                  offValue: "steps",
+                  onLabel: "Acts",
+                  offLabel: "Steps",
+                  onIcon: "acts",
+                  offIcon: "steps",
+                  onTitle: "Acts view · switch to steps",
+                  offTitle: "Steps view · switch to acts",
+                  ariaLabel: "Show Scenario journal by steps or acts",
+                  size: "small",
+                }}
+                onEvent={(event) => {
+                  if (event.name === "toggle") {
+                    setRunnerMode(event.payload.value === "acts" ? "acts" : "steps");
+                  }
+                }}
+              />
+              <Button
+                appearance="subtle"
+                size="small"
+                icon={timerPaused ? <PlayRegular /> : <PauseRegular />}
+                aria-label={timerPaused ? "Resume Scenario" : "Pause Scenario"}
+                title={timerPaused ? "Resume Scenario" : "Pause Scenario"}
+                disabled={cursor >= acts.length}
+                onClick={timerPaused ? () => setTimerPaused(false) : stop}
+              />
+              <Button
+                appearance="subtle"
+                size="small"
+                icon={<ArrowResetRegular />}
+                aria-label="Reset Scenario"
+                title="Reset Scenario"
+                disabled={running}
+                onClick={reset}
+              />
+            </div>
+          </div>
+        </PaneWithTriggerFooter> : null}
       </GikComponent>
     </>
   );

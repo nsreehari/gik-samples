@@ -1,4 +1,5 @@
 import { Dropdown, Field, Option, Switch, ToggleButton } from "@fluentui/react-components";
+import { CircleRegular, CircleSmallFilled } from "@fluentui/react-icons";
 import { readProps, type ProjectionView, type ProjectionViewProps } from "@gik/react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
@@ -51,21 +52,32 @@ export const FluentSwitch: ProjectionView = ({ node, emit }) => {
 export const FluentToggle: ProjectionView = ({ node, emit }) => {
   const props = readProps(node);
   const state = readToggleState(node);
+  const iconName = state.checked ? props.str("onIcon") : props.str("offIcon");
+  const icon = toggleIcons[iconName as keyof typeof toggleIcons];
+  const title = state.checked ? props.str("onTitle") : props.str("offTitle");
   return (
     <ToggleButton
       {...componentRootProps(node)}
       checked={state.checked}
       size={resolveControlSize(props.str("size"), node.props.variant)}
       disabled={props.bool("disabled")}
+      icon={icon}
+      aria-label={props.str("ariaLabel") || undefined}
+      title={title || undefined}
       onClick={() => void emit("toggle", {
         checked: !state.checked,
         value: state.checked ? state.offValue : state.onValue,
       })}
     >
-      {state.label}
+      {icon ? null : state.label}
     </ToggleButton>
   );
 };
+
+const toggleIcons = {
+  acts: <CircleSmallFilled />,
+  steps: <CircleRegular />,
+} as const;
 
 export const FluentDropdown: ProjectionView = ({ node, emit }) => {
   const props = readProps(node);
@@ -120,7 +132,13 @@ const switchSchema = withComponentStylePropsSchema({
 const toggleSchema = withComponentStylePropsSchema({
   type: "object",
   additionalProperties: false,
-  properties: toggleProperties,
+  properties: {
+    ...toggleProperties,
+    onIcon: { type: "string", enum: Object.keys(toggleIcons) },
+    offIcon: { type: "string", enum: Object.keys(toggleIcons) },
+    onTitle: { type: "string" },
+    offTitle: { type: "string" },
+  },
 } as const);
 
 const dropdownSchema = withComponentStylePropsSchema({
@@ -185,7 +203,7 @@ const toggleDescription = description(
   { checked: { type: "boolean" }, value: { type: "string" } },
   ["checked", "value"],
   "A binary mode needs a compact button presentation",
-  ["Declare stable on and off values", "Handle toggle outside the component"],
+  ["Declare stable on and off values", "Use onIcon, offIcon, onTitle, offTitle, and ariaLabel for an icon-only toggle", "Handle toggle outside the component"],
 );
 const dropdownDescription = description(
   "fluent:dropdown",

@@ -4,8 +4,7 @@ import { test } from "vitest";
 import {
   canonicalizeHostUrl,
   readHostQuery,
-  readScenarioQuery,
-  writeScenarioQuery,
+  writeBlueprintQuery,
 } from "./host-query";
 
 test("host query uses durable storage except on the in-memory route", () => {
@@ -19,6 +18,16 @@ test("host query uses durable storage except on the in-memory route", () => {
   assert.equal(readHostQuery("?b=samples-overview", "/not-in-memory/").durableEnabled, true);
 });
 
+test("Blueprint query preserves the complete route while removing obsolete Scenario selections", () => {
+  assert.equal(
+    writeBlueprintQuery(
+      "https://example.test/gik-samples/scenarios/?b=portfolio-tracker-new&scenario=replace-holdings&context=mock-desktop#journal",
+      "ai-agent",
+    ),
+    "https://example.test/gik-samples/scenarios/?b=ai-agent#journal",
+  );
+});
+
 test("host query recognizes dedicated test and scenario tooling routes", () => {
   assert.equal(readHostQuery("", "/tests/").testsEnabled, true);
   assert.equal(readHostQuery("", "/gik-samples/tests/index.html").testsEnabled, true);
@@ -28,25 +37,6 @@ test("host query recognizes dedicated test and scenario tooling routes", () => {
   assert.equal(
     readHostQuery("?context=mock-desktop", "/scenarios/").externalContext,
     undefined,
-  );
-});
-
-test("scenario query uses stable Blueprint, scenario, and context preset IDs", () => {
-  assert.deepEqual(
-    readScenarioQuery("?b=portfolio-tracker-new&scenario=replace-holdings&context=mock-desktop"),
-    {
-      blueprintId: "portfolio-tracker-new",
-      scenarioId: "replace-holdings",
-      contextId: "mock-desktop",
-    },
-  );
-  assert.equal(
-    writeScenarioQuery("https://example.test/scenarios/?other=kept", {
-      blueprintId: "portfolio-tracker-new",
-      scenarioId: "replace-holdings",
-      contextId: "simple-mobile",
-    }),
-    "https://example.test/scenarios/?other=kept&b=portfolio-tracker-new&scenario=replace-holdings&context=simple-mobile",
   );
 });
 

@@ -84,10 +84,15 @@ export function GrowingContainer({
     const onContentResize = () => {
       if (shouldGrowingContainerFollowEnd(followEnd, pinnedToEndRef.current)) scrollToEnd();
     };
-    const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(onContentResize);
-    observer?.observe(content);
+    const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(onContentResize);
+    const mutationObserver = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(onContentResize);
+    resizeObserver?.observe(content);
+    mutationObserver?.observe(content, { childList: true, subtree: true, characterData: true });
     scrollToEnd();
-    return () => observer?.disconnect();
+    return () => {
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+    };
   }, [followEnd, scrollToEnd]);
 
   const onScroll = () => {

@@ -38,8 +38,8 @@
   "scenarios": [
     {
       "id": "replace-holdings",
-      "title": "Add GOOG and observe its market price",
-      "description": "Adds GOOG, waits for market pricing and valuation, then records the resulting portfolio intelligence.",
+      "title": "Rebalance and observe a portfolio",
+      "description": "Adds GOOG and AAPL, removes NVDA, increases the GOOG position, and observes each settled portfolio state.",
       "contextPreset": "mock-desktop",
       "applicableContexts": ["simple-desktop", "simple-mobile", "mock-desktop", "mock-mobile", "semantic-desktop", "semantic-mobile", "live-market-desktop", "live-market-copilot-desktop"],
       "resetAtStart": true,
@@ -47,11 +47,12 @@
         {
           "id": "replace-positions",
           "title": "Add and value GOOG",
+          "description": "Add GOOG and wait for its first settled valuation.",
           "acts": [
             {
               "id": "save-holdings",
               "title": "Add 10 shares of GOOG",
-              "description": "Retain the sample MSFT and NVDA positions and add GOOG at a 150 cost basis.",
+              "description": "Keep MSFT and NVDA, then add ten GOOG shares.",
               "event": {
                 "node": "portfolio-holdings--primary--in-holdings",
                 "name": "save",
@@ -66,8 +67,8 @@
             },
             {
               "id": "wait-for-goog-price",
-              "title": "Wait for the GOOG market price",
-              "description": "Continue when the selected market-data provider returns a GOOG quote.",
+              "title": "Await GOOG price",
+              "description": "Wait until market data returns the first GOOG quote.",
               "wait": {
                 "when": "$exists($state.portfolio.stockQuotes.GOOG.price)"
               }
@@ -75,15 +76,15 @@
             {
               "id": "wait-for-goog-valuation",
               "title": "Wait for GOOG valuation",
-              "description": "Continue when the portfolio value includes the GOOG position.",
+              "description": "Wait until portfolio value includes the new GOOG position.",
               "wait": {
                 "when": "$exists($state.portfolio.value.positions.GOOG.value)"
               }
             },
             {
               "id": "observe-goog-valuation",
-              "title": "Record the GOOG valuation",
-              "description": "Capture the settled quote, GOOG position value, and total portfolio market value.",
+              "title": "Record GOOG valuation",
+              "description": "Capture GOOG price, position value, and total market value.",
               "observe": {
                 "select": {
                   "googQuote": "$state.portfolio.stockQuotes.GOOG.price",
@@ -95,21 +96,176 @@
           ]
         },
         {
+          "id": "add-aapl",
+          "title": "Add and value AAPL",
+          "description": "Add AAPL and wait for its first settled valuation.",
+          "acts": [
+            {
+              "id": "add-aapl-holding",
+              "title": "Add 6 shares of AAPL",
+              "description": "Add six AAPL shares while preserving every current position.",
+              "event": {
+                "node": "portfolio-holdings--primary--in-holdings",
+                "name": "save",
+                "payload": {
+                  "rows": [
+                    { "ticker": "MSFT", "quantity": 10, "costBasis": 400 },
+                    { "ticker": "NVDA", "quantity": 4, "costBasis": 180 },
+                    { "ticker": "GOOG", "quantity": 10, "costBasis": 150 },
+                    { "ticker": "AAPL", "quantity": 6, "costBasis": 190 }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "wait-for-aapl-price",
+              "title": "Await AAPL price",
+              "description": "Wait until market data returns the first AAPL quote.",
+              "wait": {
+                "when": "$exists($state.portfolio.stockQuotes.AAPL.price)"
+              }
+            },
+            {
+              "id": "wait-for-aapl-valuation",
+              "title": "Wait for AAPL valuation",
+              "description": "Wait until portfolio value includes all six AAPL shares.",
+              "wait": {
+                "when": "$state.portfolio.value.positions.AAPL.quantity = 6"
+              }
+            },
+            {
+              "id": "observe-aapl-valuation",
+              "title": "Record AAPL valuation",
+              "description": "Capture AAPL price, position value, and total market value.",
+              "observe": {
+                "select": {
+                  "aaplQuote": "$state.portfolio.stockQuotes.AAPL.price",
+                  "aaplPositionValue": "$state.portfolio.value.positions.AAPL.value",
+                  "portfolioMarketValue": "$state.portfolio.value.summary.marketValue"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "remove-nvda",
+          "title": "Remove NVDA",
+          "description": "Remove NVDA and confirm the portfolio settles without it.",
+          "acts": [
+            {
+              "id": "remove-nvda-holding",
+              "title": "Remove the NVDA position",
+              "description": "Remove NVDA while preserving MSFT, GOOG, and AAPL.",
+              "event": {
+                "node": "portfolio-holdings--primary--in-holdings",
+                "name": "save",
+                "payload": {
+                  "rows": [
+                    { "ticker": "MSFT", "quantity": 10, "costBasis": 400 },
+                    { "ticker": "GOOG", "quantity": 10, "costBasis": 150 },
+                    { "ticker": "AAPL", "quantity": 6, "costBasis": 190 }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "wait-for-nvda-removal",
+              "title": "Wait for NVDA removal",
+              "description": "Wait until NVDA disappears from the saved holdings.",
+              "wait": {
+                "when": "$not($exists($state.portfolio.holdings.NVDA))"
+              }
+            },
+            {
+              "id": "wait-for-revalued-portfolio",
+              "title": "Await portfolio revalue",
+              "description": "Wait until calculated positions no longer include NVDA.",
+              "wait": {
+                "when": "$not($exists($state.portfolio.value.positions.NVDA))"
+              }
+            },
+            {
+              "id": "observe-nvda-removal",
+              "title": "Record NVDA removal",
+              "description": "Capture removal confirmation and the new total market value.",
+              "observe": {
+                "select": {
+                  "nvdaHoldingRemoved": "$not($exists($state.portfolio.holdings.NVDA))",
+                  "nvdaValuationRemoved": "$not($exists($state.portfolio.value.positions.NVDA))",
+                  "portfolioMarketValue": "$state.portfolio.value.summary.marketValue"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "increase-goog",
+          "title": "Increase and revalue GOOG",
+          "description": "Increase GOOG quantity and confirm the position revalues.",
+          "acts": [
+            {
+              "id": "increase-goog-holding",
+              "title": "Increase GOOG to 15 shares",
+              "description": "Increase GOOG to fifteen shares without changing other positions.",
+              "event": {
+                "node": "portfolio-holdings--primary--in-holdings",
+                "name": "save",
+                "payload": {
+                  "rows": [
+                    { "ticker": "MSFT", "quantity": 10, "costBasis": 400 },
+                    { "ticker": "GOOG", "quantity": 15, "costBasis": 150 },
+                    { "ticker": "AAPL", "quantity": 6, "costBasis": 190 }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "wait-for-goog-quantity",
+              "title": "Await GOOG edit",
+              "description": "Wait until saved holdings contain fifteen GOOG shares.",
+              "wait": {
+                "when": "$state.portfolio.holdings.GOOG.quantity = 15"
+              }
+            },
+            {
+              "id": "wait-for-goog-revaluation",
+              "title": "Wait for GOOG revaluation",
+              "description": "Wait until calculated GOOG value reflects fifteen shares.",
+              "wait": {
+                "when": "$state.portfolio.value.positions.GOOG.quantity = 15"
+              }
+            },
+            {
+              "id": "observe-goog-revaluation",
+              "title": "Record increased GOOG",
+              "description": "Capture GOOG quantity, position value, and total market value.",
+              "observe": {
+                "select": {
+                  "googQuantity": "$state.portfolio.value.positions.GOOG.quantity",
+                  "googPositionValue": "$state.portfolio.value.positions.GOOG.value",
+                  "portfolioMarketValue": "$state.portfolio.value.summary.marketValue"
+                }
+              }
+            }
+          ]
+        },
+        {
           "id": "review-intelligence",
-          "title": "Review portfolio intelligence",
+          "title": "Review final portfolio intelligence",
+          "description": "Wait for and record intelligence about the final portfolio.",
           "acts": [
             {
               "id": "wait-for-portfolio-intelligence",
               "title": "Wait for portfolio intelligence",
-              "description": "Continue when the selected intelligence provider returns a non-empty report.",
+              "description": "Wait until the intelligence provider returns its final report.",
               "wait": {
                 "when": "$trim($string($state.portfolio.intelligence.markdown)) != ''"
               }
             },
             {
               "id": "observe-goog-intelligence",
-              "title": "Record the portfolio intelligence",
-              "description": "Capture the provider and generated report after GOOG has been incorporated.",
+              "title": "Record portfolio intelligence",
+              "description": "Capture the provider and report after the complete rebalance.",
               "observe": {
                 "select": {
                   "provider": "$state.portfolio.intelligence.provider",

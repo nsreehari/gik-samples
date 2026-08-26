@@ -152,6 +152,10 @@ const useStyles = makeStyles({
     "& .react-flow__controls": { borderRadius: tokens.borderRadiusMedium, boxShadow: tokens.shadow4, overflow: "hidden" },
     "& .react-flow__controls-button": { color: tokens.colorNeutralForeground1, backgroundColor: tokens.colorNeutralBackground1, border: `1px solid ${tokens.colorNeutralStroke2}`, cursor: "pointer" },
     "& .react-flow__controls-button:hover": { backgroundColor: tokens.colorNeutralBackground1Hover },
+    "& .infinite-canvas-node__row": { display: "flex", alignItems: "center" },
+    "& .infinite-canvas-node__body": { flex: "1 1 auto", minWidth: 0 },
+    "& .infinite-canvas-node__rail": { display: "flex", alignItems: "center", justifyContent: "center", gap: tokens.spacingHorizontalXS },
+    "& .infinite-canvas-node__rail--left, & .infinite-canvas-node__rail--right": { flexDirection: "column" },
   },
   viewport: { width: "100%", height: "100%" },
   node: {
@@ -171,6 +175,10 @@ const useStyles = makeStyles({
   title: { display: "block", marginTop: tokens.spacingVerticalXXS, overflowWrap: "anywhere" },
   detail: { display: "block", marginTop: tokens.spacingVerticalXS, color: tokens.colorNeutralForeground3, overflowWrap: "anywhere" },
   port: { width: "10px", height: "10px", border: `2px solid ${tokens.colorNeutralBackground1}`, borderRadius: "50%", backgroundColor: tokens.colorBrandBackground, boxShadow: `0 0 0 1px ${tokens.colorBrandBackground}` },
+  leftPort: { transform: "translate(-100%, -50%)" },
+  rightPort: { transform: "translate(100%, -50%)" },
+  topPort: { transform: "translate(-50%, -100%)" },
+  bottomPort: { transform: "translate(-50%, 100%)" },
   accessibleSummary: { position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 },
 });
 
@@ -221,7 +229,16 @@ export const InfiniteCanvasPrimitive: ProjectionView = ({ node, emit }) => {
           {item.detail && variant === "standard" ? <Text className={styles.detail} size={200}>{item.detail}</Text> : null}
         </Card>;
       }}
-      renderNodePort={(port: InfiniteCanvasPort, context) => <Handle id={String(port.id)} type={context.side === "left" || context.side === "top" ? "target" : "source"} position={context.position} className={styles.port} title={typeof port.label === "string" ? port.label : undefined} />}
+      renderNodePort={(port: InfiniteCanvasPort, context) => {
+        const sideClass = context.side === "left"
+          ? styles.leftPort
+          : context.side === "right"
+            ? styles.rightPort
+            : context.side === "top"
+              ? styles.topPort
+              : styles.bottomPort;
+        return <Handle id={String(port.id)} type={context.side === "left" || context.side === "top" ? "target" : "source"} position={context.position} className={mergeClasses(styles.port, sideClass)} title={typeof port.label === "string" ? port.label : undefined} />;
+      }}
       onCanvasStateCommit={(value) => { void emit("layout", { value: value as unknown as Json }); }}
       onNodeClick={(id) => { void emit("node", { id }); }}
       onEdgeClick={(id) => { void emit("edge", { id }); }}

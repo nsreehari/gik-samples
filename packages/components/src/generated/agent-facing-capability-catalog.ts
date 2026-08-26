@@ -713,6 +713,9 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
               "label": {
                 "type": "string"
               },
+              "description": {
+                "type": "string"
+              },
               "disabled": {
                 "type": "boolean"
               }
@@ -997,7 +1000,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       },
       "slots": [
-        "children"
+        "trigger",
+        "header",
+        "body",
+        "footer"
       ],
       "emits": {
         "openChange": {
@@ -2159,6 +2165,26 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "offLabel": {
           "type": "string"
         },
+        "onIcon": {
+          "type": "string",
+          "enum": [
+            "acts",
+            "steps"
+          ]
+        },
+        "offIcon": {
+          "type": "string",
+          "enum": [
+            "acts",
+            "steps"
+          ]
+        },
+        "onTitle": {
+          "type": "string"
+        },
+        "offTitle": {
+          "type": "string"
+        },
         "disabled": {
           "type": "boolean"
         },
@@ -2215,6 +2241,7 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       },
       "constraints": [
         "Declare stable on and off values",
+        "Use onIcon, offIcon, onTitle, offTitle, and ariaLabel for an icon-only toggle",
         "Handle toggle outside the component"
       ],
       "example": {
@@ -3200,7 +3227,9 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Prefer local pane state; use defaultOpen only to choose its initial state",
         "Bind open only when application behavior or cross-Cell coordination must control the drawer",
         "Handle openChange only when the application needs to observe or control pane state",
-        "Place all authored children inside the pane",
+        "Use the optional trigger section to provide the clickable trigger element; otherwise the generated trigger button is used",
+        "Use optional header and footer sections around the required body section",
+        "Bare children remain supported and render in the body section",
         "For drawer and floating-drawer, choose the toggle corner with fabPosition",
         "Use panelWidthPx for a stable pane width or panelWidthPercent for a viewport-relative drawer width; do not provide both",
         "For dialog-modal, provide triggerLabel and closeLabel",
@@ -4962,6 +4991,9 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "showCountdown": {
           "type": "boolean"
         },
+        "countdownOnly": {
+          "type": "boolean"
+        },
         "showPaceSwitch": {
           "type": "boolean"
         },
@@ -5045,6 +5077,7 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Handle press payload reason as immediate, manual, or timeout",
         "Set triggerImmediately when the action must run once as soon as each resetKey becomes active",
         "Set showPaceSwitch only when the user should control manual versus auto behavior",
+        "Set countdownOnly when a compact fixed-width MM:SS action is more useful than a changing text label",
         "Use auto-only when the action must always run in automatic pace without exposing pace controls",
         "Set repeat only when every elapsed interval should trigger another press",
         "Use resetKey to restart the countdown when external progress changes",
@@ -6552,6 +6585,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
                 "reference": {
                   "type": "string",
                   "minLength": 1
+                },
+                "icon": {
+                  "type": "string",
+                  "minLength": 1
                 }
               }
             },
@@ -6606,7 +6643,8 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       },
       "constraints": [
         "Use the existing sequence field and orientation contract",
-        "Use progress only when surrounding content provides the current step detail",
+        "Map optional item icons through fields.icon using step, event, wait, or observe",
+        "Use progress for a compact current-item summary",
         "Put density and orientation in spec"
       ],
       "example": {
@@ -6622,7 +6660,8 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
               "title": "label",
               "order": "order",
               "detail": "detail",
-              "status": "state"
+              "status": "state",
+              "icon": "icon"
             },
             "toneMap": {
               "done": "complete",

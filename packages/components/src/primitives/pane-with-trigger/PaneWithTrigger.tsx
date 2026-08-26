@@ -89,9 +89,8 @@ const useStyles = makeStyles({
     width: "min(var(--gik-drawer-width), calc(100vw - 4.5rem))",
     height: "100%",
     minWidth: 0,
-    overflow: "auto",
+    overflow: "hidden",
     boxSizing: "border-box",
-    padding: tokens.spacingHorizontalL,
     border: `${tokens.strokeWidthThin} solid ${tokens.colorNeutralStroke2}`,
     borderRadius: tokens.borderRadiusLarge,
     backgroundColor: tokens.colorNeutralBackground1,
@@ -103,13 +102,150 @@ const useStyles = makeStyles({
     alignItems: "center",
     justifyContent: "space-between",
     gap: tokens.spacingHorizontalM,
-    marginBottom: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalS,
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground2,
   },
   floatingTitle: {
     fontSize: tokens.fontSizeBase400,
     fontWeight: tokens.fontWeightSemibold,
   },
+  floatingHeaderContent: {
+    flex: "1 1 auto",
+    minWidth: 0,
+  },
+  sections: {
+    display: "grid",
+    gridTemplateRows: "auto minmax(0, 1fr) auto",
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    width: "100%",
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  sectionBody: {
+    gridRow: 2,
+    minHeight: 0,
+    overflow: "auto",
+    boxSizing: "border-box",
+    padding: tokens.spacingHorizontalL,
+  },
+  sectionChrome: {
+    padding: tokens.spacingVerticalS,
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  sectionHeader: { gridRow: 1 },
+  sectionFooter: { gridRow: 3 },
+  dialogContent: {
+    display: "flex",
+    minHeight: 0,
+  },
 });
+
+type PaneSectionProps = React.PropsWithChildren;
+
+export function PaneWithTriggerHeader({ children }: PaneSectionProps): React.ReactElement {
+  return <>{children}</>;
+}
+
+export function PaneWithTriggerTrigger({ children }: PaneSectionProps): React.ReactElement {
+  return <>{children}</>;
+}
+
+export function PaneWithTriggerBody({ children }: PaneSectionProps): React.ReactElement {
+  return <>{children}</>;
+}
+
+export function PaneWithTriggerFooter({ children }: PaneSectionProps): React.ReactElement {
+  return <>{children}</>;
+}
+
+interface ResolvedPaneSections {
+  trigger?: React.ReactElement;
+  header: React.ReactNode[];
+  body: React.ReactNode[];
+  footer: React.ReactNode[];
+}
+
+function resolvePaneSections(children: React.ReactNode): ResolvedPaneSections {
+  let trigger: React.ReactElement | undefined;
+  const header: React.ReactNode[] = [];
+  const body: React.ReactNode[] = [];
+  const footer: React.ReactNode[] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement<PaneSectionProps>(child) && child.type === PaneWithTriggerTrigger) {
+      const triggerChildren = React.Children.toArray(child.props.children);
+      if (triggerChildren.length === 1 && React.isValidElement(triggerChildren[0])) {
+        trigger = triggerChildren[0];
+      }
+    } else if (React.isValidElement<PaneSectionProps>(child) && child.type === PaneWithTriggerHeader) {
+      header.push(child.props.children);
+    } else if (React.isValidElement<PaneSectionProps>(child) && child.type === PaneWithTriggerBody) {
+      body.push(child.props.children);
+    } else if (React.isValidElement<PaneSectionProps>(child) && child.type === PaneWithTriggerFooter) {
+      footer.push(child.props.children);
+    } else {
+      body.push(child);
+    }
+  });
+
+  return { trigger, header, body, footer };
+}
+
+function clickableTrigger(
+  trigger: React.ReactElement,
+  onClick: () => void,
+  label: string,
+  expanded: boolean,
+): React.ReactElement {
+  const authoredProps = trigger.props as {
+    onClick?: (event: React.MouseEvent) => void;
+    "aria-label"?: string;
+    title?: string;
+  };
+  return React.cloneElement(trigger, {
+    onClick: (event: React.MouseEvent) => {
+      authoredProps.onClick?.(event);
+      if (!event.defaultPrevented) onClick();
+    },
+    "aria-label": authoredProps["aria-label"] ?? label,
+    title: authoredProps.title ?? label,
+    "aria-expanded": expanded,
+  } as React.HTMLAttributes<HTMLElement>);
+}
+
+function PaneSections({
+  sections,
+  styles,
+  includeHeader = true,
+}: {
+  sections: ResolvedPaneSections;
+  styles: ReturnType<typeof useStyles>;
+  includeHeader?: boolean;
+}): React.ReactElement {
+  return (
+    <div className={styles.sections}>
+      {includeHeader && sections.header.length > 0
+        ? (
+            <header className={mergeClasses(styles.sectionChrome, styles.sectionHeader)}>
+              {sections.header}
+            </header>
+          )
+        : null}
+      <div className={styles.sectionBody}>{sections.body}</div>
+      {sections.footer.length > 0
+        ? (
+            <footer className={mergeClasses(styles.sectionChrome, styles.sectionFooter)}>
+              {sections.footer}
+            </footer>
+          )
+        : null}
+    </div>
+  );
+}
 
 export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
   const styles = useStyles();
@@ -139,12 +275,22 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
     ? `${widthPercent}vw`
     : `${Math.min(720, Math.max(240, authoredWidthPx))}px`;
   const rootProps = componentRootProps(node);
+  const sections = resolvePaneSections(children);
+  const floatingInset = open ? "36px" : "0px";
+  const floatingVerticalInset = open ? "36px" : tokens.spacingVerticalS;
   const setOpen = (nextOpen: boolean) => {
     if (!controlled) setLocalOpen(nextOpen);
     void emit("openChange", { open: nextOpen });
   };
 
   if (variant === "dialog-modal") {
+    const dialogTrigger = sections.trigger
+      ? clickableTrigger(sections.trigger, () => setOpen(true), triggerLabel, open)
+      : (
+          <Button appearance={props.str("triggerAppearance") as TriggerAppearance || undefined}>
+            {triggerLabel}
+          </Button>
+        );
     return (
       <Dialog
         open={open}
@@ -152,9 +298,7 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
         onOpenChange={(_event, data) => setOpen(data.open)}
       >
         <DialogTrigger disableButtonEnhancement>
-          <Button appearance={props.str("triggerAppearance") as TriggerAppearance || undefined}>
-            {triggerLabel}
-          </Button>
+          {dialogTrigger}
         </DialogTrigger>
         <DialogSurface
           {...rootProps}
@@ -170,7 +314,9 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
             >
               {title}
             </DialogTitle>
-            <DialogContent>{children}</DialogContent>
+            <DialogContent className={styles.dialogContent}>
+              <PaneSections sections={sections} styles={styles} />
+            </DialogContent>
           </DialogBody>
         </DialogSurface>
       </Dialog>
@@ -178,7 +324,7 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
   }
 
   const toggleIcon = isRight === open ? <ChevronRightRegular /> : <ChevronLeftRegular />;
-  const toggle = variant === "floating-drawer"
+  const defaultToggle = variant === "floating-drawer"
     ? (
         <Button
           className={mergeClasses(
@@ -207,6 +353,14 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
           onClick={() => setOpen(!open)}
         />
       );
+  const toggle = sections.trigger
+    ? clickableTrigger(
+        sections.trigger,
+        () => setOpen(variant === "floating-drawer" ? true : !open),
+        open ? closeLabel : openLabel,
+        open,
+      )
+    : defaultToggle;
 
   return (
     <aside
@@ -217,6 +371,16 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
         variant === "floating-drawer" && styles.floatingRoot,
         rootProps.className,
       )}
+      style={{
+        ...rootProps.style,
+        ...(variant === "floating-drawer"
+          ? {
+              top: floatingVerticalInset,
+              bottom: floatingVerticalInset,
+              ...(isRight ? { right: floatingInset } : { left: floatingInset }),
+            }
+          : {}),
+      }}
       aria-label={props.str("ariaLabel", title)}
     >
       {!open ? toggle : variant === "drawer" ? toggle : null}
@@ -230,8 +394,12 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
             style={{ "--gik-drawer-width": panelWidth } as React.CSSProperties}
           >
             {variant === "floating-drawer" ? (
-              <div className={styles.floatingHeader}>
-                <span className={styles.floatingTitle}>{title}</span>
+              <header className={styles.floatingHeader}>
+                <div className={styles.floatingHeaderContent}>
+                  {sections.header.length > 0
+                    ? sections.header
+                    : <span className={styles.floatingTitle}>{title}</span>}
+                </div>
                 <Button
                   appearance="subtle"
                   size="small"
@@ -240,9 +408,13 @@ export const PaneWithTrigger: ProjectionView = ({ node, emit, children }) => {
                   title={closeLabel}
                   onClick={() => setOpen(false)}
                 />
-              </div>
+              </header>
             ) : null}
-            {children}
+            <PaneSections
+              sections={sections}
+              styles={styles}
+              includeHeader={variant !== "floating-drawer"}
+            />
           </div>
         </>
       ) : null}
@@ -279,7 +451,7 @@ const schema = withComponentStylePropsSchema({
 const description: ComponentDescription = {
   capability: "primitive:pane-with-trigger",
   summary: "Reveals authored children in a trigger-controlled drawer or modal dialog.",
-  slots: ["children"],
+  slots: ["trigger", "header", "body", "footer"],
   events: ["openChange"],
   eventContracts: {
     openChange: eventContract("The drawer open state changed; handling this event is optional unless open is controlled.", { open: { type: "boolean" } }),
@@ -315,7 +487,9 @@ const description: ComponentDescription = {
       "Prefer local pane state; use defaultOpen only to choose its initial state",
       "Bind open only when application behavior or cross-Cell coordination must control the drawer",
       "Handle openChange only when the application needs to observe or control pane state",
-      "Place all authored children inside the pane",
+      "Use the optional trigger section to provide the clickable trigger element; otherwise the generated trigger button is used",
+      "Use optional header and footer sections around the required body section",
+      "Bare children remain supported and render in the body section",
       "For drawer and floating-drawer, choose the toggle corner with fabPosition",
       "Use panelWidthPx for a stable pane width or panelWidthPercent for a viewport-relative drawer width; do not provide both",
       "For dialog-modal, provide triggerLabel and closeLabel",

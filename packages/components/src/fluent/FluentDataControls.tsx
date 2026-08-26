@@ -65,7 +65,7 @@ const useListStyles = makeStyles({
     width: "100%",
   },
   verticalCard: {
-    alignItems: "center",
+    alignItems: "flex-start",
     boxSizing: "border-box",
     width: "100%",
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
@@ -82,6 +82,16 @@ const useListStyles = makeStyles({
     '&[aria-selected="true"]:hover': {
       backgroundColor: tokens.colorBrandBackground2Hover,
     },
+  },
+  verticalCardContent: {
+    display: "grid",
+    gap: tokens.spacingVerticalXXS,
+    minWidth: 0,
+  },
+  verticalCardLabel: { fontWeight: tokens.fontWeightSemibold },
+  verticalCardDescription: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
   },
 });
 
@@ -139,7 +149,14 @@ export const FluentList: ProjectionView = ({ node, emit }) => {
           checkmark={isVerticalCards ? null : undefined}
           className={isVerticalCards ? styles.verticalCard : undefined}
         >
-          {item.label}
+          {isVerticalCards ? (
+            <span className={styles.verticalCardContent}>
+              <span className={styles.verticalCardLabel}>{item.label}</span>
+              {item.description
+                ? <span className={styles.verticalCardDescription}>{item.description}</span>
+                : null}
+            </span>
+          ) : item.label}
         </ListItem>
       ))}
     </List>
@@ -244,13 +261,20 @@ const rowSchema = {
     cells: { type: "object", additionalProperties: cellValueSchema },
   },
 } as const;
+const listItemSchema = {
+  ...fluentOptionSchema,
+  properties: {
+    ...fluentOptionSchema.properties,
+    description: { type: "string" },
+  },
+} as const;
 const listSchema = withComponentStylePropsSchema({
   type: "object",
   additionalProperties: false,
   required: ["items"],
   properties: {
     ariaLabel: stringProperty,
-    items: { type: "array", items: fluentOptionSchema },
+    items: { type: "array", items: listItemSchema },
     selectionMode: { type: "string", enum: ["single", "multiselect"] },
     selectedValues: { type: "array", items: stringProperty },
   },

@@ -10,12 +10,6 @@ export interface HostQuery {
   externalContext?: Record<string, Json>;
 }
 
-export interface ScenarioQuery {
-  blueprintId?: string;
-  scenarioId?: string;
-  contextId?: string;
-}
-
 function isInMemoryPath(pathname: string): boolean {
   return /(?:^|\/)in-memory(?:\/index\.html)?\/?$/.test(pathname);
 }
@@ -60,26 +54,11 @@ export function readHostQuery(search: string, pathname = "/"): HostQuery {
   };
 }
 
-export function readScenarioQuery(search: string): ScenarioQuery {
-  const params = new URLSearchParams(search);
-  const read = (name: string) => params.get(name)?.trim() || undefined;
-  return {
-    ...(read("b") ? { blueprintId: read("b") } : {}),
-    ...(read("scenario") ? { scenarioId: read("scenario") } : {}),
-    ...(read("context") ? { contextId: read("context") } : {}),
-  };
-}
-
-export function writeScenarioQuery(
-  href: string,
-  selection: Required<Pick<ScenarioQuery, "blueprintId" | "scenarioId">>
-    & Pick<ScenarioQuery, "contextId">,
-): string {
+export function writeBlueprintQuery(href: string, blueprintId: string): string {
   const url = new URL(href);
-  url.searchParams.set("b", selection.blueprintId);
-  url.searchParams.set("scenario", selection.scenarioId);
-  if (selection.contextId) url.searchParams.set("context", selection.contextId);
-  else url.searchParams.delete("context");
+  url.searchParams.set("b", blueprintId);
+  url.searchParams.delete("scenario");
+  url.searchParams.delete("context");
   return url.toString();
 }
 

@@ -3,6 +3,7 @@ import type { Json } from "@gik/kernel";
 export interface FluentOptionValue {
   value: string;
   label: string;
+  description?: string;
   disabled?: boolean;
 }
 
@@ -22,6 +23,11 @@ export function readFluentOptions(value: Json | undefined): FluentOptionValue[] 
   return value.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     if (typeof item.value !== "string" || typeof item.label !== "string") return [];
-    return [{ value: item.value, label: item.label, disabled: item.disabled === true }];
+    return [{
+      value: item.value,
+      label: item.label,
+      ...(typeof item.description === "string" ? { description: item.description } : {}),
+      disabled: item.disabled === true,
+    }];
   });
 }

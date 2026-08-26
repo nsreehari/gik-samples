@@ -5,6 +5,10 @@ import { test } from "vitest";
 
 import {
   PaneWithTrigger,
+  PaneWithTriggerBody,
+  PaneWithTriggerFooter,
+  PaneWithTriggerHeader,
+  PaneWithTriggerTrigger,
   paneWithTriggerDefinition,
   materializePaneWithTriggerTrial,
 } from "../src/shared";
@@ -32,7 +36,7 @@ test("pane with trigger exposes drawer, floating-drawer, and dialog-modal varian
     paneWithTriggerDefinition.variants.map(({ value }) => value),
     ["drawer", "floating-drawer", "dialog-modal"],
   );
-  assert.deepEqual(paneWithTriggerDefinition.slots, ["children"]);
+  assert.deepEqual(paneWithTriggerDefinition.slots, ["trigger", "header", "body", "footer"]);
   assert.equal(paneWithTriggerDefinition.validate({
     variant: "floating-drawer",
     title: "Scenario controls",
@@ -65,6 +69,40 @@ test("pane with trigger exposes drawer, floating-drawer, and dialog-modal varian
     title: "Sources",
     layout: { slots: [{ key: "content", slot: "children", unknown: true }] },
   }).ok, false);
+});
+
+test("pane trigger section replaces the generated trigger content", () => {
+  const node = materializePaneWithTriggerTrial();
+  node.props.defaultOpen = false;
+
+  const markup = renderToStaticMarkup(
+    <PaneWithTrigger node={node} emit={() => {}}>
+      <PaneWithTriggerTrigger><button type="button">Custom trigger</button></PaneWithTriggerTrigger>
+      <PaneWithTriggerBody><span>Hidden content</span></PaneWithTriggerBody>
+    </PaneWithTrigger>,
+  );
+
+  assert.match(markup, /<button[^>]*aria-label="Open Source reports"[^>]*>Custom trigger<\/button>/);
+  assert.doesNotMatch(markup, /Hidden content/);
+});
+
+test("pane sections keep optional header and footer around the flexible body", () => {
+  const node = materializePaneWithTriggerTrial();
+  node.props.variant = "floating-drawer";
+
+  const markup = renderToStaticMarkup(
+    <PaneWithTrigger node={node} emit={() => {}}>
+      <PaneWithTriggerHeader><span>Fixed header</span></PaneWithTriggerHeader>
+      <PaneWithTriggerBody><span>Scrollable body</span></PaneWithTriggerBody>
+      <PaneWithTriggerFooter><span>Fixed footer</span></PaneWithTriggerFooter>
+    </PaneWithTrigger>,
+  );
+
+  assert.match(markup, /<header[^>]*>.*<span>Fixed header<\/span>.*<\/header>/);
+  assert.match(markup, /Scrollable body/);
+  assert.match(markup, /<footer[^>]*><span>Fixed footer<\/span><\/footer>/);
+  assert.equal((markup.match(/<header/g) ?? []).length, 1);
+  assert.doesNotMatch(markup, />Source reports<\/span>/);
 });
 
 test("floating drawer keeps the workspace undimmed", () => {

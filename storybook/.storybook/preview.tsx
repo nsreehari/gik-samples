@@ -1,4 +1,5 @@
 import React from "react";
+import "@xyflow/react/dist/base.css";
 import {
   FluentProvider,
   makeStyles,

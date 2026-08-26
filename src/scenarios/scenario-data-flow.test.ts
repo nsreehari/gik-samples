@@ -33,6 +33,7 @@ test("data flow maps terminal Blueprint Cells to canvas nodes and shared-token p
     model.nodes.find(({ id }) => id === "portfolio-holdings")?.tone,
     "accent",
   );
+  assert.ok(model.nodes.every(({ draggable }) => draggable));
   assert.equal(
     model.nodePorts["portfolio-holdings"].right?.[0].token,
     "holdings",
@@ -41,4 +42,21 @@ test("data flow maps terminal Blueprint Cells to canvas nodes and shared-token p
     model.nodePorts["market-prices"].left?.[0].token,
     "holdings",
   );
+  assert.equal(
+    model.nodes.find(({ id }) => id === "market-prices")?.sources[0]?.service,
+    "portfolio-market-data",
+  );
+  assert.equal(
+    model.nodes.find(({ id }) => id === "market-prices")?.sources[0]?.operation,
+    "refreshPrices",
+  );
+  assert.equal(
+    model.nodePorts["portfolio-holdings"].right?.[0].hasValue,
+    true,
+  );
+  assert.deepEqual(
+    model.nodePorts["market-prices"].left?.[0].value,
+    model.nodePorts["portfolio-holdings"].right?.[0].value,
+  );
+  assert.doesNotMatch(JSON.stringify(model.nodes), /market-prices\.source/);
 });

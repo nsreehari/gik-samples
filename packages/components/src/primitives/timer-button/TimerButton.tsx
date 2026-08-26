@@ -32,13 +32,17 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     flexWrap: "wrap",
   },
+  countdownButton: {
+    minWidth: "4.75rem",
+    fontFamily: tokens.fontFamilyMonospace,
+    fontVariantNumeric: "tabular-nums",
+  },
 });
 
 export function formatTimerButtonCountdown(remainingSeconds: number): string {
   const seconds = Math.max(0, Math.floor(remainingSeconds));
-  if (seconds <= 59) return String(seconds);
   const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function duration(value: unknown, fallback: number): number {
@@ -60,6 +64,7 @@ export const TimerButton: ProjectionView = ({ node, emit }) => {
     : duration(node.props.manualDurationMs, defaultDurationMs);
   const disabled = props.bool("disabled");
   const showCountdown = node.props.showCountdown !== false;
+  const countdownOnly = node.props.countdownOnly === true;
   const showPaceSwitch = !autoOnly && node.props.showPaceSwitch === true;
   const running = effectivePace === "auto" && node.props.autoStart !== false && !disabled;
   const externalResetKey = node.props.resetKey ?? "";
@@ -107,6 +112,7 @@ export const TimerButton: ProjectionView = ({ node, emit }) => {
         </ToggleButton>
       ) : null}
       <Button
+        className={countdownOnly ? styles.countdownButton : undefined}
         appearance={props.str("appearance", "secondary") as ButtonProps["appearance"]}
         size={props.str("size", "medium") as ButtonProps["size"]}
         disabled={disabled}
@@ -116,8 +122,12 @@ export const TimerButton: ProjectionView = ({ node, emit }) => {
           timer.restart();
         }}
       >
-        {label}
-        {running && showCountdown ? ` · ${countdown}` : null}
+        {countdownOnly && showCountdown
+          ? countdown
+          : <>
+            {label}
+            {running && showCountdown ? ` · ${countdown}` : null}
+          </>}
       </Button>
     </div>
   );
@@ -141,6 +151,7 @@ const schema = {
     triggerImmediately: { type: "boolean" },
     repeat: { type: "boolean" },
     showCountdown: { type: "boolean" },
+    countdownOnly: { type: "boolean" },
     showPaceSwitch: { type: "boolean" },
     disabled: { type: "boolean" },
     resetKey: { type: ["string", "number", "boolean", "null"] },
@@ -184,6 +195,7 @@ const description: ComponentDescription = {
       "Handle press payload reason as immediate, manual, or timeout",
       "Set triggerImmediately when the action must run once as soon as each resetKey becomes active",
       "Set showPaceSwitch only when the user should control manual versus auto behavior",
+      "Set countdownOnly when a compact fixed-width MM:SS action is more useful than a changing text label",
       "Use auto-only when the action must always run in automatic pace without exposing pace controls",
       "Set repeat only when every elapsed interval should trigger another press",
       "Use resetKey to restart the countdown when external progress changes",
