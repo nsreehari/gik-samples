@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { decisionDefinition } from "@gik/components/semantic";
+import { decisionDefinition } from "@gik-ai/components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Decision", component: ComponentStory, tags: ["autodocs"], args: { definition: decisionDefinition, variant: "summary" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

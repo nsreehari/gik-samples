@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { entitySetDefinition } from "@gik/components/semantic";
+import { entitySetDefinition } from "@gik-ai/components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Entity Set", component: ComponentStory, tags: ["autodocs"], args: { definition: entitySetDefinition, variant: "clusters" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

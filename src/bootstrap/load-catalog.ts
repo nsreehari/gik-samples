@@ -1,5 +1,5 @@
-import { parseBlueprintJson, type BlueprintArtifact } from "@gik/blueprint";
-import type { Json } from "@gik/kernel";
+import { parseBlueprintJson, type BlueprintArtifact } from "@gik-ai/blueprint";
+import type { Json } from "@gik-ai/kernel";
 
 import type {
   BlueprintCatalogBundle,

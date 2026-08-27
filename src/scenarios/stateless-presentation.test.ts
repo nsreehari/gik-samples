@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { materializeBlueprint, parseBlueprintReference } from "@gik/blueprint";
-import type { ResolvedNode } from "@gik/kernel";
+import { materializeBlueprint, parseBlueprintReference } from "@gik-ai/blueprint";
+import type { ResolvedNode } from "@gik-ai/kernel";
 
 import {
   getSampleBlueprintCatalog,

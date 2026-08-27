@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@fluentui/react-components";
-import { AccessGate } from "@gik/components/primitives";
-import type { Json, ResolvedNode } from "@gik/kernel";
-import type { ProjectionView, ProjectionViewProps } from "@gik/react";
+import { AccessGate } from "@gik-ai/components/primitives";
+import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import type { ProjectionView, ProjectionViewProps } from "@gik-ai/react";
 
 import {
   clearBrowserCredential,

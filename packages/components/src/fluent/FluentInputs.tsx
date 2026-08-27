@@ -1,6 +1,6 @@
 import { Dropdown, Field, Option, Switch, ToggleButton } from "@fluentui/react-components";
 import { CircleRegular, CircleSmallFilled } from "@fluentui/react-icons";
-import { readProps, type ProjectionView, type ProjectionViewProps } from "@gik/react";
+import { readProps, type ProjectionView, type ProjectionViewProps } from "@gik-ai/react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

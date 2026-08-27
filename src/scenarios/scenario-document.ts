@@ -1,7 +1,7 @@
-import type { BlueprintArtifact, ExternalContext } from "@gik/blueprint";
-import { deriveCellEventOwners } from "@gik/blueprint";
-import { evalAsyncJsonata, validateJsonataExpression } from "@gik/evaluators";
-import { validateJsonValue, type GIKEvent, type Json } from "@gik/kernel";
+import type { BlueprintArtifact, ExternalContext } from "@gik-ai/blueprint";
+import { deriveCellEventOwners } from "@gik-ai/blueprint";
+import { evalAsyncJsonata, validateJsonataExpression } from "@gik-ai/evaluators";
+import { validateJsonValue, type GIKEvent, type Json } from "@gik-ai/kernel";
 
 import { isRecord } from "../shared/json-path";
 

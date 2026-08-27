@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { relationshipSetDefinition } from "@gik/components";
+import { relationshipSetDefinition } from "@gik-ai/components";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Relationship Set", component: ComponentStory, tags: ["autodocs"], args: { definition: relationshipSetDefinition, variant: "network" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

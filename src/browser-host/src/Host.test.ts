@@ -10,8 +10,8 @@ const capturedProps = vi.hoisted(() => ({
   hostRenders: 0,
 }));
 
-vi.mock("@gik/react", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@gik/react")>();
+vi.mock("@gik-ai/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@gik-ai/react")>();
   return {
     ...actual,
     BlueprintHost: (props: { externalContext?: unknown }) => {
@@ -22,8 +22,8 @@ vi.mock("@gik/react", async (importOriginal) => {
   };
 });
 
-vi.mock("@gik/react/durable", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@gik/react/durable")>();
+vi.mock("@gik-ai/react/durable", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@gik-ai/react/durable")>();
   return {
     ...actual,
     BlueprintHost: (props: { externalContext?: unknown }) => {
@@ -58,7 +58,7 @@ function withLocation(href: string, run: () => void): void {
 }
 
 import "fake-indexeddb/auto";
-import type { BlueprintProposalReceipt } from "@gik/blueprint-agent-host";
+import type { BlueprintProposalReceipt } from "@gik-ai/blueprint-agent-host";
 import type { UseProposal } from "./runtime/blueprint-agent-lifecycle";
 import { Host, createSampleBlueprintProposalStore } from "./Host";
 import { getSampleBlueprintCatalog } from "../../bootstrap/catalog/blueprint-catalog";

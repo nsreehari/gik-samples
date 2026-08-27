@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
-import { unwrap, type Json } from "@gik/kernel";
-import { loadBundleRuntime } from "@gik/react";
+import { unwrap, type Json } from "@gik-ai/kernel";
+import { loadBundleRuntime } from "@gik-ai/react";
 
 import {
   GikComponent,

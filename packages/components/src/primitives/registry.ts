@@ -1,5 +1,5 @@
-import type { CapabilityDescriptor } from "@gik/kernel";
-import type { ProjectionView } from "@gik/react";
+import type { CapabilityDescriptor } from "@gik-ai/kernel";
+import type { ProjectionView } from "@gik-ai/react";
 
 import { AccessGate, accessGateDefinition } from "./access-gate";
 import { Alert, alertDefinition } from "./alert";

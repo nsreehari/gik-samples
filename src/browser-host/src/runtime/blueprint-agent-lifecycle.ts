@@ -10,16 +10,16 @@ import {
   type AgentTargetRef,
   type AgentToolExecutionContext,
   type BlueprintUseSource,
-} from "@gik/agent-lifecycle-exp";
-import { materializeBlueprint, validateBlueprintForAuthoring, type BlueprintArtifact } from "@gik/blueprint";
+} from "@gik-ai/agent-lifecycle-exp";
+import { materializeBlueprint, validateBlueprintForAuthoring, type BlueprintArtifact } from "@gik-ai/blueprint";
 import {
   createBlueprintProposalHost,
   createInMemoryBlueprintProposalStore,
   type BlueprintProposalHost,
   type BlueprintProposalStore,
-} from "@gik/blueprint-agent-host";
-import type { BlueprintRuntime } from "@gik/controlface/blueprint";
-import type { Json, OrchestratorResult, PatchOp, StateModel } from "@gik/kernel";
+} from "@gik-ai/blueprint-agent-host";
+import type { BlueprintRuntime } from "@gik-ai/controlface/blueprint";
+import type { Json, OrchestratorResult, PatchOp, StateModel } from "@gik-ai/kernel";
 import {
   getSampleBlueprintCatalog,
   installUserBlueprints,
@@ -35,8 +35,8 @@ type AuthorProposal = AgentProposal<AuthorAction>;
 
 export type UseProposal = AgentProposal<UseAction>;
 
-/** `@gik/agent-lifecycle-exp` deliberately describes a Blueprint via its own independent,
- * structurally-typed `BlueprintUseSource` shape rather than importing `@gik/blueprint`'s canonical
+/** `@gik-ai/agent-lifecycle-exp` deliberately describes a Blueprint via its own independent,
+ * structurally-typed `BlueprintUseSource` shape rather than importing `@gik-ai/blueprint`'s canonical
  * type -- `agentLifecycle` is an optional extension that Blueprint's own schema does not (and need
  * not) declare. This is a type-only view, not a runtime transform. */
 function lifecycleSource(runtime: BlueprintRuntime): BlueprintUseSource {

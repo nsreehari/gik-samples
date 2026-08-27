@@ -1,4 +1,4 @@
-import type { StorageApi } from "@gik/durable-runtime";
+import type { StorageApi } from "@gik-ai/durable-runtime";
 
 import {
   createBootstrapStorageConnection,

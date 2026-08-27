@@ -1,4 +1,10 @@
-# @gik/components
+# @gik-ai/components
+
+## 0.2.1-next.1
+
+### Patch Changes
+
+- Move the unpublished package to the maintainer-owned `@gik-ai` npm scope.
 
 ## 0.2.1-next.0
 
@@ -7,6 +13,6 @@
 - 49ef851: Prepare the supported public package set with package-owned consumer
   documentation and validated release metadata.
 - Updated dependencies [49ef851]
-  - @gik/kernel@0.1.2-next.0
-  - @gik/evaluators@0.1.2-next.0
-  - @gik/react@0.3.1-next.0
+  - @gik-ai/kernel@0.1.2-next.0
+  - @gik-ai/evaluators@0.1.2-next.0
+  - @gik-ai/react@0.3.1-next.0

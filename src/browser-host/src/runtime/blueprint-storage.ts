@@ -1,11 +1,11 @@
 import {
   createIndexedDbStorageApi,
   createIndexedDbStorageRef,
-} from "@gik/durable-runtime/storage/indexed-db/api";
+} from "@gik-ai/durable-runtime/storage/indexed-db/api";
 import {
   createMemoryStorageApi,
   createMemoryStorageRef,
-} from "@gik/durable-runtime/storage/memory";
+} from "@gik-ai/durable-runtime/storage/memory";
 
 import {
   createBlueprintStorageConnectionFactory,

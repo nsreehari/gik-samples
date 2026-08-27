@@ -34,7 +34,7 @@ vi.mock("@fluentui/react-components", async () => {
   };
 });
 
-vi.mock("@gik/components", () => ({
+vi.mock("@gik-ai/components", () => ({
   PaneWithTriggerBody: ({ children }: React.PropsWithChildren) => <main data-pane-section="body">{children}</main>,
   PaneWithTriggerFooter: ({ children }: React.PropsWithChildren) => <footer data-pane-section="footer">{children}</footer>,
   PaneWithTriggerHeader: ({ children }: React.PropsWithChildren) => <header data-pane-section="header">{children}</header>,

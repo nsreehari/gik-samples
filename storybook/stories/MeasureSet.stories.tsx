@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { measureSetDefinition } from "@gik/components";
+import { measureSetDefinition } from "@gik-ai/components";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Measure Set", component: ComponentStory, tags: ["autodocs"], args: { definition: measureSetDefinition, variant: "tiles" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

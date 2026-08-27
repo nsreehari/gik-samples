@@ -3,7 +3,7 @@ import {
   type BlueprintReference,
   type HostedBlueprintResolutionContext,
   parseBlueprintJson,
-} from "@gik/blueprint";
+} from "@gik-ai/blueprint";
 
 import { resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
 import type { BlueprintStorageConnectionFactory } from "./blueprint-storage";

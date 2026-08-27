@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { attackPathDefinition } from "@gik/components/security";
+import { attackPathDefinition } from "@gik-ai/components/security";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Security Components/Attack Path", component: ComponentStory, tags: ["autodocs"], args: { definition: attackPathDefinition, variant: "canvas" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

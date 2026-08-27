@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "vitest";
-import { UnsatisfiedServiceDependencyError } from "@gik/controlface";
+import { UnsatisfiedServiceDependencyError } from "@gik-ai/controlface";
 
 import {
   browserServiceDependencyAccessTesting,

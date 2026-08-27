@@ -1,6 +1,6 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Markdown, markdownDefinition } from "@gik/components/primitives";
+import { Markdown, markdownDefinition } from "@gik-ai/components/primitives";
 
 import { ComponentStory } from "./ComponentStory";
 

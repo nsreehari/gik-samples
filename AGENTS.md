@@ -34,7 +34,7 @@ These instructions apply to every coding agent working in this repository.
 
 ## Validation
 
-- Build `@gik/components` before checking consumers when its `dist` is absent.
+- Build `@gik-ai/components` before checking consumers when its `dist` is absent.
 - Run the smallest relevant tests while developing.
 - Before completing a code change, run:
 

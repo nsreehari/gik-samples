@@ -13,13 +13,13 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { CheckmarkCircleRegular } from "@fluentui/react-icons";
-import type { Json } from "@gik/kernel";
+import type { Json } from "@gik-ai/kernel";
 import {
   runDeclarativeValidators,
   validateDeclarativeFormValues,
   type DeclarativeFormSchema,
-} from "@gik/evaluators";
-import { readProps, resolveLayoutSlots, type ProjectionView } from "@gik/react";
+} from "@gik-ai/evaluators";
+import { readProps, resolveLayoutSlots, type ProjectionView } from "@gik-ai/react";
 
 import {
   defineComponent,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { sourceComparisonDefinition } from "@gik/components/software";
+import { sourceComparisonDefinition } from "@gik-ai/components/software";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Software Components/Source Comparison", component: ComponentStory, tags: ["autodocs"], args: { definition: sourceComparisonDefinition, variant: "unified-diff" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

@@ -1,4 +1,4 @@
-import type { Json } from "@gik/kernel";
+import type { Json } from "@gik-ai/kernel";
 
 function hasOnlyUnclosedRootObject(value: string): boolean {
   const stack: Array<{ token: "{" | "["; index: number }> = [];

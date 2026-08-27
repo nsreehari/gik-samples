@@ -1,8 +1,8 @@
 import React from "react";
 import { Text } from "@fluentui/react-components";
-import type { Json } from "@gik/kernel";
-import { runDeclarativeValidators } from "@gik/evaluators";
-import type { ProjectionView, ProjectionViewProps } from "@gik/react";
+import type { Json } from "@gik-ai/kernel";
+import { runDeclarativeValidators } from "@gik-ai/evaluators";
+import type { ProjectionView, ProjectionViewProps } from "@gik-ai/react";
 
 import { SourceViewer, getSourceViewerSchema, validateSourceViewer } from "../../primitives/source-viewer";
 import { componentRootProps, records, textAt } from "../../shared/component";

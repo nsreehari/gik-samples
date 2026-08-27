@@ -1,8 +1,8 @@
 import React from "react";
 import { Button, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface, DialogTitle, Input, makeStyles, tokens } from "@fluentui/react-components";
-import type { Json } from "@gik/kernel";
-import { runDeclarativeValidators } from "@gik/evaluators";
-import { readProps, type ProjectionView } from "@gik/react";
+import type { Json } from "@gik-ai/kernel";
+import { runDeclarativeValidators } from "@gik-ai/evaluators";
+import { readProps, type ProjectionView } from "@gik-ai/react";
 
 import { componentRootProps, componentStylePropsSchema } from "../../shared/component";
 import { defineComponent, eventContract, trialNode, type ComponentDescription, type ComponentValidationReport } from "../../shared/definition";

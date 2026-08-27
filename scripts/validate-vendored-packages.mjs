@@ -44,7 +44,7 @@ for (const artifact of manifest.packages) {
 }
 
 const localGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name, value]) => name.startsWith("@gik/") && String(value).startsWith("file:"));
+  .filter(([name, value]) => name.startsWith("@gik-ai/") && String(value).startsWith("file:"));
 for (const [name] of localGikDependencies) {
   if (!manifestNames.has(name)) throw new Error(`Local GIK dependency '${name}' is missing from the manifest.`);
 }

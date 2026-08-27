@@ -1,6 +1,6 @@
-import type { HostedBlueprintResolutionContext } from "@gik/blueprint";
-import type { BlueprintProposalStore } from "@gik/blueprint-agent-host";
-import type { ReactBlueprintHostRegistry } from "@gik/react";
+import type { HostedBlueprintResolutionContext } from "@gik-ai/blueprint";
+import type { BlueprintProposalStore } from "@gik-ai/blueprint-agent-host";
+import type { ReactBlueprintHostRegistry } from "@gik-ai/react";
 import type { UseProposal } from "./blueprint-agent-lifecycle";
 import { applyHostConfig } from "../../../bootstrap/config/host-config";
 import { resolveBlueprintNative } from "./blueprint-runtime";
