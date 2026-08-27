@@ -10,18 +10,18 @@ publication and manual workflow dispatch are not supported.
 5. Mark versions containing a prerelease suffix, such as `-next.0`, as GitHub
    prereleases. They publish to npm's `next` dist-tag. Stable versions publish to
    `latest`.
-6. During the first staged bootstrap, dependency publication is deferred. For
-   every later release, publish the exact core `@gik-ai/*` dependency versions
-   first; the Components release gate verifies that each one exists on npm.
+6. During the first bootstrap, dependency publication is deferred. For every
+   later release, publish the exact core `@gik-ai/*` dependency versions first;
+   the Components release gate verifies that each one exists on npm.
 7. Approve the protected `npm-publish` environment after reviewing the release
    commit, version, channel, package contents, and validation results.
 
-The first publication uses npm staged publishing with the bootstrap `NPM_TOKEN`
-and `NPM_TOKEN_BOOTSTRAP_ENABLED=true`. The GitHub Actions job stages the
-validated package but does not make it public. Review it under **Staged
-Packages** on npmjs.com and approve it with 2FA. The initial Components bootstrap
-may precede its core dependencies; do not announce or validate it for consumers
-until those exact core versions are published.
+npm staged publishing cannot create an initial package record. The first
+publication therefore uses the bootstrap `NPM_TOKEN` with
+`NPM_TOKEN_BOOTSTRAP_ENABLED=true` and publishes directly only after the
+protected `npm-publish` environment is approved. The initial Components
+bootstrap may precede its core dependencies; do not announce or validate it for
+consumers until those exact core versions are published.
 
 After the package exists, register `nsreehari/gik-samples`,
 `.github/workflows/publish.yml`, and the `npm-publish` environment as its npm
