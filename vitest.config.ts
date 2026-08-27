@@ -5,6 +5,11 @@ export default defineConfig({
     environment: "node",
     testTimeout: 20_000,
     setupFiles: ["src/bootstrap/catalog/test-setup.ts"],
+    server: {
+      deps: {
+        inline: ["tabster"],
+      },
+    },
     include: [
       "packages/components/test/**/*.test.ts",
       "packages/components/test/**/*.test.tsx",
