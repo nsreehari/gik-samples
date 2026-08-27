@@ -14,9 +14,11 @@ experience is published at `/`, selected Blueprints use `?b=<id>`, and
 Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies temporarily
 resolve from integrity-checked archives under `vendor/gik-packages`.
 
-Production builds use reserved example proxy origins by default. Set
-`VITE_GIK_FOUNDRY_PROXY_ORIGIN` and `VITE_GIK_HTTP_PROXY_ORIGIN` to the public
-deployment endpoints when building a hosted release.
+Blueprint service declarations own their concrete non-secret configuration,
+including service endpoints and logical `credentialRef` values. The browser
+host authorizes endpoints declared by repository-seeded Blueprints and resolves
+the referenced secret from browser credential storage when the service is used.
+Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
 
 ## Live site
 

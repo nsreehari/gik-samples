@@ -11,30 +11,27 @@ export interface SampleServiceHostCredentials {
 }
 
 export interface SampleServiceEndpointPolicy {
-  foundryProxyOrigin: string;
-  httpProxyOrigin: string;
+  authorizeEndpoint(kind: string, endpoint: URL): boolean | Promise<boolean>;
 }
 
 export function createSampleServiceRegistryOptions(
   credentials: SampleServiceHostCredentials,
   endpoints: SampleServiceEndpointPolicy,
 ): SampleServiceRegistryOptions {
-  const foundryOrigin = new URL(endpoints.foundryProxyOrigin).origin;
-  const httpProxyOrigin = new URL(endpoints.httpProxyOrigin).origin;
   return {
     hostCapabilities: ["copilot-executor", "workspace-resolver", "foundry-executor", "credential-resolver", "http-executor", "mcp-executor"],
     resolveCredential: credentials.resolveCredential,
     clearCredential: credentials.clearCredential,
-    authorizeEndpoint: (kind, endpoint) =>
-      (kind === "foundry-agent" && endpoint.origin === foundryOrigin)
-      || (kind === "http-service" && endpoint.origin === httpProxyOrigin),
+    authorizeEndpoint: endpoints.authorizeEndpoint,
     execute: async (request) => {
       const invocation = request as Parameters<typeof executeHttpServiceInvocation>[0];
       if (invocation.kind === "http-service") {
         const config = invocation.declaration.config as Record<string, Json> | undefined;
         const endpoint = String(config?.endpoint ?? "");
         const credentialRef = String(config?.credentialRef ?? "");
-        if (new URL(endpoint).origin !== httpProxyOrigin) throw new Error(`HTTP proxy endpoint '${endpoint}' is not authorized by the host`);
+        if (!await endpoints.authorizeEndpoint("http-service", new URL(endpoint))) {
+          throw new Error(`HTTP proxy endpoint '${endpoint}' is not authorized by the host`);
+        }
         let accessKey: string;
         try {
           accessKey = String(await credentials.resolveCredential(credentialRef));

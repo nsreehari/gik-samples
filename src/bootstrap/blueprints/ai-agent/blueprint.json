@@ -110,7 +110,7 @@
           }
         },
         "config": {
-          "endpoint": "${GIK_FOUNDRY_PROXY_ORIGIN}",
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "credentialRef": "foundry-agent/access-key"
         },
         "scope": "per-session"
