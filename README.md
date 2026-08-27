@@ -8,6 +8,12 @@ Production builds use reserved example proxy origins by default. Set
 `VITE_GIK_FOUNDRY_PROXY_ORIGIN` and `VITE_GIK_HTTP_PROXY_ORIGIN` to the public
 deployment endpoints when building a hosted release.
 
+## Live site
+
+- [Root sample app](https://nsreehari.github.io/gik-samples/)
+- [Storybook](https://nsreehari.github.io/gik-samples/storybook/)
+- [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)
+
 ## Development
 
 ```sh
