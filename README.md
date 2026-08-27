@@ -11,7 +11,7 @@ deployment endpoints when building a hosted release.
 ## Development
 
 ```sh
-npm install
+npm ci --no-audit --no-fund
 npm run dev
 ```
 
@@ -26,3 +26,7 @@ npm run build
 npm run typecheck
 npm test
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
+[SUPPORT.md](SUPPORT.md) for support boundaries, and [SECURITY.md](SECURITY.md)
+for private vulnerability reporting.
