@@ -1,6 +1,6 @@
 {
   "name": "@gik-ai/components",
-  "version": "0.2.1-next.1",
+  "version": "0.2.1-next.2",
   "description": "Self-describing declarative Fluent components for the Generative Interaction Kernel.",
   "license": "MIT",
   "author": "nsreehari",
