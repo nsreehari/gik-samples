@@ -9,6 +9,9 @@ import {
   validateFoundryAgents,
   verifyFoundryPlan,
 } from '../src/provisioning/foundry.js';
+import { loadMcpServerEnv } from '../src/load-env.js';
+
+loadMcpServerEnv();
 
 function parseArgs(argv) {
   const options = {

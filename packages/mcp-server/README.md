@@ -64,6 +64,18 @@ The default registry loads filesystem, Copilot, Lore, and GIK authoring
 manifests. Set `DISABLE_HANDLERS` to a comma-separated list of registry IDs to
 remove a unit, for example `gik-agent-authoring`.
 
+## Configuration
+
+`.env.template` is the single inventory of user-configurable environment
+variables for the MCP server and its provisioning scripts. Copy it to `.env`
+in this package and set only the values you need. The server, Copilot
+provisioner, and Foundry provisioner all load that file automatically.
+
+Existing process environment variables take precedence over `.env`. Explicit
+command-line arguments take precedence over both for the standalone
+provisioning scripts. Operating-system and npm-provided variables are not
+duplicated in the template.
+
 ## Pair Blueprint Studio
 
 1. Copy `.env.template` to `.env`.
@@ -97,6 +109,10 @@ does not alter trusted local stdio clients.
 Blueprint Studio exports `gik-project/1`. The file contains the selected
 Blueprint artifact and the agent declarations derived from the user-owned
 profile. It contains no credentials or absolute local paths.
+
+The examples below use command-line arguments. The same paths can be supplied
+through `COPILOT_PROVISIONING_PLAN`, `GIK_TARGET_WORKSPACE`, and
+`FOUNDRY_PROVISIONING_PLAN` in `.env`.
 
 Copilot workspace:
 
