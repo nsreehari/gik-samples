@@ -1,0 +1,41 @@
+name: Sample or component proposal
+description: Propose a focused public Blueprint, component, or sample improvement
+title: "[Proposal]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or learning goal
+      description: Explain what the sample should demonstrate and who benefits.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Describe the smallest complete public change.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected behavior
+      description: Include acceptance criteria and relevant accessibility expectations.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and services
+      description: Identify any new package, hosted service, endpoint, or runtime assumption.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Contribution checks
+      options:
+        - label: The proposal can be implemented without private code, data, credentials, or endpoints.
+          required: true
+        - label: I understand accepted community content does not automatically become an official supported sample.
+          required: true

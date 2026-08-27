@@ -18,10 +18,16 @@ Production builds use reserved example proxy origins by default. Set
 `VITE_GIK_FOUNDRY_PROXY_ORIGIN` and `VITE_GIK_HTTP_PROXY_ORIGIN` to the public
 deployment endpoints when building a hosted release.
 
+## Live site
+
+- [Root sample app](https://nsreehari.github.io/gik-samples/)
+- [Storybook](https://nsreehari.github.io/gik-samples/storybook/)
+- [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)
+
 ## Development
 
 ```sh
-npm install
+npm ci --no-audit --no-fund
 npm run dev
 ```
 
@@ -59,3 +65,7 @@ npm run build
 npm run typecheck
 npm test
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
+[SUPPORT.md](SUPPORT.md) for support boundaries, and [SECURITY.md](SECURITY.md)
+for private vulnerability reporting.
