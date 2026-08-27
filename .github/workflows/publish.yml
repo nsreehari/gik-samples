@@ -80,6 +80,7 @@ jobs:
         run: npm pack --workspace @gik/components --dry-run
 
       - name: Verify published GIK dependencies
+        if: vars.NPM_TOKEN_BOOTSTRAP_ENABLED != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -134,9 +135,10 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Publish Components with bootstrap token
+      - name: Stage Components with bootstrap token
         if: vars.NPM_TOKEN_BOOTSTRAP_ENABLED == 'true'
-        run: npm publish --workspace @gik/components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
+        working-directory: packages/components
+        run: npm stage publish --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -157,5 +159,5 @@ jobs:
             echo "- Release: [$TAG]($RELEASE)"
             echo "- Package: \`@gik/components\`"
             echo "- Channel: \`$CHANNEL\`"
-            echo "- Bootstrap token enabled: \`${{ vars.NPM_TOKEN_BOOTSTRAP_ENABLED == 'true' }}\`"
+            echo "- Staged bootstrap: \`${{ vars.NPM_TOKEN_BOOTSTRAP_ENABLED == 'true' }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
