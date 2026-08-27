@@ -10,7 +10,10 @@ publication and manual workflow dispatch are not supported.
 5. Mark versions containing a prerelease suffix, such as `-next.0`, as GitHub
    prereleases. They publish to npm's `next` dist-tag. Stable versions publish to
    `latest`.
-6. Approve the protected `npm-publish` environment after reviewing the release
+6. Publish the exact core `@gik/*` dependency versions first. The Components
+   release gate verifies that every declared `@gik/*` dependency already exists
+   on npm.
+7. Approve the protected `npm-publish` environment after reviewing the release
    commit, version, channel, package contents, and validation results.
 
 The first publication needs a narrowly scoped npm bootstrap token stored only as

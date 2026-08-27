@@ -79,6 +79,20 @@ jobs:
       - name: Inspect Components package
         run: npm pack --workspace @gik/components --dry-run
 
+      - name: Verify published GIK dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE' |
+          const pkg = require("./packages/components/package.json");
+          for (const [name, version] of Object.entries(pkg.dependencies ?? {})) {
+            if (name.startsWith("@gik/")) console.log(`${name}@${version}`);
+          }
+          NODE
+          while IFS= read -r dependency; do
+            npm view "$dependency" version >/dev/null
+          done
+
   publish:
     name: Publish Components
     needs: validate
