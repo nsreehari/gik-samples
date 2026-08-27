@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible problem in a public GIK sample or component
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not include vulnerabilities, credentials, private endpoints, or customer data.
+  - type: input
+    id: surface
+    attributes:
+      label: Affected surface
+      description: Blueprint ID, component, Storybook story, Scenario Explorer, or route
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide minimal steps and any safe public inputs needed to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, operating system, and Node.js version when relevant
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I searched for existing issues and pull requests.
+          required: true
+        - label: This report contains no secrets, private data, or vulnerability details.
+          required: true
