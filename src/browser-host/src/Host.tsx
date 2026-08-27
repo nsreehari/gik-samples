@@ -34,6 +34,7 @@ import { BlueprintTestsPage } from "./BlueprintTestsPage";
 import {
   ScenarioExplorerPage,
 } from "./ScenarioExplorerPage";
+import { AgentProvisioningPage } from "./provisioning/AgentProvisioningPage";
 
 export { createSampleBlueprintProposalStore } from "./blueprint-host-setup";
 
@@ -48,6 +49,9 @@ export function Host(): React.ReactElement {
   if (query.testsEnabled) return <BlueprintTestsPage />;
   if (query.scenariosEnabled) {
     return <ScenarioExplorerPage />;
+  }
+  if (query.provisioningEnabled) {
+    return <AgentProvisioningPage durableEnabled={query.durableEnabled} />;
   }
   // No selected Blueprint is not "the default Blueprint": it is the application root itself.
   if (query.targetId === null) {

@@ -1,0 +1,661 @@
+#!/usr/bin/env node
+
+import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
+import process from 'node:process';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import * as z from 'zod/v4';
+import { loadManifests } from './manifest-loader.js';
+import { resolveHandler } from './handler-registry.js';
+import { ProxyCatalog } from './proxy-catalog.js';
+import {
+  createFilesystemSnapshotInvalidationWatcher,
+  FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
+} from './filesystem-snapshot-invalidations.js';
+import { createProvisioningBrowserApi } from './provisioning/browser-api.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MCP_SERVER_DIR = path.resolve(__dirname, '..');
+
+// Load mcp-server/.env (if present) so manifest env vars resolve without exporting them manually.
+// See .env.template for the supported variables. Real values stay local; .env is gitignored.
+const MCP_SERVER_ENV_PATH = path.join(MCP_SERVER_DIR, '.env');
+if (typeof process.loadEnvFile === 'function' && existsSync(MCP_SERVER_ENV_PATH)) {
+  process.loadEnvFile(MCP_SERVER_ENV_PATH);
+}
+
+const MCP_SERVER_LOG_PATH = path.join(MCP_SERVER_DIR, 'logs', 'mcp-server.log');
+const FILESYSTEM_STORAGE_ROOT = path.resolve(
+  process.env.GIK_FILESYSTEM_STORAGE_ROOT
+    ?? path.join(MCP_SERVER_DIR, '.data', 'filesystem-storage'),
+);
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function formatTimestamp(date = new Date()) {
+  return `${MONTHS[date.getMonth()] || '???'}${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+
+function getArgValues(flag) {
+  const values = [];
+  for (let index = 2; index < process.argv.length; index += 1) {
+    if (process.argv[index] === flag && process.argv[index + 1]) {
+      values.push(process.argv[index + 1]);
+      index += 1;
+    }
+  }
+  return values;
+}
+
+function getArgValue(flag, fallback) {
+  const values = getArgValues(flag);
+  return values.length > 0 ? values[values.length - 1] : fallback;
+}
+
+function hasFlag(flag) {
+  return process.argv.includes(flag);
+}
+
+function parseDisabledHandlers() {
+  const raw = process.env.DISABLE_HANDLERS;
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return new Set();
+  }
+  return new Set(
+    raw
+      .split(',')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function validateTransportCompatibility(tools, transport) {
+  if (transport !== 'stdio') return;
+
+  const blocked = tools.filter(tool => tool.runtime?.requiresTerminalStdin);
+  if (blocked.length === 0) return;
+
+  const names = blocked.map(tool => tool.name).join(', ');
+  throw new Error(
+    `Transport mismatch: stdio cannot host tools requiring terminal-backed stdin: ${names}`
+  );
+}
+
+function registerManifestTools(server, tools) {
+  for (const tool of tools) {
+    const handler = resolveHandler(tool.handler);
+    const inputSchema = tool.inputSchema
+      ? convertJsonSchemaToZodShape(tool.inputSchema)
+      : undefined;
+    const outputSchema = tool.outputSchema
+      ? convertJsonSchemaToZodShape(tool.outputSchema)
+      : undefined;
+    server.registerTool(
+      tool.name,
+      {
+        title: tool.title || tool.name,
+        description: tool.description || '',
+        ...(inputSchema ? { inputSchema } : {}),
+        ...(outputSchema ? { outputSchema } : {}),
+        ...(tool.annotations ? { annotations: tool.annotations } : {}),
+      },
+      async (args) => handler(args, tool)
+    );
+  }
+}
+
+function applySchemaConstraints(schema, spec) {
+  if (typeof spec.description === 'string' && spec.description.trim()) {
+    schema = schema.describe(spec.description.trim());
+  }
+  if (typeof spec.minLength === 'number' && typeof schema.min === 'function') {
+    schema = schema.min(spec.minLength);
+  }
+  if (typeof spec.maxLength === 'number' && typeof schema.max === 'function') {
+    schema = schema.max(spec.maxLength);
+  }
+  if (typeof spec.minimum === 'number' && typeof schema.gte === 'function') {
+    schema = schema.gte(spec.minimum);
+  }
+  if (typeof spec.maximum === 'number' && typeof schema.lte === 'function') {
+    schema = schema.lte(spec.maximum);
+  }
+  return schema;
+}
+
+function convertJsonSchemaNode(spec) {
+  if (!spec || typeof spec !== 'object') {
+    return z.any();
+  }
+
+  if (Array.isArray(spec.enum) && spec.enum.length > 0) {
+    const literals = spec.enum.map((value) => z.literal(value));
+    const schema = literals.length === 1 ? literals[0] : z.union(literals);
+    return applySchemaConstraints(schema, spec);
+  }
+
+  if (spec.type === 'string') {
+    return applySchemaConstraints(z.string(), spec);
+  }
+  if (spec.type === 'integer') {
+    return applySchemaConstraints(z.int(), spec);
+  }
+  if (spec.type === 'number') {
+    return applySchemaConstraints(z.number(), spec);
+  }
+  if (spec.type === 'boolean') {
+    return applySchemaConstraints(z.boolean(), spec);
+  }
+  if (spec.type === 'array') {
+    const itemSchema = convertJsonSchemaNode(spec.items);
+    let schema = z.array(itemSchema);
+    if (typeof spec.minItems === 'number') schema = schema.min(spec.minItems);
+    if (typeof spec.maxItems === 'number') schema = schema.max(spec.maxItems);
+    return applySchemaConstraints(schema, spec);
+  }
+  if (spec.type === 'object') {
+    const shape = convertJsonSchemaToZodShape(spec);
+    const allowsAdditionalProperties = spec.additionalProperties !== false;
+    if (allowsAdditionalProperties) {
+      if (spec.additionalProperties && typeof spec.additionalProperties === 'object') {
+        return z.object(shape).catchall(convertJsonSchemaNode(spec.additionalProperties));
+      }
+      return z.object(shape).catchall(z.any());
+    }
+    return z.object(shape);
+  }
+
+  return z.any();
+}
+
+function convertJsonSchemaToZodShape(schema) {
+  if (!schema || schema.type !== 'object' || !schema.properties || typeof schema.properties !== 'object') {
+    return {};
+  }
+
+  const required = new Set(Array.isArray(schema.required) ? schema.required : []);
+
+  return Object.fromEntries(
+    Object.entries(schema.properties).map(([key, value]) => {
+      let fieldSchema = convertJsonSchemaNode(value);
+      if (!required.has(key)) {
+        fieldSchema = fieldSchema.optional();
+      }
+      return [key, fieldSchema];
+    }),
+  );
+}
+
+function createMcpServer(loaded, proxyCatalog) {
+  const server = new McpServer({
+    name: loaded.server.name,
+    version: loaded.server.version,
+  });
+  registerManifestTools(server, loaded.tools);
+  proxyCatalog?.attach(server);
+  return server;
+}
+
+function createEmptyLoadedManifests() {
+  return {
+    server: {
+      name: 'gik-samples-mcp',
+      version: '0.1.0',
+      description: '',
+    },
+    connection: null,
+    tools: [],
+    manifests: [],
+  };
+}
+
+function isInitializeRequest(body) {
+  return !!body && typeof body === 'object' && !Array.isArray(body) && body.method === 'initialize';
+}
+
+function sendJson(res, status, payload) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+  });
+  res.end(JSON.stringify(payload));
+}
+
+function sendText(res, status, message) {
+  res.writeHead(status, {
+    'Content-Type': 'text/plain; charset=utf-8',
+  });
+  res.end(message);
+}
+
+function applyCorsHeaders(res, origin) {
+  if (!origin) return;
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Mcp-Session-Id, Last-Event-ID');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
+}
+
+function appendMcpServerLogLine(message) {
+  const line = `${formatTimestamp()} ${message}`;
+  try {
+    mkdirSync(path.dirname(MCP_SERVER_LOG_PATH), { recursive: true });
+    appendFileSync(MCP_SERVER_LOG_PATH, `${line}\n`, 'utf8');
+  } catch {
+    // Logging must not break the server.
+  }
+}
+
+function summarizeMcpRequestBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return null;
+  }
+
+  const method = typeof body.method === 'string' ? body.method.trim() : '';
+  const params = body.params && typeof body.params === 'object' && !Array.isArray(body.params)
+    ? body.params
+    : {};
+  const toolName = typeof params.name === 'string' ? params.name.trim() : '';
+  if (method !== 'tools/call' || !toolName) {
+    return null;
+  }
+
+  return `[tools/call] ${toolName}`;
+}
+
+async function readJsonBody(req, maxBytes = 1024 * 1024) {
+  let body = '';
+  let bytes = 0;
+  for await (const chunk of req) {
+    bytes += chunk.length;
+    if (bytes > maxBytes) {
+      throw Object.assign(new Error(`Request body exceeds ${maxBytes} bytes`), { statusCode: 413 });
+    }
+    body += chunk;
+  }
+  if (!body) return null;
+  return JSON.parse(body);
+}
+
+async function closeAllSessions(sessionServers, sessionTransports) {
+  const sessions = new Set([
+    ...sessionServers.keys(),
+    ...sessionTransports.keys(),
+  ]);
+
+  for (const sessionId of sessions) {
+    const transport = sessionTransports.get(sessionId);
+    const server = sessionServers.get(sessionId);
+    try {
+      if (transport) {
+        await transport.close();
+      }
+    } catch {}
+    try {
+      if (server) {
+        await server.close();
+      }
+    } catch {}
+  }
+
+  sessionServers.clear();
+  sessionTransports.clear();
+}
+
+async function startStreamableHttpServer(loaded, proxyCatalog) {
+  const host = getArgValue('--host', '127.0.0.1');
+  if (host !== '127.0.0.1') {
+    throw new Error('The HTTP transport binds only to 127.0.0.1');
+  }
+  const port = Number(getArgValue('--port', '7801'));
+  const endpoint = getArgValue('--endpoint', '/mcp');
+  const browserApi = createProvisioningBrowserApi({
+    defaultWorkspaceRoot: process.env.GIK_SAMPLES_WORKSPACE_ROOT
+      ?? path.resolve(MCP_SERVER_DIR, '..', '..'),
+    dataRoot: path.join(MCP_SERVER_DIR, '.data'),
+    onPairingCode(code) {
+      process.stdout.write(`[gik-provisioning] one-use pairing code: ${code}\n`);
+    },
+  });
+  const sessionTransports = new Map();
+  const sessionServers = new Map();
+  const snapshotWatcher = createFilesystemSnapshotInvalidationWatcher({
+    rootDir: FILESYSTEM_STORAGE_ROOT,
+    async publish(invalidation) {
+      await Promise.allSettled([...sessionServers.values()].map((server) =>
+        server.server.notification({
+          method: FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
+          params: invalidation,
+        })));
+    },
+    onError(error) {
+      appendMcpServerLogLine(`[filesystem-invalidations] ${String(error?.message || error)}`);
+    },
+  });
+
+  const httpServer = createServer(async (req, res) => {
+    const requestUrl = new URL(req.url || '/', `http://${req.headers.host || `${host}:${port}`}`);
+    const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+    const isBrowserApi = requestUrl.pathname === '/api/pair'
+      || requestUrl.pathname.startsWith('/api/operations/');
+
+    if (origin && !browserApi.allowedOrigins.has(origin)) {
+      sendText(res, 403, 'Origin is not allowed');
+      return;
+    }
+
+    if (!isBrowserApi && requestUrl.pathname !== endpoint) {
+      sendText(res, 404, 'Not found');
+      return;
+    }
+
+    if (req.method === 'OPTIONS') {
+      if (!origin) {
+        sendText(res, 400, 'Origin is required');
+        return;
+      }
+      applyCorsHeaders(res, origin);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (isBrowserApi) {
+      try {
+        if (!origin) {
+          throw Object.assign(new Error('Origin is required'), { statusCode: 400 });
+        }
+        applyCorsHeaders(res, origin);
+        if (req.method !== 'POST') {
+          throw Object.assign(new Error('Method not allowed'), { statusCode: 405 });
+        }
+        const input = await readJsonBody(req);
+        const clientKey = req.socket.remoteAddress || 'loopback';
+        if (requestUrl.pathname === '/api/pair') {
+          sendJson(res, 200, browserApi.pair({ origin, code: input?.code, clientKey }));
+          return;
+        }
+        browserApi.authorize({
+          origin,
+          authorization: req.headers.authorization,
+          clientKey,
+        });
+        const operationName = decodeURIComponent(requestUrl.pathname.slice('/api/operations/'.length));
+        const result = await browserApi.operation(operationName, input);
+        sendJson(res, 200, { result });
+      } catch (error) {
+        if (!res.headersSent) {
+          sendJson(res, Number(error?.statusCode) || 500, {
+            error: String(error?.message || error),
+          });
+        }
+      }
+      return;
+    }
+
+    const sessionIdHeader = req.headers['mcp-session-id'];
+    const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
+
+    try {
+      applyCorsHeaders(res, origin);
+
+      if (req.method === 'POST') {
+        const parsedBody = await readJsonBody(req);
+        const requestSummary = summarizeMcpRequestBody(parsedBody);
+        if (requestSummary) {
+          appendMcpServerLogLine(requestSummary);
+        }
+
+        if (sessionId && sessionTransports.has(sessionId)) {
+          await sessionTransports.get(sessionId).handleRequest(req, res, parsedBody);
+          return;
+        }
+
+        if (!sessionId && isInitializeRequest(parsedBody)) {
+          let transport;
+          const mcpServer = createMcpServer(loaded, proxyCatalog);
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (initializedSessionId) => {
+              sessionTransports.set(initializedSessionId, transport);
+              sessionServers.set(initializedSessionId, mcpServer);
+            },
+          });
+          transport.onclose = () => {
+            const activeSessionId = transport.sessionId;
+            if (activeSessionId) {
+              sessionTransports.delete(activeSessionId);
+              sessionServers.delete(activeSessionId);
+            }
+            proxyCatalog?.detach(mcpServer);
+          };
+          await mcpServer.connect(transport);
+          await transport.handleRequest(req, res, parsedBody);
+          return;
+        }
+
+        sendJson(res, 400, {
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: No valid session ID provided',
+          },
+          id: null,
+        });
+        return;
+      }
+
+      if (req.method === 'GET' || req.method === 'DELETE') {
+        if (!sessionId || !sessionTransports.has(sessionId)) {
+          sendText(res, 400, 'Invalid or missing session ID');
+          return;
+        }
+        await sessionTransports.get(sessionId).handleRequest(req, res);
+        return;
+      }
+
+      sendText(res, 405, 'Method not allowed');
+    } catch (err) {
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: String(err?.message || err),
+          },
+          id: null,
+        });
+      }
+    }
+  });
+
+  const shutdown = async () => {
+    await snapshotWatcher.close();
+    await closeAllSessions(sessionServers, sessionTransports);
+    await new Promise((resolve) => httpServer.close(resolve));
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
+  await new Promise((resolve, reject) => {
+    httpServer.once('error', reject);
+    httpServer.listen(port, host, () => {
+      httpServer.off('error', reject);
+      resolve();
+    });
+  });
+
+  appendMcpServerLogLine(`[mcp-server] started http://${host}:${port}${endpoint}`);
+  process.stdout.write(`[mcp-server] streamable-http listening on http://${host}:${port}${endpoint}\n`);
+}
+
+async function loadRegistryDefaults() {
+  const mcpServerDir = MCP_SERVER_DIR;
+  const registryPath = path.resolve(getArgValue('--registry', path.join(mcpServerDir, 'registry.json')));
+  const manifestsDir = path.resolve(mcpServerDir, 'manifests');
+  // Registry manifests are auto-loaded into the local server process, so every
+  // registry-backed manifest must declare tools that have a working local handler.
+  let registry;
+  try {
+    registry = JSON.parse(readFileSync(registryPath, 'utf8'));
+  } catch {
+    process.stderr.write('[mcp-server] No registry.json found, starting with no manifests\n');
+    return { manifestPaths: [], proxyEntries: [] };
+  }
+  const servers = registry?.servers || {};
+  const disabledHandlers = parseDisabledHandlers();
+  const manifestPaths = [];
+  const proxyEntries = [];
+
+  for (const [serverName, entry] of Object.entries(servers)) {
+    if (!entry || typeof entry !== 'object') continue;
+
+    if (entry.disabled === true) {
+      process.stderr.write(`[mcp-server] Skipping disabled registry server "${serverName}"\n`);
+      continue;
+    }
+
+    if (disabledHandlers.has(serverName.toLowerCase())) {
+      process.stderr.write(`[mcp-server] Skipping registry server "${serverName}" (DISABLE_HANDLERS)\n`);
+      continue;
+    }
+
+    if (entry.kind === 'mcp-proxy') {
+      const proxy = entry.proxy;
+      if (!proxy || typeof proxy !== 'object' || !proxy.connection) {
+        throw new Error(`Registry MCP proxy "${serverName}" requires proxy.connection`);
+      }
+
+      proxyEntries.push({
+        serverName,
+        connection: proxy.connection,
+        optional: proxy.optional === true,
+        toolNamePrefix: proxy.toolNamePrefix,
+      });
+      continue;
+    }
+
+    if (!entry.manifest) continue;
+
+    const ref = entry.manifest;
+    const manifestPath = path.isAbsolute(ref)
+      ? ref
+      : (ref.startsWith('.') || ref.includes('/') || ref.includes('\\'))
+        ? path.resolve(mcpServerDir, ref)
+        : path.resolve(manifestsDir, ref);
+
+    if (!existsSync(manifestPath)) {
+      process.stderr.write(
+        `[mcp-server] Skipping registry server "${serverName}": manifest not reachable at ${manifestPath}\n`
+      );
+      continue;
+    }
+
+    manifestPaths.push(manifestPath);
+  }
+
+  return { manifestPaths, proxyEntries };
+}
+
+async function main() {
+  let manifestPaths = getArgValues('--manifest');
+  const transportName = getArgValue('--transport', 'stdio');
+  const dryRun = hasFlag('--dry-run');
+  const useRegistryDefaults = manifestPaths.length === 0;
+  let proxyEntries = [];
+
+  if (useRegistryDefaults) {
+    const registryDefaults = await loadRegistryDefaults();
+    manifestPaths = registryDefaults.manifestPaths;
+    proxyEntries = registryDefaults.proxyEntries;
+  }
+
+  const loaded = manifestPaths.length > 0
+    ? loadManifests(manifestPaths)
+    : createEmptyLoadedManifests();
+  const proxyCatalog = proxyEntries.length > 0
+    ? new ProxyCatalog(proxyEntries, loaded.tools.map((tool) => tool.name))
+    : null;
+  await proxyCatalog?.initialize();
+
+  if (useRegistryDefaults && manifestPaths.length === 0 && (!proxyCatalog || proxyCatalog.getTools().length === 0)) {
+    process.stderr.write('[mcp-server] No reachable registry manifests found, starting with no tools\n');
+  }
+
+  validateTransportCompatibility(loaded.tools, transportName);
+
+  if (dryRun) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          ok: true,
+          server: loaded.server,
+          transport: transportName,
+          toolCount: loaded.tools.length + (proxyCatalog ? proxyCatalog.getTools().length + 3 : 0),
+          tools: [
+            ...loaded.tools,
+            ...(proxyCatalog
+              ? [
+                  ...proxyCatalog.getTools(),
+                  ...['proxy.auth_status', 'proxy.sign_in', 'proxy.refresh_tools'].map((name) => ({
+                    name,
+                    handler: 'mcp.proxy.management',
+                  })),
+                ]
+              : []),
+          ].map(tool => ({
+            name: tool.name,
+            handler: tool.handler,
+            manifestPath: tool.manifestPath,
+          })),
+        },
+        null,
+        2,
+      ) + '\n'
+    );
+    return;
+  }
+
+  if (transportName === 'stdio') {
+    const server = createMcpServer(loaded, proxyCatalog);
+    const transport = new StdioServerTransport();
+    const snapshotWatcher = createFilesystemSnapshotInvalidationWatcher({
+      rootDir: FILESYSTEM_STORAGE_ROOT,
+      publish: (invalidation) => server.server.notification({
+        method: FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
+        params: invalidation,
+      }),
+      onError(error) {
+        process.stderr.write(`[filesystem-invalidations] ${String(error?.message || error)}\n`);
+      },
+    });
+    const closeWatcher = () => void snapshotWatcher.close();
+    process.once('SIGINT', closeWatcher);
+    process.once('SIGTERM', closeWatcher);
+    await server.connect(transport);
+    return;
+  }
+
+  if (transportName === 'streamable-http') {
+    await startStreamableHttpServer(loaded, proxyCatalog);
+    return;
+  }
+
+  throw new Error(`Unsupported transport: ${transportName}`);
+}
+
+main().catch((err) => {
+  process.stderr.write(`[mcp-server] ${String(err?.message || err)}\n`);
+  process.exit(1);
+});

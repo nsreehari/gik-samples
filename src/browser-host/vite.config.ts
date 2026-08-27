@@ -55,6 +55,10 @@ function hostedAssets(): Plugin {
       cpSync(`${distDirectory}/index.html`, `${distDirectory}/tests/index.html`);
       mkdirSync(`${distDirectory}/scenarios`, { recursive: true });
       cpSync(`${distDirectory}/index.html`, `${distDirectory}/scenarios/index.html`);
+      mkdirSync(`${distDirectory}/provisioning`, { recursive: true });
+      cpSync(`${distDirectory}/index.html`, `${distDirectory}/provisioning/index.html`);
+      mkdirSync(`${distDirectory}/in-memory/provisioning`, { recursive: true });
+      cpSync(`${distDirectory}/index.html`, `${distDirectory}/in-memory/provisioning/index.html`);
     },
   };
 }
