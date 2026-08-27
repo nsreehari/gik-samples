@@ -14,7 +14,7 @@ export default defineConfig({
     setupFiles: ["src/bootstrap/catalog/test-setup.ts"],
     server: {
       deps: {
-        inline: ["@fluentui/react-tabster", "tabster"],
+        inline: true,
       },
     },
     include: [
