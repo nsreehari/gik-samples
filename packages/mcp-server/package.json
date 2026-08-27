@@ -7,8 +7,6 @@
     "gik-samples-mcp": "./src/index.js"
   },
   "scripts": {
-    "verify:durable-runtime": "node scripts/vendor-gik-durable-runtime.mjs --verify",
-    "vendor:durable-runtime": "node scripts/vendor-gik-durable-runtime.mjs",
     "provision:copilot": "node scripts/provision-copilot-agents.mjs",
     "start": "node src/index.js",
     "start:http": "node src/index.js --transport streamable-http",
@@ -20,11 +18,11 @@
     "test:copilot": "node --test test/copilot-cli.test.js test/provision-copilot-agents.test.js",
     "test:lore": "node --test test/lore.test.js",
     "foundry:provision": "node scripts/provision-foundry-agents.mjs",
-    "test": "node scripts/vendor-gik-durable-runtime.mjs --verify && node scripts/smoke-registered-services.js && node --test test/*.test.js"
+    "test": "node scripts/smoke-registered-services.js && node --test test/*.test.js"
   },
   "dependencies": {
     "@gik-ai/agent-lifecycle-exp": "file:../../vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.0.tgz",
-    "@gik-ai/durable-runtime": "file:vendor/gik-ai-durable-runtime-0.8.1-next.0.tgz",
+    "@gik-ai/durable-runtime": "0.8.1-next.0",
     "@modelcontextprotocol/sdk": "1.29.0",
     "chokidar": "4.0.3",
     "zod": "4.4.3"
@@ -51,8 +49,7 @@
     "manifests",
     "registry.json",
     "scripts",
-    "src",
-    "vendor"
+    "src"
   ],
   "license": "MIT",
   "publishConfig": {
