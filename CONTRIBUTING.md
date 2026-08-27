@@ -44,8 +44,10 @@ npm run typecheck
 npm test
 ```
 
-The required `validate` check, a current branch, required review, and resolved
-conversations are enforced before merge.
+The required `validate` check, a current branch, and resolved conversations are
+enforced before merge. The sole maintainer performs the human review and merge
+decision; independent approving reviews become required when another maintainer
+is available.
 
 ## Official and community samples
 
