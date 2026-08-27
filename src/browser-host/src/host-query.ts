@@ -7,11 +7,12 @@ export interface HostQuery {
   durableEnabled: boolean;
   testsEnabled: boolean;
   scenariosEnabled: boolean;
+  provisioningEnabled: boolean;
   externalContext?: Record<string, Json>;
 }
 
 function isInMemoryPath(pathname: string): boolean {
-  return /(?:^|\/)in-memory(?:\/index\.html)?\/?$/.test(pathname);
+  return /(?:^|\/)in-memory(?:\/|$)/.test(pathname);
 }
 
 function isTestsPath(pathname: string): boolean {
@@ -20,6 +21,10 @@ function isTestsPath(pathname: string): boolean {
 
 function isScenariosPath(pathname: string): boolean {
   return /(?:^|\/)scenarios(?:\/index\.html)?\/?$/.test(pathname);
+}
+
+function isProvisioningPath(pathname: string): boolean {
+  return /(?:^|\/)provisioning(?:\/index\.html)?\/?$/.test(pathname);
 }
 
 function parseExternalContext(value: string | null): Record<string, Json> | undefined {
@@ -50,6 +55,7 @@ export function readHostQuery(search: string, pathname = "/"): HostQuery {
     durableEnabled: !isInMemoryPath(pathname),
     testsEnabled: isTestsPath(pathname),
     scenariosEnabled,
+    provisioningEnabled: isProvisioningPath(pathname),
     ...(externalContext ? { externalContext } : {}),
   };
 }

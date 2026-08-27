@@ -1,0 +1,21 @@
+{
+  "servers": {
+    "filesystem": {
+      "manifest": "gik-filesystem.json",
+      "connection": {
+        "transport": "streamable-http",
+        "urlEnvVar": "GIK_MCP_SERVER_URL",
+        "urlDefault": "http://127.0.0.1:7801/mcp"
+      }
+    },
+    "copilot": {
+      "manifest": "gik-copilot.json"
+    },
+    "lore": {
+      "manifest": "lore.local.json"
+    },
+    "gik-agent-authoring": {
+      "manifest": "gik-agent-authoring.json"
+    }
+  }
+}
