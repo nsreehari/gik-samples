@@ -21,7 +21,7 @@ npm ci --no-audit --no-fund
 npm run dev
 ```
 
-Do not replace vendored `@gik/*` packages with sibling checkout dependencies.
+Do not replace vendored `@gik-ai/*` packages with sibling checkout dependencies.
 Do not regenerate vendored archives unless a maintainer explicitly approves the
 provenance change.
 

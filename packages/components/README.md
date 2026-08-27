@@ -1,20 +1,20 @@
-# @gik/components
+# @gik-ai/components
 
 Public, self-describing declarative components for GIK React hosts.
 
 The package has five public layers:
 
-- `@gik/components/primitives`: domain-neutral UI mechanics such as chart, collection board, form,
+- `@gik-ai/components/primitives`: domain-neutral UI mechanics such as chart, collection board, form,
   editable table, growing container, infinite canvas, source viewer, and timer button.
-- `@gik/components/semantic`: domain-neutral information roles and relationships such as event
+- `@gik-ai/components/semantic`: domain-neutral information roles and relationships such as event
   series, processes, measures, narratives, evidence, decisions, and relationship sets.
-- `@gik/components/security`: security-domain contracts such as adversarial attack paths.
-- `@gik/components/software`: software-domain contracts such as source findings and comparisons.
-- `@gik/components/fluent`: reusable Fluent 2 controls that retain `fluent:*` capability names:
+- `@gik-ai/components/security`: security-domain contracts such as adversarial attack paths.
+- `@gik-ai/components/software`: software-domain contracts such as source findings and comparisons.
+- `@gik-ai/components/fluent`: reusable Fluent 2 controls that retain `fluent:*` capability names:
   badges, buttons, inputs, personas, spinners, tabs, tags, lists, tables, and data grids. Presentation choices are closed
   variants backed by native Fluent props; icon buttons are `fluent:button` variants.
 
-`@gik/components` re-exports every layer and aggregate `component*` registries for convenience.
+`@gik-ai/components` re-exports every layer and aggregate `component*` registries for convenience.
 New consumers should import narrow subpaths and register each selected `*ComponentViews` registry
 under its matching provider alias. Domain catalogs are opt-in rather than ambient.
 
@@ -41,18 +41,18 @@ to coordinate that state across components.
 import {
   semanticComponentDefinitions,
   semanticComponentViews,
-} from "@gik/components/semantic";
+} from "@gik-ai/components/semantic";
 
 import {
   primitiveComponentViews,
-} from "@gik/components/primitives";
+} from "@gik-ai/components/primitives";
 
 import {
   fluentComponentViews,
-} from "@gik/components/fluent";
+} from "@gik-ai/components/fluent";
 
-import { securityComponentViews } from "@gik/components/security";
-import { softwareComponentViews } from "@gik/components/software";
+import { securityComponentViews } from "@gik-ai/components/security";
+import { softwareComponentViews } from "@gik-ai/components/software";
 
 const eventSeries = semanticComponentDefinitions["event-series"];
 const guidance = eventSeries.describe();
@@ -68,7 +68,7 @@ The root package exports `GikComponent` as the typed convenience API for renderi
 component without constructing a `ResolvedNode`:
 
 ```tsx
-import { GikComponent } from "@gik/components";
+import { GikComponent } from "@gik-ai/components";
 
 <GikComponent
   kind="primitive:chart"
@@ -108,7 +108,7 @@ from the JSON declaration:
 import {
   GikComponentDeclarative,
   GikComponentRuntimeProvider,
-} from "@gik/components";
+} from "@gik-ai/components";
 
 <GikComponentRuntimeProvider
   state={{ report: { points } }}
@@ -145,11 +145,11 @@ Generate instructions and tools for only the components an agent may author. Eve
 parallel, layer-specific API:
 
 ```ts
-import { getSemanticComponentAgentKit } from "@gik/components/semantic";
-import { getPrimitiveComponentAgentKit } from "@gik/components/primitives";
-import { getFluentComponentAgentKit } from "@gik/components/fluent";
-import { getSecurityComponentAgentKit } from "@gik/components/security";
-import { getSoftwareComponentAgentKit } from "@gik/components/software";
+import { getSemanticComponentAgentKit } from "@gik-ai/components/semantic";
+import { getPrimitiveComponentAgentKit } from "@gik-ai/components/primitives";
+import { getFluentComponentAgentKit } from "@gik-ai/components/fluent";
+import { getSecurityComponentAgentKit } from "@gik-ai/components/security";
+import { getSoftwareComponentAgentKit } from "@gik-ai/components/software";
 
 const kit = getSemanticComponentAgentKit([
   "semantic:event-series",

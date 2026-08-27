@@ -35,4 +35,4 @@ jobs:
         run: npm run validate:vendor
 
       - name: Build Components
-        run: npm run build --workspace @gik/components
+        run: npm run build --workspace @gik-ai/components

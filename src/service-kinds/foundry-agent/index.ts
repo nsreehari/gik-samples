@@ -1,4 +1,4 @@
-import type { Json, NativeServiceDeclaration } from "@gik/kernel";
+import type { Json, NativeServiceDeclaration } from "@gik-ai/kernel";
 import {
 	serviceConfig,
 	UnsatisfiedServiceDependencyError,
@@ -7,8 +7,8 @@ import {
 	type ServiceRequest,
 	type ServiceKindFactory,
 	type ServiceKindManifest,
-} from "@gik/controlface/services";
-import { executeAgentFunctionCall } from "@gik/agent-lifecycle-exp";
+} from "@gik-ai/controlface/services";
+import { executeAgentFunctionCall } from "@gik-ai/agent-lifecycle-exp";
 import { createFoundryProxy, FoundryProxyError, type FoundryChatResponseSchema } from "./foundry-proxy";
 import manifestJson from "./manifest.json";
 import { parseAgentJsonReply } from "../agent-json-response";

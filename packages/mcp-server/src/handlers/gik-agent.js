@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createCapabilityDescribeTool } from '@gik/agent-lifecycle-exp';
+import { createCapabilityDescribeTool } from '@gik-ai/agent-lifecycle-exp';
 
 const mcpServerRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const workspaceRoot = path.resolve(process.env.GIK_SAMPLES_WORKSPACE_ROOT || path.join(mcpServerRoot, '..', '..'));

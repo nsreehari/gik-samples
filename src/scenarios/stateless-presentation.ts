@@ -1,7 +1,7 @@
 import {
   createCellGraphNodeExecutor,
   type MaterializedBlueprint,
-} from "@gik/blueprint";
+} from "@gik-ai/blueprint";
 import {
   CompositeStateModel,
   InMemoryStateModel,
@@ -9,7 +9,7 @@ import {
   unwrap,
   type Json,
   type ResolvedNode,
-} from "@gik/kernel";
+} from "@gik-ai/kernel";
 
 function flattenState(
   value: Json,

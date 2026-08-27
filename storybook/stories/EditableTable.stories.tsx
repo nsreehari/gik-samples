@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { editableTableDefinition } from "@gik/components/primitives";
-import type { ResolvedNode } from "@gik/kernel";
+import { editableTableDefinition } from "@gik-ai/components/primitives";
+import type { ResolvedNode } from "@gik-ai/kernel";
 
 import { ComponentStory, type ComponentStoryExample } from "./ComponentStory";
 

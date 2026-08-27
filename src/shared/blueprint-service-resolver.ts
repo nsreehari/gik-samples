@@ -4,19 +4,19 @@ import {
   type BlueprintArtifact,
   type BlueprintHostRegistry,
   type HostedBlueprintResolutionContext,
-} from "@gik/blueprint";
+} from "@gik-ai/blueprint";
 import {
   ControlFace,
   openBlueprint,
   type BlueprintRuntime,
-} from "@gik/controlface/blueprint";
+} from "@gik-ai/controlface/blueprint";
 import {
   DefaultServiceHost,
   type BlueprintServiceIdentity,
   type BlueprintServiceResolver,
   type ServiceAdapter,
   type ServiceKindRegistry,
-} from "@gik/controlface/services";
+} from "@gik-ai/controlface/services";
 import {
   InMemoryStateModel,
   JsonataExpressionProvider,
@@ -24,7 +24,7 @@ import {
   type GIKEvent,
   type Json,
   type ServiceDeclaration,
-} from "@gik/kernel";
+} from "@gik-ai/kernel";
 
 export interface BlueprintServiceResolverOptions {
   registry: BlueprintHostRegistry;

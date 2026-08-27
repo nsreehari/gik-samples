@@ -5,19 +5,19 @@ import {
   parseBlueprintReference,
   prepareBlueprintProgram,
   type MaterializedBlueprint,
-} from "@gik/blueprint";
+} from "@gik-ai/blueprint";
 import {
   buildCapabilityCatalogFromExternals,
   type BlueprintHostProps,
   type BundleNative,
-} from "@gik/react";
+} from "@gik-ai/react";
 import {
   BlueprintHost,
   BlueprintProvider,
   createNativeBlueprintWorker,
-} from "@gik/react/durable";
-import { createIndexedDbProvider } from "@gik/durable-runtime/storage/indexed-db";
-import { createIndexedDbStorageRef } from "@gik/durable-runtime/storage/indexed-db/api";
+} from "@gik-ai/react/durable";
+import { createIndexedDbProvider } from "@gik-ai/durable-runtime/storage/indexed-db";
+import { createIndexedDbStorageRef } from "@gik-ai/durable-runtime/storage/indexed-db/api";
 
 interface DurableBlueprintProps extends BlueprintHostProps {
   resolveNative?: (blueprint: MaterializedBlueprint) => BundleNative;

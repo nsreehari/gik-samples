@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { processDefinition } from "@gik/components/semantic";
+import { processDefinition } from "@gik-ai/components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Process", component: ComponentStory, tags: ["autodocs"], args: { definition: processDefinition, variant: "flow" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

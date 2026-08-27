@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { accessGateDefinition } from "@gik/components/primitives";
+import { accessGateDefinition } from "@gik-ai/components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = {

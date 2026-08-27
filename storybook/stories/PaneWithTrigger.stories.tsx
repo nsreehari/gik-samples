@@ -4,8 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   PaneWithTrigger,
   paneWithTriggerDefinition,
-} from "@gik/components/primitives";
-import type { ResolvedNode } from "@gik/kernel";
+} from "@gik-ai/components/primitives";
+import type { ResolvedNode } from "@gik-ai/kernel";
 
 import { ComponentStory } from "./ComponentStory";
 

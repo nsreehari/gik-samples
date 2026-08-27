@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { watch } from 'chokidar';
-import { createFilesystemStorageLibrary } from '@gik/durable-runtime/storage/filesystem/library';
+import { createFilesystemStorageLibrary } from '@gik-ai/durable-runtime/storage/filesystem/library';
 
 export const FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION =
   'notifications/gik/runtime_snapshot_invalidated';

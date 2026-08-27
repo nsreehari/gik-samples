@@ -3,18 +3,18 @@ import {
   PRESENTATION_FRAGMENT_CAPABILITY,
   type MaterializedBlueprint,
   type PresentationSlotLayout,
-} from "@gik/blueprint";
+} from "@gik-ai/blueprint";
 import {
   type Json,
   type ResolvedNode,
-} from "@gik/kernel";
+} from "@gik-ai/kernel";
 import {
   buildBundleRegistry,
   bundleFromJson,
   renderNode,
   type BundleNative,
   type ProjectionView,
-} from "@gik/react";
+} from "@gik-ai/react";
 
 import { resolveProjectionViews } from "./runtime/provider-registry";
 import { resolveStatelessPresentation } from "../../scenarios/stateless-presentation";

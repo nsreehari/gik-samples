@@ -37,16 +37,16 @@ import {
   PaneWithTriggerBody,
   PaneWithTriggerFooter,
   PaneWithTriggerHeader,
-} from "@gik/components";
+} from "@gik-ai/components";
 import {
   materializeBlueprint,
   parseBlueprintReference,
   runMaterializedTransition,
   type ExternalContext,
   type MaterializedBlueprint,
-} from "@gik/blueprint";
-import type { GIKEvent, Json, Orchestrator, StateModel } from "@gik/kernel";
-import { buildCapabilityCatalogFromExternals, type BundleNative } from "@gik/react";
+} from "@gik-ai/blueprint";
+import type { GIKEvent, Json, Orchestrator, StateModel } from "@gik-ai/kernel";
+import { buildCapabilityCatalogFromExternals, type BundleNative } from "@gik-ai/react";
 
 import {
   getSampleBlueprintCatalog,

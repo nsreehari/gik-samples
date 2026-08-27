@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { workSetDefinition } from "@gik/components/semantic";
+import { workSetDefinition } from "@gik-ai/components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Work Set", component: ComponentStory, tags: ["autodocs"], args: { definition: workSetDefinition, variant: "board" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

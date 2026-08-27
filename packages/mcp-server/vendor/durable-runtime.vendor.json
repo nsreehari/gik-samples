@@ -1,6 +1,6 @@
 {
-  "package": "@gik/durable-runtime",
+  "package": "@gik-ai/durable-runtime",
   "version": "0.8.1-next.0",
-  "file": "gik-durable-runtime-0.8.1-next.0.tgz",
-  "sha256": "f8df04c6804e8cf6bce4cb20c9a331827a54cbe33aaf88bfe6b09aaf3b09658f"
+  "file": "gik-ai-durable-runtime-0.8.1-next.0.tgz",
+  "sha256": "085759f047310d0b2b2f497a95a82f8c3f4bad2493b3c8897528bb5f5d9f18af"
 }

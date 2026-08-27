@@ -1,5 +1,5 @@
-import type { ExternalContext } from "@gik/blueprint";
-import type { Json } from "@gik/kernel";
+import type { ExternalContext } from "@gik-ai/blueprint";
+import type { Json } from "@gik-ai/kernel";
 
 import { openHeadlessBlueprint } from "../headless/blueprint-harness";
 import { isRecord, jsonValuesEqual, readJsonPath } from "../shared/json-path";

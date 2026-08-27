@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { evidenceCaseDefinition } from "@gik/components/semantic";
+import { evidenceCaseDefinition } from "@gik-ai/components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Evidence Case", component: ComponentStory, tags: ["autodocs"], args: { definition: evidenceCaseDefinition, variant: "case" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

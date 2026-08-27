@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { infiniteCanvasDefinition } from "@gik/components/primitives";
+import { infiniteCanvasDefinition } from "@gik-ai/components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fluentTableDefinition } from "@gik/components/fluent";
+import { fluentTableDefinition } from "@gik-ai/components/fluent";
 import { ComponentStory } from "./ComponentStory";
 const meta = { title: "Fluent Components/Table", component: ComponentStory, tags: ["autodocs"], args: { definition: fluentTableDefinition, variant: "standard" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;
 export default meta;

@@ -1,17 +1,17 @@
 import {
   DefaultServiceHost,
   type DefaultServiceHostOptions,
-} from "@gik/controlface/services";
-import { executeQueuedCellSourceEffect } from "@gik/blueprint/worker";
-import type { BlueprintRuntime } from "@gik/controlface/blueprint";
+} from "@gik-ai/controlface/services";
+import { executeQueuedCellSourceEffect } from "@gik-ai/blueprint/worker";
+import type { BlueprintRuntime } from "@gik-ai/controlface/blueprint";
 import {
   JsonataExpressionProvider,
   type Json,
   unwrap,
   type ServiceDeclaration,
   type StateModel,
-} from "@gik/kernel";
-import type { LoadBundleOptions } from "@gik/react";
+} from "@gik-ai/kernel";
+import type { LoadBundleOptions } from "@gik-ai/react";
 import {
   createSampleServiceKindRegistry,
   type SampleServiceRegistryOptions,
@@ -25,7 +25,7 @@ import { hostConfig } from "../../../bootstrap/config/host-config";
 import { createSampleServiceRegistryOptions } from "../../../service-kinds/registry-options";
 import { createBlueprintAgentLifecycle, type UseProposal } from "./blueprint-agent-lifecycle";
 import { createSampleAgentTools } from "../../../shared/agent-tools";
-import type { BlueprintProposalStore } from "@gik/blueprint-agent-host";
+import type { BlueprintProposalStore } from "@gik-ai/blueprint-agent-host";
 import { createBlueprintServiceResolver } from "../../../shared/blueprint-service-resolver";
 import { createSampleCatalogBlueprintRegistry } from "../../../bootstrap/catalog/blueprint-catalog";
 import { runWithBrowserServiceDependencies } from "./service-dependency-access";

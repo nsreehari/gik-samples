@@ -1,5 +1,5 @@
-import type { Json } from "@gik/kernel";
-import { serviceConfig } from "@gik/controlface/services";
+import type { Json } from "@gik-ai/kernel";
+import { serviceConfig } from "@gik-ai/controlface/services";
 import type { WorkerServiceInvocation } from "../worker-service-kind";
 
 type McpSession = {
@@ -55,7 +55,7 @@ async function initializeSession(
         protocolVersion: "2024-11-05",
         capabilities: {},
         clientInfo: {
-          name: "@gik/samples",
+          name: "@gik-ai/samples",
           version: "0.1.0",
         },
       },

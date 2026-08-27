@@ -1,4 +1,4 @@
-import type { Json } from "@gik/kernel";
+import type { Json } from "@gik-ai/kernel";
 
 export interface FluentOptionValue {
   value: string;

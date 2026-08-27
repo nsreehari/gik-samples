@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { milestonesDefinition } from "@gik/components";
+import { milestonesDefinition } from "@gik-ai/components";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Milestones", component: ComponentStory, tags: ["autodocs"], args: { definition: milestonesDefinition, variant: "rail" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

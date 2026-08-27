@@ -1,10 +1,10 @@
-import type { CapabilityDescriptor } from "@gik/kernel";
-import type { ProjectionView } from "@gik/react";
-import { fluentComponentCapabilities, fluentComponentViews } from "@gik/components/fluent";
-import { primitiveComponentCapabilities, primitiveComponentViews } from "@gik/components/primitives";
-import { semanticComponentCapabilities, semanticComponentViews } from "@gik/components/semantic";
-import { securityComponentCapabilities, securityComponentViews } from "@gik/components/security";
-import { softwareComponentCapabilities, softwareComponentViews } from "@gik/components/software";
+import type { CapabilityDescriptor } from "@gik-ai/kernel";
+import type { ProjectionView } from "@gik-ai/react";
+import { fluentComponentCapabilities, fluentComponentViews } from "@gik-ai/components/fluent";
+import { primitiveComponentCapabilities, primitiveComponentViews } from "@gik-ai/components/primitives";
+import { semanticComponentCapabilities, semanticComponentViews } from "@gik-ai/components/semantic";
+import { securityComponentCapabilities, securityComponentViews } from "@gik-ai/components/security";
+import { softwareComponentCapabilities, softwareComponentViews } from "@gik-ai/components/software";
 import { credentialAccessViews } from "./credential-access";
 
 const projectionProviders: Record<string, Record<string, ProjectionView>> = {

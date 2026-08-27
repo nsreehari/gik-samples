@@ -1,7 +1,7 @@
 import React from "react";
-import type { Json } from "@gik/kernel";
-import { runDeclarativeValidators } from "@gik/evaluators";
-import type { ProjectionView } from "@gik/react";
+import type { Json } from "@gik-ai/kernel";
+import { runDeclarativeValidators } from "@gik-ai/evaluators";
+import type { ProjectionView } from "@gik-ai/react";
 
 import { infiniteCanvasDefinition } from "../../primitives/infinite-canvas";
 import { componentNode, defineComponent, trialNode, type ComponentDescription, type ComponentValidationReport } from "../../shared/definition";

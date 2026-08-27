@@ -1,4 +1,4 @@
-# Releasing `@gik/components`
+# Releasing `@gik-ai/components`
 
 Package publication occurs only when a GitHub Release is published. Direct local
 publication and manual workflow dispatch are not supported.
@@ -11,7 +11,7 @@ publication and manual workflow dispatch are not supported.
    prereleases. They publish to npm's `next` dist-tag. Stable versions publish to
    `latest`.
 6. During the first staged bootstrap, dependency publication is deferred. For
-   every later release, publish the exact core `@gik/*` dependency versions
+   every later release, publish the exact core `@gik-ai/*` dependency versions
    first; the Components release gate verifies that each one exists on npm.
 7. Approve the protected `npm-publish` environment after reviewing the release
    commit, version, channel, package contents, and validation results.
@@ -29,5 +29,5 @@ trusted publisher. Then remove the bootstrap token and set
 `NPM_TOKEN_BOOTSTRAP_ENABLED=false`. Later releases publish directly only after
 the release gate confirms that every exact core dependency already exists.
 
-This repository publishes only `@gik/components`. Its vendored `@gik/*` archives
+This repository publishes only `@gik-ai/components`. Its vendored `@gik-ai/*` archives
 are build inputs and must never be published from this repository.

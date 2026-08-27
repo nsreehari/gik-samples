@@ -1,6 +1,6 @@
 import type React from "react";
 import { mergeClasses, type BadgeProps } from "@fluentui/react-components";
-import type { ResolvedNode } from "@gik/kernel";
+import type { ResolvedNode } from "@gik-ai/kernel";
 
 export type DataRecord = Record<string, unknown>;
 export type BadgeColor = NonNullable<BadgeProps["color"]>;

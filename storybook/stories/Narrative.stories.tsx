@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { narrativeDefinition } from "@gik/components";
+import { narrativeDefinition } from "@gik-ai/components";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Narrative", component: ComponentStory, tags: ["autodocs"], args: { definition: narrativeDefinition, variant: "article" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

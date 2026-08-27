@@ -11,7 +11,7 @@ the copied scripts, or reviewed and applied through the loopback companion.
 
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. Core `@gik/*` dependencies temporarily
+Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies temporarily
 resolve from integrity-checked archives under `vendor/gik-packages`.
 
 Production builds use reserved example proxy origins by default. Set

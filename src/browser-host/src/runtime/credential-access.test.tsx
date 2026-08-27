@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import React from "react";
 import { test, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Json, ResolvedNode } from "@gik/kernel";
-import { FallbackView, buildRegistryFromImports, renderNode } from "@gik/react";
+import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import { FallbackView, buildRegistryFromImports, renderNode } from "@gik-ai/react";
 
 vi.mock("@fluentui/react-components", () => {
   const element = (tag: keyof React.JSX.IntrinsicElements) => ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "vitest";
-import { createBlueprint } from "@gik/blueprint";
+import { createBlueprint } from "@gik-ai/blueprint";
 import {
   getSampleBlueprintCatalog,
   installUserBlueprints,

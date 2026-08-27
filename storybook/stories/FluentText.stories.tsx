@@ -1,7 +1,7 @@
 import React from "react";
 import { makeStyles, tokens } from "@fluentui/react-components";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FluentText, fluentTextDefinition } from "@gik/components/fluent";
+import { FluentText, fluentTextDefinition } from "@gik-ai/components/fluent";
 
 import { ComponentStory } from "./ComponentStory";
 

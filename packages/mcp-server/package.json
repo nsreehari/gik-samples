@@ -1,5 +1,5 @@
 {
-  "name": "@gik/samples-mcp-server",
+  "name": "@gik-ai/samples-mcp-server",
   "version": "0.1.0",
   "type": "module",
   "description": "Public local MCP companion for GIK Blueprint authoring, durable storage, Lore, Copilot, and provisioning.",
@@ -23,8 +23,8 @@
     "test": "node scripts/vendor-gik-durable-runtime.mjs --verify && node scripts/smoke-registered-services.js && node --test test/*.test.js"
   },
   "dependencies": {
-    "@gik/agent-lifecycle-exp": "file:../../vendor/gik-packages/gik-agent-lifecycle-exp-0.1.0.tgz",
-    "@gik/durable-runtime": "file:vendor/gik-durable-runtime-0.8.1-next.0.tgz",
+    "@gik-ai/agent-lifecycle-exp": "file:../../vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.0.tgz",
+    "@gik-ai/durable-runtime": "file:vendor/gik-ai-durable-runtime-0.8.1-next.0.tgz",
     "@modelcontextprotocol/sdk": "1.29.0",
     "chokidar": "4.0.3",
     "zod": "4.4.3"

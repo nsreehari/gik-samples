@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { materializeBlueprint, parseBlueprintReference } from "@gik/blueprint";
+import { materializeBlueprint, parseBlueprintReference } from "@gik-ai/blueprint";
 
 import {
   getSampleBlueprintCatalog,

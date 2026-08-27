@@ -1,9 +1,9 @@
-import type { Json, NativeServiceDeclaration } from "@gik/kernel";
+import type { Json, NativeServiceDeclaration } from "@gik-ai/kernel";
 import type {
   ServiceAdapter,
   ServiceKindFactory,
   ServiceKindManifest,
-} from "@gik/controlface/services";
+} from "@gik-ai/controlface/services";
 
 export interface WorkerServiceInvocation {
   kind: string;

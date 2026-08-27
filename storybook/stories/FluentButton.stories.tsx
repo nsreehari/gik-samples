@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fluentButtonDefinition } from "@gik/components/fluent";
-import type { ResolvedNode } from "@gik/kernel";
+import { fluentButtonDefinition } from "@gik-ai/components/fluent";
+import type { ResolvedNode } from "@gik-ai/kernel";
 import { ComponentStory } from "./ComponentStory";
 
 const iconTrial = (trial: ResolvedNode) => {
