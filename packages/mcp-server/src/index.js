@@ -5,7 +5,6 @@ import { randomUUID } from 'node:crypto';
 import process from 'node:process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -17,19 +16,12 @@ import {
   createFilesystemSnapshotInvalidationWatcher,
   FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
 } from './filesystem-snapshot-invalidations.js';
+import { loadMcpServerEnv, MCP_SERVER_DIRECTORY } from './load-env.js';
 import { createProvisioningBrowserApi } from './provisioning/browser-api.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const MCP_SERVER_DIR = path.resolve(__dirname, '..');
+loadMcpServerEnv();
 
-// Load mcp-server/.env (if present) so manifest env vars resolve without exporting them manually.
-// See .env.template for the supported variables. Real values stay local; .env is gitignored.
-const MCP_SERVER_ENV_PATH = path.join(MCP_SERVER_DIR, '.env');
-if (typeof process.loadEnvFile === 'function' && existsSync(MCP_SERVER_ENV_PATH)) {
-  process.loadEnvFile(MCP_SERVER_ENV_PATH);
-}
-
+const MCP_SERVER_DIR = MCP_SERVER_DIRECTORY;
 const MCP_SERVER_LOG_PATH = path.join(MCP_SERVER_DIR, 'logs', 'mcp-server.log');
 const FILESYSTEM_STORAGE_ROOT = path.resolve(
   process.env.GIK_FILESYSTEM_STORAGE_ROOT
