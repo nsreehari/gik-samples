@@ -54,6 +54,22 @@ const useStyles = makeStyles({
     gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
     gap: tokens.spacingHorizontalM,
   },
+  setupGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: tokens.spacingHorizontalL,
+  },
+  setupStep: {
+    display: "grid",
+    alignContent: "start",
+    gap: tokens.spacingVerticalS,
+  },
+  setupList: {
+    margin: 0,
+    paddingLeft: tokens.spacingHorizontalXL,
+    display: "grid",
+    gap: tokens.spacingVerticalXS,
+  },
   actions: { display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalS },
   select: {
     minHeight: "32px",
@@ -256,6 +272,60 @@ export function AgentProvisioningPage({
           </Caption1>
           <a href={import.meta.env.BASE_URL}>Back to Blueprint catalog</a>
         </header>
+
+        <section className={styles.panel} aria-label="Local provisioning setup instructions">
+          <Subtitle1>Local setup and end-to-end flow</Subtitle1>
+          <Caption1>
+            The browser never receives local paths or cloud credentials. Install the loopback
+            companion locally, approve workspaces in its configuration, and pair this page with
+            the one-use code printed by the server.
+          </Caption1>
+          <div className={styles.setupGrid}>
+            <div className={styles.setupStep}>
+              <strong>1. Install the companion</strong>
+              <Caption1>Node.js 24 or newer is required.</Caption1>
+              <pre className={styles.code}>{
+`git clone https://github.com/nsreehari/gik-samples.git
+cd gik-samples/packages/mcp-server
+npm install`
+              }</pre>
+            </div>
+            <div className={styles.setupStep}>
+              <strong>2. Configure one local file</strong>
+              <ol className={styles.setupList}>
+                <li>Copy <code>.env.template</code> to <code>.env</code>.</li>
+                <li>Set <code>GIK_WORKSPACE_ROOTS</code> to approved <code>id=path</code> entries.</li>
+                <li>Set <code>GIK_ALLOWED_ORIGINS</code> to this page&apos;s exact origin.</li>
+                <li>For Foundry, set <code>AZURE_AI_FOUNDRY_PROJECT_ENDPOINT</code>.</li>
+              </ol>
+              <a
+                href="https://github.com/nsreehari/gik-samples/tree/main/packages/mcp-server"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open complete companion configuration reference
+              </a>
+            </div>
+            <div className={styles.setupStep}>
+              <strong>3. Add provider prerequisites</strong>
+              <Caption1>Copilot: install and authenticate GitHub Copilot CLI.</Caption1>
+              <Caption1>Foundry: run <code>az login</code>, then install the optional SDK peers.</Caption1>
+              <pre className={styles.code}>{
+`npm install @azure/ai-projects@^2.3.0 @azure/identity@^4.13.1`
+              }</pre>
+            </div>
+            <div className={styles.setupStep}>
+              <strong>4. Start and pair</strong>
+              <pre className={styles.code}>{
+`npm run start:http -- --port 7801`
+              }</pre>
+              <Caption1>
+                Enter the printed one-use code below. Then select a Blueprint, choose a provider,
+                give the agent a new ID, and run Generate → Preview → Apply → Verify → Smoke test.
+              </Caption1>
+            </div>
+          </div>
+        </section>
 
         <div className={styles.grid}>
           <section className={styles.panel} aria-label="Agent provisioning profile">
