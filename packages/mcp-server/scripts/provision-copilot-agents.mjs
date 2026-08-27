@@ -8,6 +8,9 @@ import {
   previewWorkspacePlan,
   validateWorkspaceFiles,
 } from '../src/provisioning/workspace-plan.js';
+import { loadMcpServerEnv } from '../src/load-env.js';
+
+loadMcpServerEnv();
 
 function parseArgs(argv) {
   const options = {
