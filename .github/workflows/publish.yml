@@ -1,0 +1,147 @@
+name: Publish Components to npm
+
+on:
+  release:
+    types:
+      - published
+
+concurrency:
+  group: npm-publish-components
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Components release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      channel: ${{ steps.release.outputs.channel }}
+      commit: ${{ steps.release.outputs.commit }}
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify release
+        id: release
+        shell: bash
+        env:
+          IS_DRAFT: ${{ github.event.release.draft }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          test "$IS_DRAFT" = "false"
+          version="$(node -p "require('./packages/components/package.json').version")"
+          test "$TAG" = "components-v$version"
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            [[ "$version" == *-* ]]
+            echo "channel=next" >> "$GITHUB_OUTPUT"
+          else
+            [[ "$version" != *-* ]]
+            echo "channel=latest" >> "$GITHUB_OUTPUT"
+          fi
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Use compatible npm resolver
+        run: npm install --global npm@11.19.0
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate vendored packages
+        run: npm run validate:vendor
+
+      - name: Build
+        run: npm run build
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Inspect Components package
+        run: npm pack --workspace @gik/components --dry-run
+
+  publish:
+    name: Publish Components
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Reverify release ref
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.validate.outputs.commit }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG" main
+          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Use compatible npm resolver
+        run: npm install --global npm@11.19.0
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Publish Components with bootstrap token
+        if: vars.NPM_TOKEN_BOOTSTRAP_ENABLED == 'true'
+        run: npm publish --workspace @gik/components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish Components with trusted publishing
+        if: vars.NPM_TOKEN_BOOTSTRAP_ENABLED != 'true'
+        run: npm publish --workspace @gik/components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
+
+      - name: Record release summary
+        if: always()
+        env:
+          RELEASE: ${{ github.event.release.html_url }}
+          TAG: ${{ github.event.release.tag_name }}
+          CHANNEL: ${{ needs.validate.outputs.channel }}
+        run: |
+          {
+            echo "## npm publication"
+            echo
+            echo "- Release: [$TAG]($RELEASE)"
+            echo "- Package: \`@gik/components\`"
+            echo "- Channel: \`$CHANNEL\`"
+            echo "- Bootstrap token enabled: \`${{ vars.NPM_TOKEN_BOOTSTRAP_ENABLED == 'true' }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
