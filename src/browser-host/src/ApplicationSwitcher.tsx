@@ -29,6 +29,12 @@ export function ApplicationSwitcher({ currentId }: { currentId?: string }): Reac
     }
     window.location.assign(url.toString());
   };
+  const openProvisioning = () => {
+    window.location.assign(new URL(
+      `${import.meta.env.BASE_URL}${window.location.pathname.includes("/in-memory/") ? "in-memory/" : ""}provisioning/`,
+      window.location.origin,
+    ).toString());
+  };
 
   return (
     <div className="gx-switcher" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
@@ -62,6 +68,15 @@ export function ApplicationSwitcher({ currentId }: { currentId?: string }): Reac
               <span>Scenario Explorer</span>
             </button>
           ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            className="gx-switcher-row"
+            onClick={openProvisioning}
+          >
+            <span className="gx-switcher-check" aria-hidden="true" />
+            <span>Agent Provisioning</span>
+          </button>
         </div>
       ) : (
         <button

@@ -16,6 +16,7 @@ test("host query uses durable storage except on the in-memory route", () => {
     false,
   );
   assert.equal(readHostQuery("?b=samples-overview", "/not-in-memory/").durableEnabled, true);
+  assert.equal(readHostQuery("", "/in-memory/provisioning/").durableEnabled, false);
 });
 
 test("Blueprint query preserves the complete route while removing obsolete Scenario selections", () => {
@@ -34,6 +35,8 @@ test("host query recognizes dedicated test and scenario tooling routes", () => {
   assert.equal(readHostQuery("", "/scenarios/").scenariosEnabled, true);
   assert.equal(readHostQuery("", "/gik-samples/scenarios/index.html").scenariosEnabled, true);
   assert.equal(readHostQuery("", "/").scenariosEnabled, false);
+  assert.equal(readHostQuery("", "/provisioning/").provisioningEnabled, true);
+  assert.equal(readHostQuery("", "/in-memory/provisioning/index.html").provisioningEnabled, true);
   assert.equal(
     readHostQuery("?context=mock-desktop", "/scenarios/").externalContext,
     undefined,

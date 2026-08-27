@@ -168,6 +168,9 @@ export function AppRootPage({
             <Badge appearance="tint" color="brand">Live projection</Badge>
             <Badge appearance="tint" color="informative">Named presentation regions</Badge>
           </div>
+          <a href={`${import.meta.env.BASE_URL}${durableEnabled ? "" : "in-memory/"}provisioning/`}>
+            Provision an agent from a Blueprint
+          </a>
         </header>
 
         <Highlights />

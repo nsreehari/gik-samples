@@ -1,0 +1,280 @@
+{
+  "server": {
+    "name": "gik-filesystem",
+    "version": "0.1.0",
+    "description": "Root-confined durable filesystem storage tools."
+  },
+  "tools": [
+    {
+      "name": "filesystem.create_ref",
+      "handler": "filesystem",
+      "title": "Create filesystem storage reference",
+      "description": "Creates a root-confined fs-path reference for a logical namespace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "namespace": { "type": "string", "minLength": 1 }
+        },
+        "required": ["namespace"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.storage_batch",
+      "handler": "filesystem",
+      "title": "Run filesystem storage operations",
+      "description": "Runs an ordered batch against filesystem KV, JSON, Blob, Journal, Queue, Lock, Scratch, or Archive storage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string", "minLength": 1 },
+                "capability": { "type": "string", "enum": ["kv", "json", "blob", "journal", "queue", "lock", "scratch", "archive"] },
+                "operation": { "type": "string", "minLength": 1 },
+                "args": { "type": "array" },
+                "lane": { "type": "string" },
+                "resource": {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["stream", "blob"] },
+                    "name": { "type": "string", "minLength": 1 }
+                  },
+                  "required": ["kind", "name"]
+                }
+              },
+              "required": ["ref", "capability", "operation"]
+            }
+          }
+        },
+        "required": ["operations"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.journal_append_and_wake",
+      "handler": "filesystem",
+      "title": "Append journal entry and request engine work",
+      "description": "Appends one journal entry and advances the runtime engine wake timestamp.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "journalRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "entry": {}
+        },
+        "required": ["stateRef", "journalRef", "effectsQueueRef", "entry"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.engine_wake_read",
+      "handler": "filesystem",
+      "title": "Read engine wake state",
+      "description": "Reads requestedAt and processedAt for the runtime engine.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" }
+        },
+        "required": ["stateRef", "effectsQueueRef"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.engine_wake_processed",
+      "handler": "filesystem",
+      "title": "Mark engine wake processed",
+      "description": "Advances the processed engine wake timestamp monotonically.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "processedAt": { "type": "string", "minLength": 1 }
+        },
+        "required": ["stateRef", "effectsQueueRef", "processedAt"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.runtime_initialize",
+      "handler": "filesystem",
+      "title": "Initialize filesystem runtime",
+      "description": "Creates the initial runtime state and opaque spec when they do not already exist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 },
+          "initialState": {},
+          "initialSpec": {}
+        },
+        "required": ["stateRef", "effectsQueueRef", "runtimeId", "initialState", "initialSpec"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.runtime_snapshot",
+      "handler": "filesystem",
+      "title": "Read filesystem runtime snapshot",
+      "description": "Reads committed runtime state and opaque spec without acquiring a transition lock.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 }
+        },
+        "required": ["stateRef", "effectsQueueRef", "runtimeId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.runtime_snapshot_changes",
+      "handler": "filesystem",
+      "title": "Read filesystem runtime snapshot changes",
+      "description": "Returns unchanged for the current revision or an authoritative committed reset snapshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 },
+          "afterRevision": { "type": ["string", "null"] }
+        },
+        "required": ["stateRef", "effectsQueueRef", "runtimeId", "afterRevision"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.transition_acquire",
+      "handler": "filesystem",
+      "title": "Acquire filesystem transition",
+      "description": "Acquires a runtime lock and returns state, opaque spec, and pending journal entries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "journalRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 },
+          "leaseMs": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["stateRef", "journalRef", "effectsQueueRef", "runtimeId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.transition_commit",
+      "handler": "filesystem",
+      "title": "Commit filesystem transition",
+      "description": "Commits runtime state, opaque spec, spec updates, and effects, then releases the runtime lock.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "journalRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 },
+          "leaseToken": { "type": "string", "minLength": 1 },
+          "expectedRevision": { "type": ["string", "null"] },
+          "previousCursor": { "type": ["string", "null"] },
+          "nextCursor": { "type": "string", "minLength": 1 },
+          "state": {},
+          "spec": {},
+          "specUpdates": { "type": "array" },
+          "effects": { "type": "array" }
+        },
+        "required": ["stateRef", "journalRef", "effectsQueueRef", "runtimeId", "leaseToken", "expectedRevision", "previousCursor", "nextCursor", "state", "spec", "specUpdates", "effects"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.transition_abort",
+      "handler": "filesystem",
+      "title": "Abort filesystem transition",
+      "description": "Releases a filesystem runtime lock without committing a transition.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stateRef": { "type": "string", "minLength": 1 },
+          "journalRef": { "type": "string", "minLength": 1 },
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "runtimeId": { "type": "string", "minLength": 1 },
+          "leaseToken": { "type": "string", "minLength": 1 }
+        },
+        "required": ["stateRef", "journalRef", "effectsQueueRef", "runtimeId", "leaseToken"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.effect_lease",
+      "handler": "filesystem",
+      "title": "Lease a durable runtime effect",
+      "description": "Leases one effect from the same durable queue used by transition commit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "visibilityMs": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["effectsQueueRef"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.effect_ack",
+      "handler": "filesystem",
+      "title": "Acknowledge a durable runtime effect",
+      "description": "Acknowledges a leased durable runtime effect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "messageId": { "type": "string", "minLength": 1 },
+          "leaseToken": { "type": "string", "minLength": 1 }
+        },
+        "required": ["effectsQueueRef", "messageId", "leaseToken"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "filesystem.effect_nack",
+      "handler": "filesystem",
+      "title": "Release a durable runtime effect",
+      "description": "Returns a leased effect to its queue or moves it to dead-letter storage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "effectsQueueRef": { "type": "string", "minLength": 1 },
+          "effectsLane": { "type": "string" },
+          "messageId": { "type": "string", "minLength": 1 },
+          "leaseToken": { "type": "string", "minLength": 1 },
+          "dead": { "type": "boolean" },
+          "reason": { "type": "string" }
+        },
+        "required": ["effectsQueueRef", "messageId", "leaseToken"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
