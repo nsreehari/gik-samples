@@ -12,7 +12,6 @@ const serverDirectory = path.resolve(
 );
 
 const configurableVariables = [
-  'AZURE_AI_FOUNDRY_PROJECT_ENDPOINT',
   'AZURE_CLI_COMMAND',
   'COPILOT_PROVISIONING_PLAN',
   'DISABLE_HANDLERS',

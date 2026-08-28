@@ -21,7 +21,6 @@ import {
   clearBrowserCredential,
   resolveBrowserCredential,
 } from "./browser-credentials";
-import { hostConfig } from "../../../bootstrap/config/host-config";
 import { createSampleServiceRegistryOptions } from "../../../service-kinds/registry-options";
 import { createBlueprintAgentLifecycle, type UseProposal } from "./blueprint-agent-lifecycle";
 import { createSampleAgentTools } from "../../../shared/agent-tools";
@@ -33,11 +32,20 @@ import {
   bindBlueprintStorage,
   type BlueprintStorageConnectionFactory,
 } from "../../../shared/blueprint-storage";
+import { getSampleBlueprintCatalog } from "../../../bootstrap/catalog/blueprint-catalog";
+import {
+  authorizeTrustedServiceEndpoint,
+  trustedServiceEndpointOrigins,
+} from "../../../bootstrap/catalog/trusted-service-endpoints";
 
+const trustedServiceEndpoints = trustedServiceEndpointOrigins(getSampleBlueprintCatalog().seedEntries);
 export const browserServiceRegistryOptions = createSampleServiceRegistryOptions({
   resolveCredential: resolveBrowserCredential,
   clearCredential: clearBrowserCredential,
-}, hostConfig);
+}, {
+  authorizeEndpoint: (kind, endpoint) =>
+    authorizeTrustedServiceEndpoint(trustedServiceEndpoints, kind, endpoint),
+});
 
 function mergeRegistryOptions(
   registryOptions: SampleServiceRegistryOptions = {},

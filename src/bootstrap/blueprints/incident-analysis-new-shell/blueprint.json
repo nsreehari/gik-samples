@@ -712,7 +712,7 @@
           }
         },
         "config": {
-          "endpoint": "${GIK_FOUNDRY_PROXY_ORIGIN}",
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "agent": "Incident-Report-Semantic-Agent",
           "credentialRef": "foundry-agent/access-key"
         },
@@ -743,7 +743,7 @@
           }
         },
         "config": {
-          "endpoint": "${GIK_FOUNDRY_PROXY_ORIGIN}",
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "agent": "Incident-Report-Refinement-Agent",
           "credentialRef": "foundry-agent/access-key"
         },

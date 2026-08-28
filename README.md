@@ -14,9 +14,11 @@ experience is published at `/`, selected Blueprints use `?b=<id>`, and
 Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies temporarily
 resolve from integrity-checked archives under `vendor/gik-packages`.
 
-Production builds use reserved example proxy origins by default. Set
-`VITE_GIK_FOUNDRY_PROXY_ORIGIN` and `VITE_GIK_HTTP_PROXY_ORIGIN` to the public
-deployment endpoints when building a hosted release.
+Blueprint service declarations own their concrete non-secret configuration,
+including service endpoints and logical `credentialRef` values. The browser
+host authorizes endpoints declared by repository-seeded Blueprints and resolves
+the referenced secret from browser credential storage when the service is used.
+Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
 
 ## Live site
 
@@ -49,8 +51,9 @@ passed exactly as additional `--origin` values. The server never binds beyond
 
 Copilot provisioning and runs use the complete local Copilot CLI subsystem.
 Foundry provisioning requires `az login`, the optional `@azure/ai-projects`
-and `@azure/identity` peers, and an explicit
-`AZURE_AI_FOUNDRY_PROJECT_ENDPOINT`; Azure tokens never reach the browser. See
+and `@azure/identity` peers. Provider targets, models, and logical workspace
+references flow from Blueprint service config into the portable and
+server-reviewed plans; Azure tokens never reach the browser. See
 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
 HTTP bearer, and download-fallback details.
 
