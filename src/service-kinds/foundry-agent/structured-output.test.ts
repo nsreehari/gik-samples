@@ -21,12 +21,23 @@ function collectProviderSchemas(value: unknown, schemas: unknown[]): void {
 
 function assertStrictObjectSchemas(value: unknown, path = "schema"): void {
   if (!isRecord(value)) return;
+  for (const keyword of ["maxProperties", "minProperties", "patternProperties", "propertyNames"]) {
+    assert.equal(
+      value[keyword],
+      undefined,
+      `${path} uses unsupported Foundry strict structured-output keyword ${keyword}`,
+    );
+  }
   if (value.type === "object") {
     assert.equal(
       value.additionalProperties,
       false,
       `${path} must set additionalProperties to false for Foundry strict structured output`,
     );
+    const required = new Set(Array.isArray(value.required) ? value.required : []);
+    for (const property of Object.keys(isRecord(value.properties) ? value.properties : {})) {
+      assert.equal(required.has(property), true, `${path}.properties.${property} must be required`);
+    }
   }
   if (value.type === "array") {
     assert.notEqual(value.items, undefined, `${path} must declare items for Foundry strict structured output`);

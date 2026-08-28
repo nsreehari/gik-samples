@@ -512,7 +512,8 @@
                                           },
                                           "composition": {
                                             "type": "object",
-                                            "maxProperties": 0,
+                                            "required": [],
+                                            "properties": {},
                                             "additionalProperties": false
                                           }
                                         },
