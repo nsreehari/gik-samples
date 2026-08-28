@@ -2,7 +2,6 @@ import type { HostedBlueprintResolutionContext } from "@gik-ai/blueprint";
 import type { BlueprintProposalStore } from "@gik-ai/blueprint-agent-host";
 import type { ReactBlueprintHostRegistry } from "@gik-ai/react";
 import type { UseProposal } from "./blueprint-agent-lifecycle";
-import { applyHostConfig } from "../../../bootstrap/config/host-config";
 import { resolveBlueprintNative } from "./blueprint-runtime";
 import { getSampleBlueprintCatalog } from "../../../bootstrap/catalog/blueprint-catalog";
 import type { BlueprintStorageConnectionFactory } from "../../../shared/blueprint-storage";
@@ -32,7 +31,7 @@ export function createSampleBlueprintHostRegistry(
         `Hosted Blueprint '${reference.id}' version '${reference.version}' is unavailable; host has '${blueprint.payload.version}'`,
       );
     }
-    return applyHostConfig(blueprint);
+    return blueprint;
   };
   return {
     resolveArtifact,
@@ -50,7 +49,7 @@ export function createSampleBlueprintHostRegistry(
         blueprintDatabaseRootInstanceId,
         options.blueprintStorage,
       );
-      const blueprint = storedBlueprint ? applyHostConfig(storedBlueprint) : resolveArtifact(reference);
+      const blueprint = storedBlueprint ?? resolveArtifact(reference);
 
       const proposalStore = options.createProposalStore?.(reference.id, context);
       return {

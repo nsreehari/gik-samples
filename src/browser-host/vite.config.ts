@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import sirv from "sirv";
@@ -58,7 +58,10 @@ function hostedAssets(): Plugin {
       mkdirSync(`${distDirectory}/provisioning`, { recursive: true });
       cpSync(`${distDirectory}/index.html`, `${distDirectory}/provisioning/index.html`);
       mkdirSync(`${distDirectory}/in-memory/provisioning`, { recursive: true });
-      cpSync(`${distDirectory}/index.html`, `${distDirectory}/in-memory/provisioning/index.html`);
+      writeFileSync(
+        `${distDirectory}/in-memory/provisioning/index.html`,
+        `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../../provisioning/"><script>location.replace("../../provisioning/"+location.search+location.hash)</script>`,
+      );
     },
   };
 }

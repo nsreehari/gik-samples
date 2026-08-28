@@ -3,6 +3,7 @@ export interface ServerPlan {
   planDigest: string;
   expiresAt: string;
   actions: unknown[];
+  target?: { projectEndpoint: string };
 }
 
 export function normalizeCompanionPort(value: string | number): number {

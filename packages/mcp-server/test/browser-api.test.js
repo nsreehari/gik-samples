@@ -24,6 +24,7 @@ test('browser API pairs exact origins and applies only reviewed plans to configu
     dataRoot,
     now: () => currentTime,
     onPairingCode: (code) => codes.push(code),
+    azureCliRunner: () => '{"azure-cli":"available"}',
   });
 
   try {
@@ -34,6 +35,9 @@ test('browser API pairs exact origins and applies only reviewed plans to configu
     const paired = api.pair({ origin: 'https://example.github.io', code: '123456' });
     assert.equal(typeof paired.bearerToken, 'string');
     assert.notEqual(codes.at(-1), '123456');
+    const environment = await api.operation('environment');
+    assert.equal(environment.azureCli.available, true);
+    assert.equal(environment.azureCli.command, 'az');
     api.authorize({
       origin: 'https://example.github.io',
       authorization: `Bearer ${paired.bearerToken}`,
@@ -125,23 +129,30 @@ test('browser API carries Foundry preview, apply, verify, and smoke through one 
       };
     },
   };
+  let foundryClientCalls = 0;
   const api = createProvisioningBrowserApi({
     env: {
       GIK_ALLOWED_ORIGINS: 'http://localhost:5175',
       GIK_WORKSPACE_ROOTS: `workspace=${temporary}`,
-      AZURE_AI_FOUNDRY_PROJECT_ENDPOINT: 'https://example.services.ai.azure.com/api/projects/example',
     },
     dataRoot: temporary,
-    foundryClientFactory: async () => project,
+    foundryClientFactory: async () => {
+      foundryClientCalls += 1;
+      return project;
+    },
   });
   const agents = [{
     id: 'sample-agent',
     definition: { kind: 'prompt', model: 'model', instructions: 'Be useful.' },
   }];
   try {
-    const plan = await api.operation('foundry_plan', { agents });
-    assert.equal(plan.actions[0].operation, 'create');
+    const projectEndpoint = 'https://example.services.ai.azure.com/api/projects/example';
+    const plan = await api.operation('foundry_plan', { agents, projectEndpoint });
+    assert.equal(plan.actions[0].operation, 'reconcile');
+    assert.equal(plan.target.projectEndpoint, projectEndpoint);
+    assert.equal(foundryClientCalls, 0);
     const applied = await api.operation('foundry_apply', plan);
+    assert.equal(foundryClientCalls, 1);
     assert.equal(applied.agents[0].version, '1');
     await assert.rejects(api.operation('foundry_apply', plan), /already applied/);
     assert.equal((await api.operation('foundry_verify', plan)).ok, true);

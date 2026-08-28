@@ -31,7 +31,7 @@ export function ApplicationSwitcher({ currentId }: { currentId?: string }): Reac
   };
   const openProvisioning = () => {
     window.location.assign(new URL(
-      `${import.meta.env.BASE_URL}${window.location.pathname.includes("/in-memory/") ? "in-memory/" : ""}provisioning/`,
+      `${import.meta.env.BASE_URL}provisioning/`,
       window.location.origin,
     ).toString());
   };

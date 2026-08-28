@@ -23,6 +23,9 @@ environmental or dependency failure.
 When the task is clear:
 
 - Implement the smallest complete change.
+- Author concrete non-secret service configuration in the Blueprint's named
+  service declaration. Use `credentialRef` for secrets; never put a literal
+  credential in a Blueprint, host configuration, source file, or prompt.
 - Add or update focused tests for changed behavior.
 - Run `npm run validate:vendor`, `npm run build`, `npm run typecheck`, and
   `npm test`.

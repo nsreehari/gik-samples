@@ -12,11 +12,6 @@ import { createIndexedDbRecordLibrary } from "@gik-ai/durable-runtime/storage/in
 import type { Json } from "@gik-ai/kernel";
 import { loadBlueprintCatalogBundle } from "../load-catalog";
 import {
-  applyHostConfig,
-  hostConfig,
-  type HostConfig,
-} from "../config/host-config";
-import {
   parseBlueprintBootstrapAssets,
   type BlueprintBootstrapAssets,
 } from "./blueprint-bootstrap-assets";
@@ -109,11 +104,10 @@ export function resolveSampleBlueprintBootstrapAssets(
 
 export function resolveSampleBlueprintSource(
   id: string,
-  config: HostConfig = hostConfig,
 ): BlueprintArtifact {
   const blueprint = getSampleBlueprintCatalog().entries[id];
   if (!blueprint) throw new Error(`Unknown Blueprint '${id}'`);
-  return applyHostConfig(blueprint, config);
+  return blueprint;
 }
 
 export function createSampleCatalogBlueprintRegistry(): BlueprintHostRegistry {
@@ -138,14 +132,13 @@ export function createSampleCatalogBlueprintRegistry(): BlueprintHostRegistry {
 export function openSampleBlueprint(
   id: string,
   externalContext?: ExternalContext,
-  config: HostConfig = hostConfig,
 ): BlueprintRuntime {
   const materialized = materializeBlueprint({
-    blueprint: resolveSampleBlueprintSource(id, config),
+    blueprint: resolveSampleBlueprintSource(id),
     externalContext,
     resolveBlueprint(reference) {
       const parsed = parseBlueprintReference(reference);
-      const child = resolveSampleBlueprintSource(parsed.id, config);
+      const child = resolveSampleBlueprintSource(parsed.id);
       if (parsed.version !== undefined && child.payload.version !== parsed.version) {
         throw new Error(`Blueprint '${parsed.id}' version '${parsed.version}' is unavailable`);
       }

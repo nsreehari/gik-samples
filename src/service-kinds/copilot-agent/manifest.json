@@ -9,6 +9,7 @@
       "server": { "type": "string", "minLength": 1 },
       "model": { "type": "string", "minLength": 1 },
       "workspaceRef": { "type": "string", "minLength": 1 },
+      "workspaceRootId": { "type": "string", "minLength": 1 },
       "agent": { "type": "string", "minLength": 1 },
       "responseMode": { "type": "string", "enum": ["text", "json"] }
     },
