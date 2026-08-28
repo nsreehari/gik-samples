@@ -90,7 +90,9 @@ duplicated in the template.
 
 5. Open `/provisioning/` in Blueprint Studio and enter the one-use code printed
    by the server.
-6. Generate the portable plan, preview it, apply it, and verify it.
+6. Provider targets, models, and logical workspace references come from the
+   selected Blueprint's service config and become part of the portable plan.
+7. Generate the portable plan, preview it, apply it, and verify it.
 
 The HTTP host always binds to `127.0.0.1`. Wildcard origins are rejected.
 Pairing tokens are random, short-lived, held in browser memory, and bound to
@@ -134,17 +136,17 @@ Foundry:
 ```sh
 node scripts/provision-foundry-agents.mjs \
   --plan C:\path\to\project.json \
-  --endpoint https://example.services.ai.azure.com/api/projects/example \
   --dry-run
 
 node scripts/provision-foundry-agents.mjs \
   --plan C:\path\to\project.json \
-  --endpoint https://example.services.ai.azure.com/api/projects/example \
   --verify
 ```
 
-Foundry uses `AzureCliCredential`; run `az login` locally first. There is no
-default Azure endpoint and no live Azure call in the test suite. Infrastructure
+The Foundry plan carries the project endpoint declared by the Blueprint service,
+and the server binds that endpoint into the reviewed plan digest. Foundry uses
+`AzureCliCredential`; run `az login` locally first. There is no MCP-side default
+Azure endpoint and no live Azure call in the test suite. Infrastructure
 deployment is intentionally not part of the default server.
 
 ## Copilot

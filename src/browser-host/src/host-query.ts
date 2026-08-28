@@ -49,13 +49,14 @@ function selectedBlueprintId(params: URLSearchParams): string | null {
 export function readHostQuery(search: string, pathname = "/"): HostQuery {
   const params = new URLSearchParams(search);
   const scenariosEnabled = isScenariosPath(pathname);
+  const provisioningEnabled = isProvisioningPath(pathname);
   const externalContext = scenariosEnabled ? undefined : parseExternalContext(params.get("context"));
   return {
     targetId: selectedBlueprintId(params),
-    durableEnabled: !isInMemoryPath(pathname),
+    durableEnabled: provisioningEnabled || !isInMemoryPath(pathname),
     testsEnabled: isTestsPath(pathname),
     scenariosEnabled,
-    provisioningEnabled: isProvisioningPath(pathname),
+    provisioningEnabled,
     ...(externalContext ? { externalContext } : {}),
   };
 }
@@ -72,6 +73,10 @@ export function canonicalizeHostUrl(href: string): string {
   const url = new URL(href);
   const params = url.searchParams;
 
+  url.pathname = url.pathname.replace(
+    /\/in-memory\/provisioning(?:\/index\.html)?\/?$/,
+    "/provisioning/",
+  );
   if (params.has("b") && !params.get("b")?.trim()) params.delete("b");
   params.delete("durable");
 

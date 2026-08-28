@@ -192,7 +192,6 @@ export function AgentProvisioningPage({
       workspaceRoots: Array<{ id: string; root: string }>;
       copilot: { available: boolean };
       azureCli: { available: boolean };
-      foundry: { configured: boolean };
     }>("environment", {});
     setClient(next);
     setPairingCode("");
@@ -201,7 +200,7 @@ export function AgentProvisioningPage({
       `Workspace roots: ${environment.workspaceRoots.map(({ id }) => id).join(", ") || "none"}`,
       `Copilot CLI: ${environment.copilot.available ? "available" : "unavailable"}`,
       `Azure CLI: ${environment.azureCli.available ? "available" : "unavailable"}`,
-      `Foundry endpoint: ${environment.foundry.configured ? "configured" : "not configured"}`,
+      "Foundry project endpoint: supplied by the reviewed provisioning plan",
     ].join("\n"));
   });
 
@@ -239,11 +238,11 @@ export function AgentProvisioningPage({
   });
 
   const runCopilot = () => act("Running constrained Copilot smoke prompt\u2026", async () => {
-    if (!profile) throw new Error("Select a profile first");
+    if (!profile || plan?.provider !== "copilot") throw new Error("Generate a Copilot plan first");
     const result = await serverOperation<{ stdout: string }>("copilot_cli_run", {
-      workspaceRootId: profile.workspaceRootId,
+      workspaceRootId: plan.profile.workspaceRootId,
       agent: profile.agentId,
-      model: profile.model,
+      model: plan.profile.model,
       message: runPrompt,
       timeoutMs: 60_000,
     });
@@ -296,7 +295,7 @@ npm install`
                 <li>Copy <code>.env.template</code> to <code>.env</code>.</li>
                 <li>Set <code>GIK_WORKSPACE_ROOTS</code> to approved <code>id=path</code> entries.</li>
                 <li>Set <code>GIK_ALLOWED_ORIGINS</code> to this page&apos;s exact origin.</li>
-                <li>For Foundry, set <code>AZURE_AI_FOUNDRY_PROJECT_ENDPOINT</code>.</li>
+                <li>Provider targets and models come from the selected Blueprint service config.</li>
               </ol>
               <a
                 href="https://github.com/nsreehari/gik-samples/tree/main/packages/mcp-server"
@@ -362,18 +361,6 @@ npm install`
                   <Field label="Agent ID">
                     <Input value={profile.agentId} onChange={(_, data) =>
                       setProfile(profileFrom(profile, { agentId: data.value }))} />
-                  </Field>
-                  <Field label="Model">
-                    <Input value={profile.model} onChange={(_, data) =>
-                      setProfile(profileFrom(profile, { model: data.value }))} />
-                  </Field>
-                  <Field label="Registered workspace root ID">
-                    <Input
-                      value={profile.workspaceRootId}
-                      disabled={profile.provider === "foundry"}
-                      onChange={(_, data) =>
-                        setProfile(profileFrom(profile, { workspaceRootId: data.value }))}
-                    />
                   </Field>
                 </div>
                 <Field label="Description">

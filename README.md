@@ -51,8 +51,9 @@ passed exactly as additional `--origin` values. The server never binds beyond
 
 Copilot provisioning and runs use the complete local Copilot CLI subsystem.
 Foundry provisioning requires `az login`, the optional `@azure/ai-projects`
-and `@azure/identity` peers, and an explicit
-`AZURE_AI_FOUNDRY_PROJECT_ENDPOINT`; Azure tokens never reach the browser. See
+and `@azure/identity` peers. Provider targets, models, and logical workspace
+references flow from Blueprint service config into the portable and
+server-reviewed plans; Azure tokens never reach the browser. See
 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
 HTTP bearer, and download-fallback details.
 

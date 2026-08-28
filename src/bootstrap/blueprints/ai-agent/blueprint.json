@@ -111,6 +111,8 @@
         },
         "config": {
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
+          "projectEndpoint": "https://sz-foundry-westus.services.ai.azure.com/api/projects/sz-project",
+          "model": "gpt-5.4",
           "credentialRef": "foundry-agent/access-key"
         },
         "scope": "per-session"
@@ -242,7 +244,8 @@
                 "config": {
                   "server": "http://127.0.0.1:7801/mcp",
                   "model": "gpt-5.4",
-                  "workspaceRef": ".copilot-workspace"
+                  "workspaceRef": ".copilot-workspace",
+                  "workspaceRootId": "workspace"
                 },
                 "scope": "per-session"
               }

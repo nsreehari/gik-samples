@@ -30,11 +30,25 @@ export function validateFoundryAgents(agents) {
   });
 }
 
-export async function createFoundryProjectClient(endpoint) {
+export function normalizeFoundryProjectEndpoint(endpoint) {
   const value = String(endpoint || '').trim();
-  if (!value) throw new Error('AZURE_AI_FOUNDRY_PROJECT_ENDPOINT is not configured');
+  if (!value) throw new Error('Foundry project endpoint is required');
   const url = new URL(value);
   if (url.protocol !== 'https:') throw new Error('The Foundry project endpoint must use HTTPS');
+  if (!url.hostname.endsWith('.services.ai.azure.com')) {
+    throw new Error('The Foundry project endpoint must use an Azure AI services host');
+  }
+  if (url.username || url.password || url.port || url.search || url.hash) {
+    throw new Error('The Foundry project endpoint cannot include credentials, a port, query, or fragment');
+  }
+  if (!/^\/api\/projects\/[^/]+\/?$/.test(url.pathname)) {
+    throw new Error('The Foundry project endpoint must identify an /api/projects/<project> resource');
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
+export async function createFoundryProjectClient(endpoint) {
+  const value = normalizeFoundryProjectEndpoint(endpoint);
   let projectsModule;
   let identityModule;
   try {

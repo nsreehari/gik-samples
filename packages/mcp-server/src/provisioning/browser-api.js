@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { handleCopilotTool } from '../handlers/copilot.js';
+import { runAzureCli } from '../handlers/azure-cli.js';
 import {
   applyWorkspacePlan,
   previewWorkspacePlan,
@@ -12,7 +13,7 @@ import {
 import {
   applyFoundryPlan,
   createFoundryProjectClient,
-  previewFoundryPlan,
+  normalizeFoundryProjectEndpoint,
   smokeTestFoundryAgent,
   validateFoundryAgents,
   verifyFoundryPlan,
@@ -98,6 +99,19 @@ function probeCommand(command, args) {
   };
 }
 
+function probeAzureCli(runner, env) {
+  try {
+    runner(['version'], { env });
+    return { available: true, command: env.AZURE_CLI_COMMAND || 'az' };
+  } catch (error) {
+    return {
+      available: false,
+      command: env.AZURE_CLI_COMMAND || 'az',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function pairingCode() {
   return String(randomInt(0, 1_000_000)).padStart(6, '0');
 }
@@ -108,6 +122,9 @@ function publicPlan(plan) {
     planDigest: plan.digest,
     expiresAt: plan.expiresAt,
     actions: plan.actions,
+    ...(plan.provider === 'foundry'
+      ? { target: { projectEndpoint: plan.endpoint } }
+      : {}),
   };
 }
 
@@ -118,6 +135,7 @@ export function createProvisioningBrowserApi({
   now = () => Date.now(),
   onPairingCode = () => {},
   foundryClientFactory = createFoundryProjectClient,
+  azureCliRunner = runAzureCli,
 } = {}) {
   const allowedOrigins = parseAllowedOrigins(env.GIK_ALLOWED_ORIGINS);
   const workspaceRoots = parseWorkspaceRoots(env.GIK_WORKSPACE_ROOTS, defaultWorkspaceRoot);
@@ -227,9 +245,8 @@ export function createProvisioningBrowserApi({
 
   async function createFoundryPlan(input) {
     const agents = validateFoundryAgents(input?.agents);
-    const endpoint = String(env.AZURE_AI_FOUNDRY_PROJECT_ENDPOINT || '').trim();
-    const project = await foundryClientFactory(endpoint);
-    const actions = await previewFoundryPlan(agents, project);
+    const endpoint = normalizeFoundryProjectEndpoint(input?.projectEndpoint);
+    const actions = agents.map(({ id: agentId }) => ({ agentId, operation: 'reconcile' }));
     const id = randomBytes(18).toString('base64url');
     const planDigest = digest(JSON.stringify({ provider: 'foundry', endpoint, agents }));
     const expiresAtMs = now() + planTtlMs;
@@ -268,10 +285,7 @@ export function createProvisioningBrowserApi({
         return {
           workspaceRoots: [...workspaceRoots].map(([id, root]) => ({ id, root })),
           copilot: probeCommand(process.platform === 'win32' ? 'copilot.exe' : 'copilot', ['--help']),
-          azureCli: probeCommand(env.AZURE_CLI_COMMAND || 'az', ['version']),
-          foundry: {
-            configured: Boolean(String(env.AZURE_AI_FOUNDRY_PROJECT_ENDPOINT || '').trim()),
-          },
+          azureCli: probeAzureCli(azureCliRunner, env),
         };
       case 'copilot_workspace_plan':
         return createWorkspacePlan(input);
