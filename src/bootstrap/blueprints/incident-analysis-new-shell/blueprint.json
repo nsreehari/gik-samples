@@ -508,7 +508,8 @@
                                           },
                                           "composition": {
                                             "type": "object",
-                                            "maxProperties": 0
+                                            "maxProperties": 0,
+                                            "additionalProperties": false
                                           }
                                         },
                                         "additionalProperties": false
@@ -623,15 +624,16 @@
                                               "type": "string",
                                               "const": "markdown"
                                             }
-                                          },
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "additionalProperties": false
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
                                 },
+                                "additionalProperties": false
+                              },
                                 "state": {
                                   "type": "object",
                                   "required": [
@@ -690,8 +692,7 @@
                       },
                       "additionalProperties": false
                     }
-                  }
-                },
+                  },
                 {
                   "kind": "jsonata",
                   "expr": "data.payload.projectionTiers[0].id = 'report-semantic' and data.payload.projectionTiers[0].kind = 'incident-report-semantic-model' and data.payload.projectionTiers[1].id = 'runtime-document' and data.payload.projectionTiers[1].kind = 'runtime-document'",
