@@ -383,6 +383,8 @@
                             "maxItems": 0,
                             "items": {
                               "type": "object",
+                              "required": [],
+                              "properties": {},
                               "additionalProperties": false
                             }
                           },

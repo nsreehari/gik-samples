@@ -34,7 +34,8 @@ function assertStrictObjectSchemas(value: unknown, path = "schema"): void {
       false,
       `${path} must set additionalProperties to false for Foundry strict structured output`,
     );
-    const required = new Set(Array.isArray(value.required) ? value.required : []);
+    assert.equal(Array.isArray(value.required), true, `${path} must declare required`);
+    const required = new Set(value.required as unknown[]);
     for (const property of Object.keys(isRecord(value.properties) ? value.properties : {})) {
       assert.equal(required.has(property), true, `${path}.properties.${property} must be required`);
     }
