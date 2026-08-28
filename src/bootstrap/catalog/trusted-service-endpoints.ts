@@ -10,16 +10,29 @@ function collectBlueprintServiceEndpoints(
   blueprint: TrustedBlueprintSource,
   endpoints: Map<string, Set<string>>,
 ): void {
-  if (!isRecord(blueprint.payload) || !isRecord(blueprint.payload.services)) return;
+  if (!isRecord(blueprint.payload)) return;
 
-  Object.values(blueprint.payload.services).forEach((declaration) => {
-    if (!isRecord(declaration) || typeof declaration.kind !== "string") return;
-    const config = isRecord(declaration.config) ? declaration.config : undefined;
-    if (typeof config?.endpoint !== "string") return;
+  const collect = (services: unknown) => {
+    if (!isRecord(services)) return;
+    Object.values(services).forEach((declaration) => {
+      if (!isRecord(declaration) || typeof declaration.kind !== "string") return;
+      const config = isRecord(declaration.config) ? declaration.config : undefined;
+      if (typeof config?.endpoint !== "string") return;
 
-    const origins = endpoints.get(declaration.kind) ?? new Set<string>();
-    origins.add(new URL(config.endpoint).origin);
-    endpoints.set(declaration.kind, origins);
+      const origins = endpoints.get(declaration.kind) ?? new Set<string>();
+      origins.add(new URL(config.endpoint).origin);
+      endpoints.set(declaration.kind, origins);
+    });
+  };
+
+  collect(blueprint.payload.services);
+  const recipes = blueprint.payload.serviceRecipes;
+  if (!Array.isArray(recipes)) return;
+  recipes.forEach((recipe) => {
+    if (!isRecord(recipe) || !Array.isArray(recipe.implementationPrograms)) return;
+    recipe.implementationPrograms.forEach((program) => {
+      if (isRecord(program)) collect(program.services);
+    });
   });
 }
 
