@@ -28,6 +28,9 @@ function assertStrictObjectSchemas(value: unknown, path = "schema"): void {
       `${path} must set additionalProperties to false for Foundry strict structured output`,
     );
   }
+  if (value.type === "array") {
+    assert.notEqual(value.items, undefined, `${path} must declare items for Foundry strict structured output`);
+  }
   if (isRecord(value.properties)) {
     Object.entries(value.properties).forEach(([name, property]) =>
       assertStrictObjectSchemas(property, `${path}.properties.${name}`));

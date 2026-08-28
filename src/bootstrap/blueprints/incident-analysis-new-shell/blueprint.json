@@ -380,7 +380,11 @@
                           },
                           "serviceRecipes": {
                             "type": "array",
-                            "maxItems": 0
+                            "maxItems": 0,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false
+                            }
                           },
                           "projectionTiers": {
                             "type": "array",
