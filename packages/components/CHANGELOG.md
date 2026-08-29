@@ -1,5 +1,11 @@
 # @gik-ai/components
 
+## 0.2.1
+
+### Patch Changes
+
+- Promote the validated `0.2.1` prerelease series to the first stable release.
+
 ## 0.2.1-next.2
 
 ### Patch Changes
