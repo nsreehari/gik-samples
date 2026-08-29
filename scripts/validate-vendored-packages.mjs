@@ -52,4 +52,27 @@ if (localGikDependencies.length !== manifest.packages.length) {
   throw new Error("Vendored package manifest and root dependencies are inconsistent.");
 }
 
+const componentsJson = JSON.parse(
+  await readFile(join(repositoryRoot, "packages", "components", "package.json"), "utf8"),
+);
+const registryGikDependencies = Object.entries(packageJson.dependencies)
+  .filter(([name, value]) => name.startsWith("@gik-ai/") && !String(value).startsWith("file:"));
+for (const [name, version] of registryGikDependencies) {
+  if (manifestNames.has(name)) {
+    throw new Error(`Vendored package '${name}' must not also resolve from the registry.`);
+  }
+  const componentsVersion = componentsJson.dependencies?.[name];
+  if (componentsVersion !== undefined && componentsVersion !== version) {
+    throw new Error(`'${name}' must use one version across the workspace.`);
+  }
+}
+
+const registryGikVersions = new Map(registryGikDependencies);
+for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
+  if (!name.startsWith("@gik-ai/")) continue;
+  if (registryGikVersions.get(name) !== override) {
+    throw new Error(`Override for '${name}' must match the declared dependency version.`);
+  }
+}
+
 console.log(`Validated ${manifest.packages.length} vendored GIK packages from ${manifest.sourceCommit}.`);

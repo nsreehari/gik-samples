@@ -1,5 +1,12 @@
 # @gik-ai/components
 
+## 0.2.1-next.2
+
+### Patch Changes
+
+- Bootstrap the initial npm package record through the protected GitHub Release
+  workflow because npm staged publishing requires an existing package.
+
 ## 0.2.1-next.1
 
 ### Patch Changes

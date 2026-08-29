@@ -175,7 +175,7 @@
                   }
                 },
                 "config": {
-                  "endpoint": "${GIK_HTTP_PROXY_ORIGIN}",
+                  "endpoint": "https://sz-http-proxy.azurewebsites.net",
                   "credentialRef": "http-proxy/access-key"
                 },
                 "scope": "per-blueprint"
@@ -2204,7 +2204,7 @@
           }
         },
         "config": {
-          "endpoint": "${GIK_FOUNDRY_PROXY_ORIGIN}",
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "agent": "Portfolio-Intelligence-Agent",
           "credentialRef": "foundry-agent/access-key"
         },
@@ -2704,7 +2704,7 @@
           }
         },
         "config": {
-          "endpoint": "${GIK_FOUNDRY_PROXY_ORIGIN}",
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "agent": "Portfolio-Semantic-Intelligence-Agent",
           "credentialRef": "foundry-agent/access-key",
           "responseMode": "json"

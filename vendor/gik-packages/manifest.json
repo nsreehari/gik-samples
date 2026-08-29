@@ -15,53 +15,11 @@
       "sha256": "3870935fe86bcc2793d31e159da241c90653cbea10547d8190d9b32400679ed5"
     },
     {
-      "name": "@gik-ai/blueprint",
-      "version": "0.2.1-next.0",
-      "file": "gik-ai-blueprint-0.2.1-next.0.tgz",
-      "bytes": 40685,
-      "sha256": "56e13fb85f0e1936016b2a74e0bcc255880cfdd161c334c6f9550929d4cadc6b"
-    },
-    {
       "name": "@gik-ai/blueprint-agent-host",
       "version": "0.1.0",
       "file": "gik-ai-blueprint-agent-host-0.1.0.tgz",
       "bytes": 5425,
       "sha256": "50a204444cef8de5124956704e0cdbddb909e0e08d6f1e679f03e98d24bed0c4"
-    },
-    {
-      "name": "@gik-ai/controlface",
-      "version": "0.1.5-next.0",
-      "file": "gik-ai-controlface-0.1.5-next.0.tgz",
-      "bytes": 316503,
-      "sha256": "69012123d3f8ddd32d463a9d557fb58a55b9a2280b11d0de1356101928433383"
-    },
-    {
-      "name": "@gik-ai/durable-runtime",
-      "version": "0.8.1-next.0",
-      "file": "gik-ai-durable-runtime-0.8.1-next.0.tgz",
-      "bytes": 39793,
-      "sha256": "085759f047310d0b2b2f497a95a82f8c3f4bad2493b3c8897528bb5f5d9f18af"
-    },
-    {
-      "name": "@gik-ai/evaluators",
-      "version": "0.1.2-next.0",
-      "file": "gik-ai-evaluators-0.1.2-next.0.tgz",
-      "bytes": 82374,
-      "sha256": "82abe7bc76e9ffcae0ebb77e9bf2c88589a8825b8e22223e08a7b1297d9353b3"
-    },
-    {
-      "name": "@gik-ai/kernel",
-      "version": "0.1.2-next.0",
-      "file": "gik-ai-kernel-0.1.2-next.0.tgz",
-      "bytes": 124860,
-      "sha256": "a90869357a7e9d995fbb561dbf387e10676a8c09eca797bebbfc1f9704c69235"
-    },
-    {
-      "name": "@gik-ai/react",
-      "version": "0.3.1-next.0",
-      "file": "gik-ai-react-0.3.1-next.0.tgz",
-      "bytes": 25446,
-      "sha256": "876d8b3b82c89332a3f7ad592921a4e8769da7121834cfac5bfefc8dcdc411b6"
     }
   ]
 }

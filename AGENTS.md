@@ -27,6 +27,10 @@ These instructions apply to every coding agent working in this repository.
   issue explicitly requires a breaking change.
 - Keep static UI available while heavy surfaces load locally.
 - Add or update focused tests for behavioral changes.
+- Keep concrete non-secret service configuration, including endpoints and
+  `credentialRef` values, in the named service declaration in `blueprint.json`.
+  Service kinds define the configuration schema; the host authorizes endpoints
+  and resolves referenced secrets at execution time.
 - Do not modify workflows, dependencies, vendored archives, endpoint
   configuration, release settings, or agent policy without explicit human
   approval.

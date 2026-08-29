@@ -10,6 +10,7 @@ import {
 import {
   defaultProvisioningProfile,
   generateProvisioningPlan,
+  serverPlanInput,
 } from "./provisioning";
 
 test("selected Blueprint identity and user profile deterministically lower through lifecycle transforms", () => {
@@ -25,13 +26,26 @@ test("selected Blueprint identity and user profile deterministically lower throu
   assert.deepEqual(first, second);
   assert.equal(first.blueprint.id, blueprint.payload.id);
   assert.equal(first.provider, "copilot");
+  assert.equal(first.profile.workspaceRootId, "workspace");
+  assert.equal(first.profile.model, "gpt-5.4");
   assert.match(first.files[0].content, /name: AnyBlueprintAgent/);
   assert.match(first.files[0].content, new RegExp(`Governed Blueprint: ${blueprint.payload.id}@`));
 
-  const foundry = generateProvisioningPlan(blueprint, { ...profile, provider: "foundry" });
+  const foundry = generateProvisioningPlan(blueprint, {
+    ...profile,
+    provider: "foundry",
+  });
   assert.equal(foundry.provider, "foundry");
+  assert.equal(
+    foundry.projectEndpoint,
+    "https://sz-foundry-westus.services.ai.azure.com/api/projects/sz-project",
+  );
   assert.equal(foundry.agents[0].definition.kind, "prompt");
   assert.match(foundry.agents[0].definition.instructions, /Use only verified repository facts/);
+  assert.deepEqual(serverPlanInput(foundry), {
+    projectEndpoint: foundry.projectEndpoint,
+    agents: foundry.agents,
+  });
 });
 
 test("provisioning profiles persist on durable storage and remain overlays keyed by Blueprint ID", async () => {

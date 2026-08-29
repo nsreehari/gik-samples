@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   applyFoundryPlan,
+  normalizeFoundryProjectEndpoint,
   previewFoundryPlan,
   smokeTestFoundryAgent,
   validateFoundryAgents,
@@ -81,4 +82,23 @@ test('Foundry plan validation rejects duplicate or non-prompt agents', () => {
   assert.throws(() => validateFoundryAgents([
     { id: 'invalid', definition: { kind: 'workflow' } },
   ]), /prompt definition/);
+});
+
+test('Foundry project endpoints are restricted to canonical Azure AI project resources', () => {
+  assert.equal(
+    normalizeFoundryProjectEndpoint('https://example.services.ai.azure.com/api/projects/sample/'),
+    'https://example.services.ai.azure.com/api/projects/sample',
+  );
+  assert.throws(
+    () => normalizeFoundryProjectEndpoint('https://evil.example/api/projects/sample'),
+    /Azure AI services host/,
+  );
+  assert.throws(
+    () => normalizeFoundryProjectEndpoint('https://example.services.ai.azure.com:8443/api/projects/sample'),
+    /cannot include/,
+  );
+  assert.throws(
+    () => normalizeFoundryProjectEndpoint('https://example.services.ai.azure.com/api/projects/sample?redirect=evil'),
+    /cannot include/,
+  );
 });
