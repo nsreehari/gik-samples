@@ -11,8 +11,10 @@ the copied scripts, or reviewed and applied through the loopback companion.
 
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies temporarily
-resolve from integrity-checked archives under `vendor/gik-packages`.
+Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies resolve
+from the public npm registry; only the unpublished `@gik-ai/agent-lifecycle-exp`
+and `@gik-ai/blueprint-agent-host` packages still resolve from
+integrity-checked archives under `vendor/gik-packages`.
 
 Blueprint service declarations own their concrete non-secret configuration,
 including service endpoints and logical `credentialRef` values. The browser
