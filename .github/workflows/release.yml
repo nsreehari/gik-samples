@@ -1,12 +1,18 @@
-name: Publish Components to npm
+name: Release
 
 on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: Published release tag or commit to redeploy or roll back Pages to
+        required: true
+        type: string
 
 concurrency:
-  group: npm-publish-components
+  group: release
   cancel-in-progress: false
 
 permissions:
@@ -14,6 +20,7 @@ permissions:
 
 jobs:
   validate:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'components-v')
     name: Validate Components release
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -94,6 +101,7 @@ jobs:
           done
 
   publish:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'components-v')
     name: Publish Components
     needs: validate
     runs-on: ubuntu-latest
@@ -152,3 +160,60 @@ jobs:
             echo "- Channel: \`$CHANNEL\`"
             echo "- Authentication: npm trusted publishing"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  build-pages:
+    name: Build and smoke-test Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.release_ref }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Use compatible npm resolver
+        run: npm install --global npm@11.19.0
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build site
+        run: npm run build
+        env:
+          VITE_BASE: /gik-samples/
+
+      - name: Smoke-test release artifact
+        run: npm run test:pages
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          VITE_BASE: /gik-samples/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/browser-host/dist
+
+  deploy-pages:
+    name: Deploy Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
