@@ -2,9 +2,11 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -37,3 +39,8 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Smoke-test built browser host
+        run: npm run test:pages
+        env:
+          CHROME_PATH: /usr/bin/google-chrome

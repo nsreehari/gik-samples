@@ -17,6 +17,16 @@ function loadingShell(): ReactElement {
   return <Spinner label={"Loading\u00a0\u2026"} labelPosition="after" size="small" />;
 }
 
+function failureShell(error: unknown): ReactElement {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    <div role="alert" style={{ padding: "2rem" }}>
+      <h1>GIK Studio could not start</h1>
+      <p>{message}</p>
+    </div>
+  );
+}
+
 // `./Host` and the sample Blueprint catalog module both transitively import the full render/runtime
 // stack (kernel, blueprint compiler, durable runtime, and renderers). Importing them
 // statically here would block the very first paint on fetching/parsing/evaluating that entire graph.
@@ -26,31 +36,35 @@ async function start(rootElement: HTMLElement): Promise<void> {
   const root = createRoot(rootElement);
   root.render(<HostThemeProvider>{loadingShell()}</HostThemeProvider>);
 
-  const catalogModule = await import("../../bootstrap/catalog/blueprint-catalog");
-  const hostModulePromise = import("./Host");
-  let resolveSeedReady!: () => void;
-  let rejectSeedReady!: (reason?: unknown) => void;
-  const seedReady = new Promise<void>((resolve, reject) => {
-    resolveSeedReady = resolve;
-    rejectSeedReady = reject;
-  });
-  const catalogPromise = catalogModule.bootstrapSampleBlueprintCatalog({
-    onSeedReady(snapshot) {
-      catalogModule.installSampleBlueprintCatalog(snapshot);
-      resolveSeedReady();
-    },
-  });
-  void catalogPromise.catch(rejectSeedReady);
-  const [, hostModule] = await Promise.all([seedReady, hostModulePromise]);
+  try {
+    const catalogModule = await import("../../bootstrap/catalog/blueprint-catalog");
+    const hostModulePromise = import("./Host");
+    let resolveSeedReady!: () => void;
+    let rejectSeedReady!: (reason?: unknown) => void;
+    const seedReady = new Promise<void>((resolve, reject) => {
+      resolveSeedReady = resolve;
+      rejectSeedReady = reject;
+    });
+    const catalogPromise = catalogModule.bootstrapSampleBlueprintCatalog({
+      onSeedReady(snapshot) {
+        catalogModule.installSampleBlueprintCatalog(snapshot);
+        resolveSeedReady();
+      },
+    });
+    void catalogPromise.catch(rejectSeedReady);
+    const [, hostModule] = await Promise.all([seedReady, hostModulePromise]);
 
-  const { Host } = hostModule;
-  const renderHost = () => root.render(
-    <HostThemeProvider><Host /></HostThemeProvider>
-  );
-  renderHost();
+    const { Host } = hostModule;
+    const renderHost = () => root.render(
+      <HostThemeProvider><Host /></HostThemeProvider>
+    );
+    renderHost();
 
-  catalogModule.installSampleBlueprintCatalog(await catalogPromise);
-  renderHost();
+    catalogModule.installSampleBlueprintCatalog(await catalogPromise);
+    renderHost();
+  } catch (error) {
+    root.render(<HostThemeProvider>{failureShell(error)}</HostThemeProvider>);
+  }
 }
 
 void start(el);
