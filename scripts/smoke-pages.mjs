@@ -1,22 +1,19 @@
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 
-const npmCli = process.env.npm_execpath;
 const chrome = process.env.CHROME_PATH;
 const port = 4175;
 const baseUrl = process.env.VITE_BASE || "/";
 const pageUrl = new URL(baseUrl, `http://127.0.0.1:${port}`).href;
+const viteCli = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
 
-if (!npmCli) throw new Error("Run the Pages smoke test through npm.");
 if (!chrome) throw new Error("CHROME_PATH is required for the Pages smoke test.");
 
 const preview = spawn(
   process.execPath,
   [
-    npmCli,
-    "exec",
-    "--",
-    "vite",
+    viteCli,
     "preview",
     "src/browser-host",
     "--host",
@@ -63,14 +60,22 @@ function dumpPage() {
     ]);
     let stdout = "";
     let stderr = "";
+    const timeout = setTimeout(() => {
+      browser.kill();
+      reject(new Error(`Chrome timed out rendering ${pageUrl}:\n${stderr}`));
+    }, 30_000);
     browser.stdout.on("data", (chunk) => {
       stdout += chunk;
     });
     browser.stderr.on("data", (chunk) => {
       stderr += chunk;
     });
-    browser.once("error", reject);
+    browser.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
     browser.once("exit", (code) => {
+      clearTimeout(timeout);
       if (code === 0) resolve(stdout);
       else reject(new Error(`Chrome exited with ${code}:\n${stderr}`));
     });
