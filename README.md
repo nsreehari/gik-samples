@@ -71,6 +71,7 @@ npm run typecheck
 npm test
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
+See [VALIDATION.md](VALIDATION.md) for the full deterministic local validation
+sequence, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
 [SUPPORT.md](SUPPORT.md) for support boundaries, and [SECURITY.md](SECURITY.md)
 for private vulnerability reporting.
