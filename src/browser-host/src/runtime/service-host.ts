@@ -38,13 +38,16 @@ import {
   trustedServiceEndpointOrigins,
 } from "../../../bootstrap/catalog/trusted-service-endpoints";
 
-const trustedServiceEndpoints = trustedServiceEndpointOrigins(getSampleBlueprintCatalog().seedEntries);
 export const browserServiceRegistryOptions = createSampleServiceRegistryOptions({
   resolveCredential: resolveBrowserCredential,
   clearCredential: clearBrowserCredential,
 }, {
   authorizeEndpoint: (kind, endpoint) =>
-    authorizeTrustedServiceEndpoint(trustedServiceEndpoints, kind, endpoint),
+    authorizeTrustedServiceEndpoint(
+      trustedServiceEndpointOrigins(getSampleBlueprintCatalog().seedEntries),
+      kind,
+      endpoint,
+    ),
 });
 
 function mergeRegistryOptions(

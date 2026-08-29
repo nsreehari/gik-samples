@@ -11,6 +11,7 @@
     "dev": "node scripts/build.mjs --dev",
     "test": "vitest run --config vitest.config.ts",
     "test:app": "vitest run --config vitest.config.ts",
+    "test:pages": "node scripts/smoke-pages.mjs",
     "mcp:start": "node packages/mcp-server/src/index.js --transport streamable-http",
     "mcp:start:stdio": "node packages/mcp-server/src/index.js --transport stdio",
     "mcp:test": "node --test packages/mcp-server/test/*.test.js",
