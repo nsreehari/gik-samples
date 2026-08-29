@@ -65,8 +65,12 @@ for (const [name, version] of registryGikDependencies) {
   if (componentsVersion !== undefined && componentsVersion !== version) {
     throw new Error(`'${name}' must use one version across the workspace.`);
   }
-  const override = packageJson.overrides?.[name];
-  if (override !== undefined && override !== version) {
+}
+
+const registryGikVersions = new Map(registryGikDependencies);
+for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
+  if (!name.startsWith("@gik-ai/")) continue;
+  if (registryGikVersions.get(name) !== override) {
     throw new Error(`Override for '${name}' must match the declared dependency version.`);
   }
 }
