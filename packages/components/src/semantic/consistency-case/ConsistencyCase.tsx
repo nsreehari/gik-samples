@@ -88,7 +88,26 @@ const description: ComponentDescription = {
 
 export function getConsistencyCaseSchema(): Record<string, unknown> { return schema as unknown as Record<string, unknown>; }
 export function validateConsistencyCase(props: unknown): ComponentValidationReport {
-  return runDeclarativeValidators([{ kind: "ajv-schema", schema: getConsistencyCaseSchema(), message: "Invalid semantic:consistency-case props", code: "consistency-case-schema" }], props as Json);
+  const report = runDeclarativeValidators([
+    { kind: "ajv-schema", schema: getConsistencyCaseSchema(), message: "Invalid semantic:consistency-case props", code: "consistency-case-schema" },
+  ], props as Json);
+  if (!report.ok) return report;
+
+  const value = asRecord(props);
+  const record = asRecord(value.case);
+  const fields = asRecord(asRecord(value.spec).fields);
+  const missingRequiredField = ["question", "outcome", "rationale"]
+    .some((name) => !textAt(record, textAt(fields, name)).trim());
+  if (!missingRequiredField) return report;
+
+  return {
+    ...report,
+    ok: false,
+    errors: [...report.errors, {
+      detail: "Consistency case question, outcome, and rationale are required",
+      code: "consistency-case-required-fields",
+    }],
+  };
 }
 export function materializeConsistencyCaseTrial() {
   return trialNode("semantic:consistency-case", {

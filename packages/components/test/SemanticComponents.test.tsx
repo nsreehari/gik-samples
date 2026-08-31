@@ -239,7 +239,7 @@ test("component schemas reject semantic tokens outside each component vocabulary
 });
 
 test("public registries separate component layers and expose an aggregate", () => {
-  const semantic = ["argument", "decision", "entity-set", "event-series", "evidence-case", "measure-set", "milestones", "narrative", "process", "relationship-set", "work-set"];
+  const semantic = ["argument", "assessment", "change-proposal", "consistency-case", "decision", "entity-set", "event-series", "evidence-case", "finding-set", "measure-set", "milestones", "narrative", "process", "relationship-set", "work-set"];
   const security = ["attack-path"];
   const software = ["source-comparison", "source-findings"];
   const primitives = ["access-gate", "alert", "chart", "collection-board", "container", "datetime", "editable-table", "file-download", "file-input", "file-list", "form", "gantt", "graph-diagram", "growing-container", "infinite-canvas", "markdown", "math-challenge", "metric", "note", "pane-with-trigger", "property", "source-viewer", "timer-button", "todo-list"];
@@ -346,7 +346,7 @@ test("component definitions expose closed agent-facing variant contracts", () =>
 
 test("agent authoring APIs discover, describe, validate, and materialize components", () => {
   const catalog = listSemanticComponents();
-  assert.equal(catalog.length, 11);
+  assert.equal(catalog.length, 15);
   assert.deepEqual(catalog.find((entry) => entry.id === "argument")?.variants, ["map", "outline", "text"]);
   assert.ok(!catalog.some((entry) => entry.id === "chart"));
   assert.deepEqual(catalog.find((entry) => entry.id === "event-series")?.variants, ["chronology", "axis", "text"]);
