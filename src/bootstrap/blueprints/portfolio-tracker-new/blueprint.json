@@ -2803,10 +2803,369 @@
           "intelligenceRefreshGeneration": 0,
           "analysisContext": null,
           "resolvedIntelligenceEnvelope": null
+        },
+        "purposeParticipant": {
+          "schemaVersion": 1,
+          "purpose": {
+            "revision": "portfolio-purpose/v1",
+            "statement": "Help the portfolio owner understand progress and make deliberate, evidence-backed investment decisions.",
+            "successMeasures": [
+              "Portfolio condition is assessed from current holdings and valuations.",
+              "Advisory plans retain stable identities across heartbeats.",
+              "Consequential decisions remain with the portfolio owner."
+            ],
+            "constraints": [
+              "Never place trades or mutate holdings autonomously.",
+              "Never weaken purpose, success measures, constraints, or authority.",
+              "Never infer a missing risk constraint when clarification is required."
+            ]
+          },
+          "assessment": {
+            "status": "awaiting-observation",
+            "lastObservedAt": null,
+            "marketValue": 0,
+            "gainLoss": 0
+          },
+          "strategy": {
+            "revision": 0,
+            "posture": "observe",
+            "rationale": "Await the first strategy heartbeat with a settled portfolio valuation."
+          },
+          "plan": {
+            "revision": 0,
+            "actions": []
+          },
+          "cadences": {
+            "operational": {
+              "generation": 0,
+              "lastAt": null
+            },
+            "progress": {
+              "generation": 0,
+              "lastAt": null
+            },
+            "strategy": {
+              "generation": 0,
+              "lastAt": null
+            }
+          },
+          "pendingRequests": {
+            "riskConstraint": null,
+            "rebalanceDecision": null,
+            "targetReturn": null
+          },
+          "settledRequestIds": []
         }
       }
     },
     "cells": {
+      "portfolio-purpose-observation": {
+        "id": "portfolio-purpose-observation",
+        "events": {
+          "operational-heartbeat": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "at"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "operational-heartbeat": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.cadences.operational",
+                "args": {
+                  "from": "{'generation':$number(purposeParticipant.cadences.operational.generation) + 1,'lastAt':$event.at}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.assessment.lastObservedAt",
+                "args": {
+                  "from": "$event.at"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "portfolio-purpose-assessment": {
+        "id": "portfolio-purpose-assessment",
+        "events": {
+          "progress-heartbeat": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "at"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "progress-heartbeat": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.cadences.progress",
+                "args": {
+                  "from": "{'generation':$number(purposeParticipant.cadences.progress.generation) + 1,'lastAt':$event.at}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.assessment",
+                "args": {
+                  "from": "{'status':portfolio.value.summary.marketValue > 0 ? 'observed' : 'awaiting-valuation','lastObservedAt':$event.at,'marketValue':portfolio.value.summary.marketValue,'gainLoss':portfolio.value.summary.gainLoss}"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "portfolio-purpose-planning": {
+        "id": "portfolio-purpose-planning",
+        "events": {
+          "strategy-heartbeat": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "at"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "strategy-heartbeat": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.cadences.strategy",
+                "args": {
+                  "from": "{'generation':$number(purposeParticipant.cadences.strategy.generation) + 1,'lastAt':$event.at}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.strategy",
+                "args": {
+                  "from": "{'revision':$number(purposeParticipant.strategy.revision) + 1,'posture':portfolio.value.summary.marketValue > 0 ? 'review' : 'observe','rationale':portfolio.value.summary.marketValue > 0 ? 'Review the settled valuation and ask the owner before any consequential change.' : 'Continue observing until a settled valuation is available.'}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.plan",
+                "args": {
+                  "from": "{'revision':$number(purposeParticipant.plan.revision) + 1,'actions':portfolio.value.summary.marketValue > 0 ? [{'id':'review-portfolio-condition','kind':'advisory','status':'proposed','correlationId':'portfolio-condition-review','description':'Review current valuation, gain or loss, and concentration before proposing a change.'}] : [{'id':'await-settled-valuation','kind':'advisory','status':'waiting','correlationId':'portfolio-valuation-readiness','description':'Wait for a settled portfolio valuation before proposing any change.'}]}"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "portfolio-purpose-requests": {
+        "id": "portfolio-purpose-requests",
+        "events": {
+          "request-risk-clarification": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "revision"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "risk-clarification-resolved": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "requestRevision",
+                "settlementId",
+                "riskTolerance"
+              ],
+              "properties": {
+                "requestRevision": {
+                  "type": "integer"
+                },
+                "settlementId": {
+                  "type": "string"
+                },
+                "riskTolerance": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "request-rebalance-decision": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "revision"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "request-target-return-data": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "revision"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "request-risk-clarification": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "args": {
+                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.revision,'status':'pending','correlationId':'portfolio-risk-constraint'}"
+                }
+              },
+              {
+                "do": "request",
+                "control": {
+                  "kind": "clarification",
+                  "responseSchema": {
+                    "type": "object",
+                    "required": [
+                      "riskTolerance"
+                    ],
+                    "properties": {
+                      "riskTolerance": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "data": {
+                  "requestType": "portfolio-risk-constraint",
+                  "correlationId": "portfolio-risk-constraint",
+                  "prompt": "What risk tolerance should govern future advisory analysis?"
+                }
+              }
+            ],
+            "risk-clarification-resolved": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "purposeParticipant.pendingRequests.riskConstraint.status = 'pending' ? purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestRevision : false",
+                "args": {
+                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.requestRevision,'status':'resolved','correlationId':'portfolio-risk-constraint','riskTolerance':$event.riskTolerance,'settlementId':$event.settlementId}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "purposeParticipant.pendingRequests.riskConstraint.status = 'pending' ? purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestRevision : false",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.settlementId)"
+                }
+              }
+            ],
+            "request-rebalance-decision": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "args": {
+                  "from": "{'requestType':'portfolio-rebalance-proposal','revision':$event.revision,'status':'pending','correlationId':'portfolio-rebalance-proposal'}"
+                }
+              },
+              {
+                "do": "request",
+                "control": {
+                  "kind": "decision",
+                  "responseSchema": {
+                    "type": "object",
+                    "required": [
+                      "approved"
+                    ],
+                    "properties": {
+                      "approved": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "data": {
+                  "requestType": "portfolio-rebalance-proposal",
+                  "correlationId": "portfolio-rebalance-proposal",
+                  "prompt": "Should the advisory rebalance proposal be accepted for further review?"
+                }
+              }
+            ],
+            "request-target-return-data": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.targetReturn",
+                "args": {
+                  "from": "{'requestType':'portfolio-target-return','revision':$event.revision,'status':'pending','correlationId':'portfolio-target-return'}"
+                }
+              },
+              {
+                "do": "request",
+                "control": {
+                  "kind": "data",
+                  "responseSchema": {
+                    "type": "object",
+                    "required": [
+                      "annualTargetPercent"
+                    ],
+                    "properties": {
+                      "annualTargetPercent": {
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "data": {
+                  "requestType": "portfolio-target-return",
+                  "correlationId": "portfolio-target-return",
+                  "prompt": "What annual target return should be used for progress assessment?"
+                }
+              }
+            ]
+          }
+        }
+      },
       "portfolio-holdings": {
         "id": "portfolio-holdings",
         "outputs": [
