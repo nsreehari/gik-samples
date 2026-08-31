@@ -2,6 +2,12 @@
 
 Community-facing components, Blueprint samples, and the browser App Host for the Generative Interaction Kernel.
 
+## Reference applications
+
+- [`apps/finbook`](./apps/finbook) is a carve-out-ready declarative finance
+  application with its own Blueprint, web host, MCP server, domain logic,
+  SQLite persistence, seeds, and tests.
+
 The app publishes `/provisioning/` and `/in-memory/provisioning/`. These routes
 use the same repository/user Blueprint catalog as the Studio and store
 user-owned provisioning profiles in IndexedDB or memory respectively. They

@@ -15,7 +15,10 @@
     "mcp:start": "node packages/mcp-server/src/index.js --transport streamable-http",
     "mcp:start:stdio": "node packages/mcp-server/src/index.js --transport stdio",
     "mcp:test": "node --test packages/mcp-server/test/*.test.js",
-    "typecheck": "tsc -p packages/components/tsconfig.json --noEmit && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit",
+    "finbook:build": "tsx apps/finbook/scripts/validate-blueprint.ts && vite build --config apps/finbook/app/vite.config.ts",
+    "finbook:dev": "vite --config apps/finbook/app/vite.config.ts",
+    "finbook:server": "npm start --prefix apps/finbook/server",
+    "typecheck": "tsc -p packages/components/tsconfig.json --noEmit && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit && tsc -p apps/finbook/app/tsconfig.json --noEmit",
     "validate:vendor": "node scripts/validate-vendored-packages.mjs",
     "vendor:gik": "node scripts/vendor-gik-packages.mjs"
   },

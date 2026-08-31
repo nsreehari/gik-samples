@@ -1,0 +1,568 @@
+{
+  "gik": "0.1",
+  "type": "blueprint",
+  "payload": {
+    "id": "finbook",
+    "kind": "finance-blueprint",
+    "version": "1.0.0",
+    "structureMode": "fixed",
+    "serviceTiers": [
+      {
+        "id": "finance-domain",
+        "kind": "finance-domain"
+      }
+    ],
+    "serviceRecipes": [],
+    "services": {
+      "finbook-accounts": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "listAccounts": {
+            "operation": "finbook.list_accounts",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.list_accounts"
+        },
+        "scope": "per-blueprint"
+      },
+      "finbook-income": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "getIncome": {
+            "operation": "finbook.get_computed_view",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.get_computed_view"
+        },
+        "scope": "per-blueprint"
+      },
+      "finbook-holdings": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "getHoldings": {
+            "operation": "finbook.get_computed_view",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.get_computed_view"
+        },
+        "scope": "per-blueprint"
+      },
+      "finbook-gains": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "getGains": {
+            "operation": "finbook.get_computed_view",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.get_computed_view"
+        },
+        "scope": "per-blueprint"
+      },
+      "finbook-journal": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "getJournalSummary": {
+            "operation": "finbook.get_journal_summary",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.get_journal_summary"
+        },
+        "scope": "per-blueprint"
+      },
+      "finbook-validation": {
+        "kind": "mcp",
+        "version": "1",
+        "operations": {
+          "validate": {
+            "operation": "finbook.validate_working_state",
+            "contract": "finbook-tool/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "input"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            }
+          }
+        },
+        "config": {
+          "server": "http://127.0.0.1:7811/mcp",
+          "tool": "finbook.validate_working_state"
+        },
+        "scope": "per-blueprint"
+      }
+    },
+    "projectionTiers": [
+      {
+        "id": "finance-domain",
+        "kind": "finance-domain",
+        "capabilities": [
+          "finance-domain:finbook-explorer"
+        ]
+      },
+      {
+        "id": "finance-presentation",
+        "kind": "runtime-document",
+        "capabilities": []
+      }
+    ],
+    "projectionRecipes": [
+      {
+        "id": "finance-domain-to-presentation",
+        "from": "finance-domain",
+        "to": "finance-presentation",
+        "representations": [
+          {
+            "id": "finbook-responsive",
+            "views": {
+              "finbook-explorer": {
+                "primary": {
+                  "capability": "finance:finbook-explorer",
+                  "bindings": {
+                    "account": {
+                      "from": "finbook.selection.account"
+                    },
+                    "fy": {
+                      "from": "finbook.selection.fy"
+                    },
+                    "accounts": {
+                      "from": "finbook.accounts"
+                    },
+                    "income": {
+                      "from": "finbook.income"
+                    },
+                    "holdings": {
+                      "from": "finbook.holdings"
+                    },
+                    "gains": {
+                      "from": "finbook.gains"
+                    },
+                    "journal": {
+                      "from": "finbook.journal"
+                    },
+                    "validation": {
+                      "from": "finbook.validation"
+                    },
+                    "loading": {
+                      "expression": "systemInputs.numSourcesRunning > 0"
+                    }
+                  },
+                  "region": "board"
+                }
+              }
+            },
+            "presentation": {
+              "slots": [
+                "board"
+              ],
+              "root": "board"
+            }
+          }
+        ],
+        "fallback": "finbook-responsive"
+      }
+    ],
+    "runtime": {
+      "externals": {
+        "projectionViews": {
+          "finance": {
+            "from": "finance",
+            "use": [
+              "finbook-explorer"
+            ]
+          }
+        }
+      },
+      "state": {
+        "finbook": {
+          "selection": {
+            "account": "Asha",
+            "fy": "2024-25",
+            "refreshGeneration": 0
+          },
+          "accounts": [],
+          "income": {},
+          "holdings": {},
+          "gains": {},
+          "journal": {},
+          "validation": {}
+        }
+      }
+    },
+    "cells": {
+      "finbook-accounts": {
+        "id": "finbook-accounts",
+        "inputs": [
+          {
+            "token": "finbook-refresh-generation",
+            "required": false
+          }
+        ],
+        "sources": [
+          {
+            "id": "finbook-accounts.source",
+            "service": "finbook-accounts",
+            "operation": "listAccounts",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data.accounts"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "settled-finbook-accounts",
+            "expression": "sources.`finbook-accounts.source`",
+            "assign": "finbook.accounts",
+            "dependencies": [
+              "sources.finbook-accounts.source"
+            ]
+          }
+        ]
+      },
+      "finbook-reports": {
+        "id": "finbook-reports",
+        "inputs": [
+          {
+            "token": "selected-account",
+            "as": "account"
+          },
+          {
+            "token": "selected-fy",
+            "as": "fy"
+          },
+          {
+            "token": "finbook-refresh-generation",
+            "as": "refreshGeneration",
+            "required": false
+          }
+        ],
+        "systemInputs": [
+          "numSourcesRunning"
+        ],
+        "sources": [
+          {
+            "id": "finbook-reports.income",
+            "service": "finbook-income",
+            "operation": "getIncome",
+            "when": "inputs.account != ''",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'account':inputs.account,'view':'income-summary','fy':inputs.fy}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data"
+            }
+          },
+          {
+            "id": "finbook-reports.holdings",
+            "service": "finbook-holdings",
+            "operation": "getHoldings",
+            "when": "inputs.account != ''",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'account':inputs.account,'view':'holdings'}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data"
+            }
+          },
+          {
+            "id": "finbook-reports.gains",
+            "service": "finbook-gains",
+            "operation": "getGains",
+            "when": "inputs.account != ''",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'account':inputs.account,'view':'capital-gains','fy':inputs.fy}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "settled-finbook-income",
+            "expression": "sources.`finbook-reports.income`",
+            "assign": "finbook.income",
+            "dependencies": [
+              "sources.finbook-reports.income"
+            ]
+          },
+          {
+            "id": "settled-finbook-holdings",
+            "expression": "sources.`finbook-reports.holdings`",
+            "assign": "finbook.holdings",
+            "dependencies": [
+              "sources.finbook-reports.holdings"
+            ]
+          },
+          {
+            "id": "settled-finbook-gains",
+            "expression": "sources.`finbook-reports.gains`",
+            "assign": "finbook.gains",
+            "dependencies": [
+              "sources.finbook-reports.gains"
+            ]
+          }
+        ]
+      },
+      "finbook-status": {
+        "id": "finbook-status",
+        "inputs": [
+          {
+            "token": "finbook-refresh-generation",
+            "as": "refreshGeneration",
+            "required": false
+          }
+        ],
+        "systemInputs": [
+          "numSourcesRunning"
+        ],
+        "sources": [
+          {
+            "id": "finbook-status.journal",
+            "service": "finbook-journal",
+            "operation": "getJournalSummary",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data"
+            }
+          },
+          {
+            "id": "finbook-status.validation",
+            "service": "finbook-validation",
+            "operation": "validate",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.structured.data"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "settled-finbook-journal",
+            "expression": "sources.`finbook-status.journal`",
+            "assign": "finbook.journal",
+            "dependencies": [
+              "sources.finbook-status.journal"
+            ]
+          },
+          {
+            "id": "settled-finbook-validation",
+            "expression": "sources.`finbook-status.validation`",
+            "assign": "finbook.validation",
+            "dependencies": [
+              "sources.finbook-status.validation"
+            ]
+          }
+        ]
+      },
+      "finbook-explorer": {
+        "id": "finbook-explorer",
+        "outputs": [
+          {
+            "token": "selected-account",
+            "from": "finbook.selection.account"
+          },
+          {
+            "token": "selected-fy",
+            "from": "finbook.selection.fy"
+          },
+          {
+            "token": "finbook-refresh-generation",
+            "from": "finbook.selection.refreshGeneration"
+          }
+        ],
+        "systemInputs": [
+          "numSourcesRunning"
+        ],
+        "potentialViews": {
+          "primary": {
+            "capability": "finance-domain:finbook-explorer",
+            "region": "board"
+          }
+        },
+        "events": {
+          "select-account": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "account"
+              ],
+              "properties": {
+                "account": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "select-fy": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "fy"
+              ],
+              "properties": {
+                "fy": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "refresh": {
+            "payloadSchema": {
+              "type": "object"
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "select-account": [
+              {
+                "do": "assign",
+                "target": "finbook.selection.account",
+                "args": {
+                  "from": "$event.account"
+                }
+              }
+            ],
+            "select-fy": [
+              {
+                "do": "assign",
+                "target": "finbook.selection.fy",
+                "args": {
+                  "from": "$event.fy"
+                }
+              }
+            ],
+            "refresh": [
+              {
+                "do": "assign",
+                "target": "finbook.selection.refreshGeneration",
+                "args": {
+                  "from": "$number(finbook.selection.refreshGeneration) + 1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "presentation": {
+      "slots": [
+        "board"
+      ],
+      "root": "board",
+      "allowedCapabilities": [
+        {
+          "tier": "finance-domain"
+        },
+        "finance:finbook-explorer"
+      ]
+    }
+  }
+}
