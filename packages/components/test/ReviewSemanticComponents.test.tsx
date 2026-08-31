@@ -73,7 +73,10 @@ test("agent-facing tools describe and scope the new capabilities", () => {
 
 test("finding-set rejects duplicate finding identifiers and unknown properties", () => {
   const trial = findingSetDefinition.materializeTrial();
-  const duplicate = { ...trial.props, findings: [trial.props.findings[0], trial.props.findings[0]] };
+  const findings = trial.props.findings;
+  assert.ok(Array.isArray(findings));
+  assert.ok(findings.length > 0);
+  const duplicate = { ...trial.props, findings: [findings[0], findings[0]] };
   assert.equal(findingSetDefinition.validate(duplicate).ok, false);
   assert.equal(findingSetDefinition.validate({ ...trial.props, extra: true }).ok, false);
 });
