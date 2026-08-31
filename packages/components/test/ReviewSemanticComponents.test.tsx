@@ -8,11 +8,13 @@ import {
   changeProposalDefinition,
   consistencyCaseDefinition,
   findingSetDefinition,
+  describeSemanticComponent,
+  getSemanticComponentAgentKit,
+  listSemanticComponents,
   semanticComponentCapabilities,
   semanticComponentDefinitions,
   semanticComponentViews,
-} from "../src/semantic/registry";
-import { describeSemanticComponent, getSemanticComponentAgentKit, listSemanticComponents } from "../src/semantic/authoring";
+} from "../src/semantic";
 
 const definitions = {
   "finding-set": findingSetDefinition,
@@ -37,7 +39,10 @@ test("new semantic components are registered with capabilities and views", () =>
   for (const name of Object.keys(definitions)) {
     assert.equal(semanticComponentViews[name], semanticComponentDefinitions[name as keyof typeof semanticComponentDefinitions].component);
     assert.ok(semanticComponentCapabilities[name].propsSchema);
-    assert.equal(semanticComponentCapabilities[name].propsSchema.additionalProperties, false);
+    assert.equal(
+      (semanticComponentCapabilities[name].propsSchema as { additionalProperties?: boolean }).additionalProperties,
+      false,
+    );
   }
   const catalog = listSemanticComponents().map((entry) => entry.capability);
   assert.ok(catalog.includes("semantic:finding-set"));
@@ -58,7 +63,7 @@ test("agent-facing tools describe and scope the new capabilities", () => {
     "assessment",
     "change-proposal",
   ]);
-  assert.deepEqual(kit.capabilities.sort(), [
+  assert.deepEqual([...kit.capabilities].sort(), [
     "semantic:assessment",
     "semantic:change-proposal",
     "semantic:consistency-case",
