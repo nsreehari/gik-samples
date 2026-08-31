@@ -51,6 +51,24 @@ function declaredResponseSchema(
 	return { name, schema: schema as Record<string, unknown>, strict: true };
 }
 
+export function instructionsWithGuardrailCorrection(
+	instructions: string | undefined,
+	eventPayload: Record<string, Json> | undefined,
+): string | undefined {
+	const correction = record(eventPayload?.guardrailCorrection);
+	const issues = Array.isArray(correction.issues)
+		? correction.issues
+			.map((issue) => record(issue).detail)
+			.filter((detail): detail is string => typeof detail === "string" && detail.length > 0)
+		: [];
+	if (issues.length === 0) return instructions;
+	const correctionPrompt = [
+		"The previous response failed validation. Return a corrected response that satisfies every requirement:",
+		...issues.map((issue) => `- ${issue}`),
+	].join("\n");
+	return instructions ? `${instructions}\n\n${correctionPrompt}` : correctionPrompt;
+}
+
 export function parseFoundryJsonReply(reply: string): Json {
 	return parseAgentJsonReply("Foundry agent", reply);
 }
@@ -148,12 +166,16 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 					if (!agentName) throw new Error("foundry-agent requires config.agent or input.agentName");
 					const responseSchema = inputResponseSchema(input)
 						?? (responseMode === "json" ? undefined : declaredResponseSchema(request, adapterContext));
+					const instructions = instructionsWithGuardrailCorrection(
+						typeof input.instructions === "string" ? input.instructions : undefined,
+						request.eventPayload,
+					);
 					const foundry = await client();
 					let response = await foundry.chat({
 							message: String(input.message ?? ""),
 							agentName,
 							conversationId: typeof input.conversationId === "string" ? input.conversationId : undefined,
-							instructions: typeof input.instructions === "string" ? input.instructions : undefined,
+							instructions,
 							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
 							responseSchema,
 						});

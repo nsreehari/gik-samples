@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { materializeBlueprint, parseBlueprintReference } from "@gik-ai/blueprint";
+import {
+  materializeBlueprint,
+  parseBlueprintReference,
+  runMaterializedTransition,
+} from "@gik-ai/blueprint";
 import type { ResolvedNode } from "@gik-ai/kernel";
 
 import {
@@ -34,4 +38,44 @@ test("resolves a materialized Blueprint Presentation from an explicit state snap
   assert.ok(nodes.some(({ id }) => id.startsWith("portfolio-holdings--primary--in-")));
   assert.ok(nodes.some(({ id }) => id.startsWith("market-prices--primary--in-")));
   assert.ok(nodes.some(({ id }) => id.startsWith("portfolio-value-cell--primary--in-")));
+});
+
+test("incident analysis hides report decorations until a report is available", async () => {
+  const materialized = materializeBlueprint({
+    blueprint: resolveSampleBlueprintSource("incident-analysis-new-shell"),
+    externalContext: { model: "semantic" },
+    resolveBlueprint(reference) {
+      return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
+    },
+  });
+
+  const tree = await resolveStatelessPresentation(
+    materialized,
+    structuredClone(materialized.payload.initialState),
+  );
+  const nodes = flattenTree(tree);
+  const reportTimestamp = nodes.find(({ id }) =>
+    id.startsWith("report-viewer--primary--in-analysis-report--before-1"));
+
+  assert.ok(reportTimestamp);
+  assert.equal(reportTimestamp.visible, false);
+});
+
+test("incident analysis requests source report options on its initial transition", async () => {
+  const materialized = materializeBlueprint({
+    blueprint: resolveSampleBlueprintSource("incident-analysis-new-shell"),
+    resolveBlueprint(reference) {
+      return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
+    },
+  });
+
+  const result = await runMaterializedTransition({
+    materializedBlueprint: materialized,
+    state: structuredClone(materialized.payload.initialState),
+    events: [],
+  });
+
+  assert.equal(result.effects.length, 1);
+  assert.equal(result.effects[0]?.kind, "invoke");
+  assert.equal(result.effects[0]?.control.tool, "listSourceReports");
 });
