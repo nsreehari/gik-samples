@@ -196,6 +196,23 @@ test("the in-memory application root explicitly disables durable storage", () =>
   assert.equal(capturedProps.appRootDurableEnabled, false);
 });
 
+test("the tests, scenarios, and provisioning routes are code-split and do not resolve synchronously", () => {
+  // These routes are dynamically imported (React.lazy) so their chunks, and everything they in turn
+  // import, stay out of the root and Blueprint-route bundles until actually navigated to. A
+  // synchronous render (as production's initial paint effectively is, before the chunk arrives) must
+  // therefore show the shared loading fallback rather than the resolved page content.
+  for (const href of [
+    "https://example.test/tests/",
+    "https://example.test/scenarios/",
+    "https://example.test/provisioning/",
+  ]) {
+    withLocation(href, () => {
+      const markup = renderToStaticMarkup(React.createElement(Host));
+      assert.match(markup, /Loading analysis/);
+    });
+  }
+});
+
 test("portfolio tracker uses Blueprint-authored launch defaults", () => {
   withLocation("https://example.test/?b=portfolio-tracker-new&gik=1", () => {
     renderToStaticMarkup(React.createElement(Host));

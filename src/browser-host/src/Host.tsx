@@ -30,11 +30,22 @@ import { ApplicationSwitcher } from "./ApplicationSwitcher";
 import { AppRootPage } from "./AppRootPage";
 import { useBlueprintHostSetup } from "./blueprint-host-setup";
 import { DurableBlueprintHost } from "./durable-blueprint-host";
-import { BlueprintTestsPage } from "./BlueprintTestsPage";
-import {
-  ScenarioExplorerPage,
-} from "./ScenarioExplorerPage";
-import { AgentProvisioningPage } from "./provisioning/AgentProvisioningPage";
+
+// Blueprint Tests, the Scenario Explorer, and agent provisioning are distinct top-level routes
+// (`/tests/`, `/scenarios/`, `/provisioning/`) that are never active alongside the application root
+// or a selected-Blueprint route. Loading them dynamically keeps their code, and everything they in
+// turn import, out of the bundle chunks the root and Blueprint routes need at startup.
+const BlueprintTestsPage = React.lazy(
+  () => import("./BlueprintTestsPage").then((module) => ({ default: module.BlueprintTestsPage })),
+);
+const ScenarioExplorerPage = React.lazy(
+  () => import("./ScenarioExplorerPage").then((module) => ({ default: module.ScenarioExplorerPage })),
+);
+const AgentProvisioningPage = React.lazy(
+  () => import("./provisioning/AgentProvisioningPage").then(
+    (module) => ({ default: module.AgentProvisioningPage }),
+  ),
+);
 
 export { createSampleBlueprintProposalStore } from "./blueprint-host-setup";
 
@@ -46,12 +57,26 @@ export function Host(): React.ReactElement {
     const canonicalUrl = canonicalizeHostUrl(window.location.href);
     if (canonicalUrl !== window.location.href) window.history.replaceState(null, "", canonicalUrl);
   }, []);
-  if (query.testsEnabled) return <BlueprintTestsPage />;
+  if (query.testsEnabled) {
+    return (
+      <React.Suspense fallback={hostedBlueprintLoading()}>
+        <BlueprintTestsPage />
+      </React.Suspense>
+    );
+  }
   if (query.scenariosEnabled) {
-    return <ScenarioExplorerPage />;
+    return (
+      <React.Suspense fallback={hostedBlueprintLoading()}>
+        <ScenarioExplorerPage />
+      </React.Suspense>
+    );
   }
   if (query.provisioningEnabled) {
-    return <AgentProvisioningPage durableEnabled={query.durableEnabled} />;
+    return (
+      <React.Suspense fallback={hostedBlueprintLoading()}>
+        <AgentProvisioningPage durableEnabled={query.durableEnabled} />
+      </React.Suspense>
+    );
   }
   // No selected Blueprint is not "the default Blueprint": it is the application root itself.
   if (query.targetId === null) {
