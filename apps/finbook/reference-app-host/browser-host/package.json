@@ -11,7 +11,7 @@
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.312",
     "@gik-ai/blueprint": "*",
-    "@gik-ai/components": "*",
+    "@gik-ai/components": "file:vendor/gik-packages/gik-ai-components-0.2.1.tgz",
     "@gik-ai/controlface": "*",
     "@gik-ai/evaluators": "*",
     "@gik-ai/kernel": "*",
