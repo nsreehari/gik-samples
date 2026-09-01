@@ -8,7 +8,7 @@ import {
 	type ServiceKindFactory,
 	type ServiceKindManifest,
 } from "@gik-ai/controlface/services";
-import { executeAgentFunctionCall } from "@gik-ai/agent-lifecycle-exp";
+import { executeAgentFunctionCall, type AgentTool } from "@gik-ai/agent-lifecycle-exp";
 import { createFoundryProxy, FoundryProxyError, type FoundryChatResponseSchema } from "./foundry-proxy";
 import manifestJson from "./manifest.json";
 import { parseAgentJsonReply } from "../agent-json-response";
@@ -187,7 +187,10 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
 							responseSchema,
 						});
-					const tools = adapterContext.agentTools ?? [];
+					const tools: readonly AgentTool[] = (adapterContext.agentTools ?? []).map((tool) => ({
+						...tool,
+						handler: (args: unknown) => tool.handler(args),
+					}));
 						let inProgressProposal = false;
 					for (let turn = 0; response.toolCalls.length > 0; turn += 1) {
 						if (turn >= 8) throw new Error("Foundry agent exceeded the lifecycle tool turn limit");
