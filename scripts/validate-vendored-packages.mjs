@@ -16,11 +16,13 @@ if (!/^[0-9a-f]{40}$/.test(manifest.sourceCommit)) {
 }
 
 const manifestNames = new Set();
+const manifestVersions = new Map();
 for (const artifact of manifest.packages) {
   if (manifestNames.has(artifact.name)) {
     throw new Error(`Duplicate vendored package '${artifact.name}'.`);
   }
   manifestNames.add(artifact.name);
+  manifestVersions.set(artifact.name, artifact.version);
   const dependency = packageJson.dependencies[artifact.name];
   const expectedDependency = `file:vendor/gik-packages/${artifact.file}`;
   if (dependency !== expectedDependency) {
@@ -55,15 +57,22 @@ if (localGikDependencies.length !== manifest.packages.length) {
 const componentsJson = JSON.parse(
   await readFile(join(repositoryRoot, "packages", "components", "package.json"), "utf8"),
 );
+const rootGikDependencies = Object.entries(packageJson.dependencies)
+  .filter(([name]) => name.startsWith("@gik-ai/"));
+for (const [name, version] of rootGikDependencies) {
+  const componentsVersion = componentsJson.dependencies?.[name];
+  const expectedVersion = String(version).startsWith("file:")
+    ? manifestVersions.get(name)
+    : version;
+  if (componentsVersion !== undefined && componentsVersion !== expectedVersion) {
+    throw new Error(`'${name}' must use one version across the workspace.`);
+  }
+}
 const registryGikDependencies = Object.entries(packageJson.dependencies)
   .filter(([name, value]) => name.startsWith("@gik-ai/") && !String(value).startsWith("file:"));
-for (const [name, version] of registryGikDependencies) {
+for (const [name] of registryGikDependencies) {
   if (manifestNames.has(name)) {
     throw new Error(`Vendored package '${name}' must not also resolve from the registry.`);
-  }
-  const componentsVersion = componentsJson.dependencies?.[name];
-  if (componentsVersion !== undefined && componentsVersion !== version) {
-    throw new Error(`'${name}' must use one version across the workspace.`);
   }
 }
 
