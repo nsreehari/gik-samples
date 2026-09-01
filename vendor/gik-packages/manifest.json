@@ -1,7 +1,7 @@
 {
   "format": "gik-vendored-packages/1",
   "sourceRepository": "https://github.com/nsreehari/generative-interaction-kernel.git",
-  "sourceCommit": "94a749c22c831941c38db4c711428ace8c91e6ca",
+  "sourceCommit": "23f37613eab0e7121ff83a48f88684a5917f2d36",
   "excluded": [
     "source map files",
     "sourceMappingURL comments"
@@ -9,17 +9,24 @@
   "packages": [
     {
       "name": "@gik-ai/agent-lifecycle-exp",
-      "version": "0.1.0",
-      "file": "gik-ai-agent-lifecycle-exp-0.1.0.tgz",
-      "bytes": 24075,
-      "sha256": "3870935fe86bcc2793d31e159da241c90653cbea10547d8190d9b32400679ed5"
+      "version": "0.1.1",
+      "file": "gik-ai-agent-lifecycle-exp-0.1.1.tgz",
+      "bytes": 23856,
+      "sha256": "ea14fdc1997e15888717ff8b84e294ee6bf4386f67b8d0a09247bf7eaf00c2ef"
     },
     {
       "name": "@gik-ai/blueprint-agent-host",
       "version": "0.1.0",
       "file": "gik-ai-blueprint-agent-host-0.1.0.tgz",
-      "bytes": 5425,
-      "sha256": "50a204444cef8de5124956704e0cdbddb909e0e08d6f1e679f03e98d24bed0c4"
+      "bytes": 5399,
+      "sha256": "ad4fc005d12072a42327ebb5e98c5f6c6a3a944c68cbf8675213255df43d6b97"
+    },
+    {
+      "name": "@gik-ai/kernel",
+      "version": "0.1.2",
+      "file": "gik-ai-kernel-0.1.2.tgz",
+      "bytes": 126094,
+      "sha256": "de1b4d49d501258eaf69d096c48df94cabc3f62ebc2872a8e22c11bc9074d8f1"
     }
   ]
 }

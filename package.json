@@ -22,7 +22,7 @@
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.312",
-    "@gik-ai/agent-lifecycle-exp": "file:vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.0.tgz",
+    "@gik-ai/agent-lifecycle-exp": "file:vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.1.tgz",
     "@gik-ai/blueprint": "0.2.1-next.1",
     "@gik-ai/blueprint-agent-host": "file:vendor/gik-packages/gik-ai-blueprint-agent-host-0.1.0.tgz",
     "@gik-ai/controlface": "0.1.5-next.1",

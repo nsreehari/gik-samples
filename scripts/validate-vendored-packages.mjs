@@ -68,9 +68,11 @@ for (const [name, version] of registryGikDependencies) {
 }
 
 const registryGikVersions = new Map(registryGikDependencies);
+const localGikVersions = new Map(localGikDependencies);
 for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
   if (!name.startsWith("@gik-ai/")) continue;
-  if (registryGikVersions.get(name) !== override) {
+  const expectedOverride = localGikVersions.has(name) ? `$${name}` : registryGikVersions.get(name);
+  if (expectedOverride !== override) {
     throw new Error(`Override for '${name}' must match the declared dependency version.`);
   }
 }
