@@ -7,21 +7,34 @@ import {
   type BundleNative,
   type ProjectionView,
 } from "@gik-ai/react";
+import type { CapabilityDescriptor } from "@gik-ai/kernel";
+import {
+  primitiveComponentCapabilities,
+  primitiveComponentViews,
+} from "@gik-ai/components/primitives";
 
 import finbookBlueprintJson from "../../blueprints/finbook/blueprint.json";
 import { financeComponentViews } from "./components/FinbookExplorer";
+import { financeComponentCapabilities } from "./components/FinbookExplorerContract";
 import { createFinbookServiceOrchestrator } from "./services/service-host";
 
 validateBlueprintArtifact(finbookBlueprintJson);
 const finbookBlueprint: BlueprintArtifact = finbookBlueprintJson;
 const runtime = openBlueprint(finbookBlueprint);
-const mcpServer = import.meta.env.VITE_FINBOOK_MCP_URL?.trim() || undefined;
 const native: BundleNative = {
-  wrapOrchestrator: createFinbookServiceOrchestrator(runtime, mcpServer),
+  wrapOrchestrator: createFinbookServiceOrchestrator(runtime),
 };
 
 function resolveLeavesProvider(id: string): Record<string, ProjectionView> | undefined {
-  return id === "finance" ? financeComponentViews : undefined;
+  if (id === "finance") return financeComponentViews;
+  if (id === "primitive") return primitiveComponentViews;
+  return undefined;
+}
+
+function resolveCapabilityDescriptors(id: string): Record<string, CapabilityDescriptor> | undefined {
+  if (id === "finance") return financeComponentCapabilities;
+  if (id === "primitive") return primitiveComponentCapabilities;
+  return undefined;
 }
 
 export function FinbookHost(): React.ReactElement {
@@ -30,6 +43,7 @@ export function FinbookHost(): React.ReactElement {
       blueprint={finbookBlueprint}
       native={native}
       resolveLeavesProvider={resolveLeavesProvider}
+      resolveCapabilityDescriptors={resolveCapabilityDescriptors}
     />
   );
 }

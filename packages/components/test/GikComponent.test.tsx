@@ -184,6 +184,35 @@ test("GikComponentDeclarative exposes Fluent components through the fluent provi
   assert.ok("fluent:button" in vocabulary.capabilities);
 });
 
+test("GikComponentDeclarative accepts an opt-in domain capability catalog", () => {
+  const descriptor = {
+    propsSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["result"],
+      properties: { result: { type: "object" } },
+    },
+    dataProp: "result",
+    emits: [],
+  };
+  const bundle = createGikComponentDeclarativeBundle({
+    id: "finbook-explorer",
+    capability: "finance:finbook-explorer",
+    props: { result: {} },
+  }, {
+    state: {},
+    contexts: {},
+    effectHandlers: {},
+    resolveCapabilityDescriptors: (from) => from === "finance" ? { "finbook-explorer": descriptor } : undefined,
+  });
+  const vocabulary = unwrap(bundle.vocabulary);
+
+  assert.deepEqual(vocabulary.capabilities["finance:finbook-explorer"], descriptor);
+  assert.deepEqual(vocabulary.externals?.projectionViews, {
+    finance: { from: "finance", use: ["finbook-explorer"] },
+  });
+});
+
 test("GikComponentDeclarative routes canonical edges.on invoke actions to runtime handlers", async () => {
   let receivedPayload: Record<string, Json> | undefined;
   const props = materializeWorkSetTrial().props;

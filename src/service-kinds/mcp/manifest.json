@@ -1,20 +1,17 @@
 {
   "id": "mcp",
-  "version": "1",
+  "version": "2",
   "title": "Model Context Protocol",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "server": { "type": "string", "minLength": 1 },
-      "serverStatePath": { "type": "string", "minLength": 1 },
-      "tool": { "type": "string", "minLength": 1 },
-      "credentialRef": { "type": "string", "minLength": 1 }
+      "server": { "type": "string", "minLength": 1 }
     },
-    "required": ["server", "tool"]
+    "required": ["server"]
   },
   "executionModes": ["immediate", "queued"],
   "subjects": ["cell", "substrate-agent", "chat", "task"],
   "requiresHostCapabilities": ["mcp-executor"],
-  "supports": { "cancel": true, "probe": true }
+  "supports": { "cancel": false, "probe": true }
 }

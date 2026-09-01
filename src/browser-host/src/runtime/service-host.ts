@@ -6,7 +6,6 @@ import { executeQueuedCellSourceEffect } from "@gik-ai/blueprint/worker";
 import type { BlueprintRuntime } from "@gik-ai/controlface/blueprint";
 import {
   JsonataExpressionProvider,
-  type Json,
   unwrap,
   type ServiceDeclaration,
   type StateModel,
@@ -16,7 +15,6 @@ import {
   createSampleServiceKindRegistry,
   type SampleServiceRegistryOptions,
 } from "../../../service-kinds";
-import { executeMcpServiceInvocation } from "../../../service-kinds/mcp/runtime";
 import {
   clearBrowserCredential,
   resolveBrowserCredential,
@@ -51,10 +49,8 @@ export const browserServiceRegistryOptions = createSampleServiceRegistryOptions(
 });
 
 function mergeRegistryOptions(
-  registryOptions: SampleServiceRegistryOptions = {},
-  state?: StateModel
+  registryOptions: SampleServiceRegistryOptions = {}
 ): SampleServiceRegistryOptions {
-  const execute = registryOptions.execute ?? browserServiceRegistryOptions.execute;
   return {
     ...browserServiceRegistryOptions,
     ...registryOptions,
@@ -64,23 +60,7 @@ function mergeRegistryOptions(
         ...(registryOptions.hostCapabilities ?? []),
       ]),
     ],
-    execute: execute && state
-      ? (request) => {
-          const invocation = request as Parameters<typeof executeMcpServiceInvocation>[0];
-          if (invocation.kind !== "mcp") return execute(request);
-          const config = invocation.declaration.config as Record<string, Json> | undefined;
-          const serverStatePath = String(config?.serverStatePath ?? "").trim();
-          const server = serverStatePath ? String(state.get(serverStatePath) ?? "").trim() : "";
-          if (!server) return execute(request);
-          return execute({
-            ...invocation,
-            declaration: {
-              ...invocation.declaration,
-              config: { ...config, server },
-            },
-          });
-        }
-      : execute,
+    execute: registryOptions.execute ?? browserServiceRegistryOptions.execute,
   };
 }
 
@@ -107,7 +87,7 @@ function createBlueprintServiceHost(
   const manifest = unwrap(runtime.vocabulary);
   const declarations = (manifest.externals?.services ?? {}) as Record<string, ServiceDeclaration>;
   const agentLifecycle = createBlueprintAgentLifecycle(runtime, state, { proposalStore });
-  const mergedOptions = mergeRegistryOptions(registryOptions, state);
+  const mergedOptions = mergeRegistryOptions(registryOptions);
   const rootOptions = bindBlueprintStorage(
     mergedOptions,
     blueprintStorage,

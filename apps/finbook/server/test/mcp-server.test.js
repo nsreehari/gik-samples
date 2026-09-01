@@ -27,6 +27,20 @@ test("serves the Finbook tool catalog and seeded accounts", async (t) => {
   const address = server.address();
   assert(address && typeof address === "object");
   const serverUrl = `http://127.0.0.1:${address.port}`;
+  const preflight = await fetch(`${serverUrl}/mcp`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "http://127.0.0.1:5176",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type,mcp-session-id,mcp-protocol-version",
+    },
+  });
+  assert.equal(preflight.status, 204);
+  assert.match(
+    preflight.headers.get("access-control-allow-headers") ?? "",
+    /mcp-protocol-version/,
+  );
+
   const initialized = await post(serverUrl, {
     jsonrpc: "2.0",
     id: 1,
@@ -48,9 +62,18 @@ test("serves the Finbook tool catalog and seeded accounts", async (t) => {
   assert.equal(notification.response.status, 204);
   assert.equal(notification.body, null);
 
-  const catalog = await post(serverUrl, {
+  const expiredSession = await post(serverUrl, {
     jsonrpc: "2.0",
     id: 2,
+    method: "tools/list",
+    params: {},
+  }, "expired-session");
+  assert.equal(expiredSession.response.status, 404);
+  assert.equal(expiredSession.body.error.message, "Invalid MCP session");
+
+  const catalog = await post(serverUrl, {
+    jsonrpc: "2.0",
+    id: 3,
     method: "tools/list",
     params: {},
   }, sessionId);
@@ -58,7 +81,7 @@ test("serves the Finbook tool catalog and seeded accounts", async (t) => {
 
   const accounts = await post(serverUrl, {
     jsonrpc: "2.0",
-    id: 3,
+    id: 4,
     method: "tools/call",
     params: {
       name: "finbook.list_accounts",

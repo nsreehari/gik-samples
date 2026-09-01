@@ -42,7 +42,7 @@ function corsHeaders(origin) {
   if (!origin || !allowedOrigins.includes(origin)) return {};
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "content-type,mcp-session-id",
+    "Access-Control-Allow-Headers": "content-type,mcp-session-id,mcp-protocol-version",
     "Access-Control-Allow-Methods": "POST,OPTIONS",
     "Access-Control-Expose-Headers": "mcp-session-id",
     Vary: "Origin",
@@ -93,7 +93,7 @@ async function handleRpc(request, response) {
 
   const sessionId = String(request.headers["mcp-session-id"] ?? "");
   if (!sessions.has(sessionId)) {
-    json(response, 400, rpcError(body.id ?? null, -32001, "Invalid MCP session"), cors);
+    json(response, 404, rpcError(body.id ?? null, -32001, "Invalid MCP session"), cors);
     return;
   }
 

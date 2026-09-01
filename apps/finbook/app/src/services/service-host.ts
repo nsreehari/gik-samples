@@ -12,7 +12,6 @@ import { createFinbookServiceRegistry } from "./registry";
 
 export function createFinbookServiceOrchestrator(
   runtime: BlueprintRuntime,
-  serverOverride?: string,
 ): NonNullable<LoadBundleOptions["wrapOrchestrator"]> {
   return (fallback, state) => {
     const declarations = (unwrap(runtime.vocabulary).externals?.services ?? {}) as Record<string, ServiceDeclaration>;
@@ -20,7 +19,7 @@ export function createFinbookServiceOrchestrator(
       blueprintId: runtime.blueprintId,
       blueprintRevision: runtime.revision,
       declarations,
-      registry: createFinbookServiceRegistry(serverOverride),
+      registry: createFinbookServiceRegistry(),
       state,
       expression: new JsonataExpressionProvider({ safe: true }),
       dependencyFailurePolicy: "throw",

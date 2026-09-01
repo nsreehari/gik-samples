@@ -1,8 +1,9 @@
 # Finbook
 
-Finbook is a complete GIK reference application that can be copied out of this
-repository. It owns its Blueprint, projection leaf, finance domain, MCP server,
-SQLite adapter, seed data, tests, and build entry points.
+Finbook is a cloneable full-stack GIK reference application. Its first
+milestone intentionally presents a small read-only report explorer while owning
+the complete application boundary: Blueprint, component catalog, host, finance
+domain, MCP server, SQLite adapter, seed data, tests, and build entry points.
 
 ## Architecture
 
@@ -14,15 +15,22 @@ apps/finbook/
 └── server/       Finbook domain, SQLite persistence, and MCP/HTTP host
 ```
 
-The React entry renders one `BlueprintHost`. The Blueprint owns account and
-financial-year selection, refresh behavior, service declarations, loading
-state, and projection composition. `finance:finbook-explorer` is a
-presentation-only leaf: it renders resolved props and emits declared UI events.
+The React entry renders one `BlueprintHost` and supplies both the standard
+primitive catalog and the app-owned finance catalog. The Blueprint has two
+semantic Cells:
 
-The browser host includes a narrow MCP service adapter because the current
-general-purpose sample service host also owns Studio catalog, credential,
-storage, and agent concerns. This adapter is app-local and has no dependency on
-Blueprint Studio.
+- `finbook-selector` loads account options, presents a `primitive:form`, and
+  publishes the selected account, financial year, and report through ports;
+- `finbook-explorer` consumes those ports, runs one Finbook computed-view
+  query, and presents the result through `finance:finbook-explorer`.
+
+`finance:finbook-explorer` is a self-describing declarative component with a
+closed props schema, validator, authoring guidance, trial materializer,
+capability descriptor, and projection view. Its implementation composes the
+governed `fluent:table` component instead of recreating table controls.
+
+The browser host includes a narrow app-owned MCP service adapter and has no
+dependency on Blueprint Studio.
 
 ## Run locally
 
@@ -54,8 +62,11 @@ npm run check --prefix apps\finbook\server
 `FINBOOK_DB_PATH`, `FINBOOK_HOST`, `FINBOOK_PORT`, and
 `FINBOOK_ALLOWED_ORIGINS` configure the local server. Runtime SQLite files are
 created from the checked-in JSON/JSONL seeds and are ignored by Git.
-Set `VITE_FINBOOK_MCP_URL` when building the web app for a deployed MCP
-endpoint; the local Blueprint endpoint remains the development default.
+
+The Blueprint owns the concrete MCP endpoint. For deployment, author a
+deployment-specific Finbook Blueprint revision containing the hosted HTTPS
+endpoint; the browser host may authorize or reject that endpoint but does not
+rewrite it from environment variables.
 
 ## Extract
 

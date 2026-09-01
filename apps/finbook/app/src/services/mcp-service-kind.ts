@@ -6,17 +6,29 @@ import {
   type ServiceKindManifest,
 } from "@gik-ai/controlface/services";
 
-import manifestJson from "./manifest.json";
-import { createMcpHttpClient, type McpClientInfo } from "./runtime";
+import { createMcpHttpClient } from "./mcp-runtime";
 
-export interface McpServiceKindOptions {
-  fetch?: typeof globalThis.fetch;
-  clientInfo?: McpClientInfo;
-}
-
-function declaredOperations(declaration: NativeServiceDeclaration): Set<string> {
-  return new Set(Object.values(declaration.operations).map(({ operation }) => operation));
-}
+const manifest: ServiceKindManifest = {
+  id: "mcp",
+  version: "1",
+  title: "Model Context Protocol",
+  configSchema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      server: { type: "string", minLength: 1 },
+    },
+    required: ["server"],
+  },
+  executionModes: ["immediate", "queued"],
+  subjects: ["cell"],
+  requiresHostCapabilities: ["mcp-executor"],
+  supports: {
+    discover: true,
+    probe: true,
+    cancel: false,
+  },
+};
 
 function serverUrl(declaration: NativeServiceDeclaration): URL {
   const server = String(serviceConfig(declaration).server ?? "").trim();
@@ -28,16 +40,7 @@ function serverUrl(declaration: NativeServiceDeclaration): URL {
   return url;
 }
 
-export function createMcpServiceKind(
-  options: McpServiceKindOptions = {},
-): ServiceKindFactory {
-  const manifest = manifestJson as ServiceKindManifest;
-  const fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
-  const clientInfo = options.clientInfo ?? {
-    name: "@gik-ai/samples",
-    version: "0.1.0",
-  };
-
+export function createMcpServiceKind(): ServiceKindFactory {
   return {
     manifest,
     validate: async (declaration, context) => {
@@ -66,12 +69,10 @@ export function createMcpServiceKind(
         throw new Error(`MCP endpoint '${endpoint.href}' is not authorized by the host`);
       }
 
-      const operations = declaredOperations(declaration);
-      const client = createMcpHttpClient({
-        server: endpoint,
-        clientInfo,
-        fetchImpl,
-      });
+      const operations = new Set(
+        Object.values(declaration.operations).map(({ operation }) => operation),
+      );
+      const client = createMcpHttpClient(endpoint);
       const provider = {
         id: `mcp:${context.identity?.serviceId ?? endpoint.href}`,
         version: manifest.version,
@@ -128,5 +129,3 @@ export function createMcpServiceKind(
     },
   };
 }
-
-export const mcpServiceKind = createMcpServiceKind();

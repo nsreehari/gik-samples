@@ -1,49 +1,18 @@
-import { ServiceKindRegistry, type ServiceKindFactory, type ServiceKindManifest } from "@gik-ai/controlface/services";
+import { ServiceKindRegistry } from "@gik-ai/controlface/services";
 
-import { createWorkerServiceKind } from "./worker-service-kind";
-import { executeMcpServiceInvocation } from "./mcp-runtime";
+import { createMcpServiceKind } from "./mcp-service-kind";
 
-const mcpManifest: ServiceKindManifest = {
-  id: "mcp",
-  version: "1",
-  title: "Model Context Protocol",
-  configSchema: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      server: { type: "string", minLength: 1 },
-      tool: { type: "string", minLength: 1 },
-    },
-    required: ["server", "tool"],
-  },
-  executionModes: ["immediate", "queued"],
-  subjects: ["cell"],
-  requiresHostCapabilities: ["mcp-executor"],
-  supports: { cancel: false, probe: true },
-};
+function isLoopback(hostname: string): boolean {
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "[::1]";
+}
 
-const mcpServiceKind: ServiceKindFactory = createWorkerServiceKind(mcpManifest);
-
-export function createFinbookServiceRegistry(serverOverride?: string): ServiceKindRegistry {
+export function createFinbookServiceRegistry(): ServiceKindRegistry {
   const registry = new ServiceKindRegistry({
     hostCapabilities: ["mcp-executor"],
-    execute: async (request) => {
-      const invocation = request as Parameters<typeof executeMcpServiceInvocation>[0];
-      const config = invocation.declaration.config;
-      return executeMcpServiceInvocation(serverOverride
-        ? {
-            ...invocation,
-            declaration: {
-              ...invocation.declaration,
-              config: {
-                ...(config && typeof config === "object" && !Array.isArray(config) ? config : {}),
-                server: serverOverride,
-              },
-            },
-          }
-        : invocation);
-    },
+    authorizeEndpoint: (kind, endpoint) => kind === "mcp"
+      && (endpoint.protocol === "https:"
+        || (endpoint.protocol === "http:" && isLoopback(endpoint.hostname))),
   });
-  registry.register(mcpServiceKind);
+  registry.register(createMcpServiceKind());
   return registry;
 }

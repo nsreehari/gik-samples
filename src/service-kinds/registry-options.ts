@@ -3,7 +3,6 @@ import { UnsatisfiedServiceDependencyError } from "@gik-ai/controlface/services"
 import type { SampleServiceRegistryOptions } from ".";
 import { executeCopilotAgentInvocation } from "./copilot-agent/runtime";
 import { executeHttpServiceInvocation } from "./http-service/runtime";
-import { executeMcpServiceInvocation } from "./mcp/runtime";
 
 export interface SampleServiceHostCredentials {
   resolveCredential(reference: string): Promise<unknown>;
@@ -50,9 +49,6 @@ export function createSampleServiceRegistryOptions(
           }
           throw error;
         }
-      }
-      if (invocation.kind === "mcp") {
-        return executeMcpServiceInvocation(request as Parameters<typeof executeMcpServiceInvocation>[0]);
       }
       if (invocation.kind === "copilot-agent") {
         return executeCopilotAgentInvocation(request as Parameters<typeof executeCopilotAgentInvocation>[0]);
