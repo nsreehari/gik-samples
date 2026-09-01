@@ -1,7 +1,7 @@
 {
   "format": "gik-vendored-packages/1",
   "sourceRepository": "https://github.com/nsreehari/generative-interaction-kernel.git",
-  "sourceCommit": "23f37613eab0e7121ff83a48f88684a5917f2d36",
+  "sourceCommit": "1e2a7b6baa32d6b8a85536b01a8ec8b4ce7f0d95",
   "excluded": [
     "source map files",
     "sourceMappingURL comments"
@@ -22,11 +22,25 @@
       "sha256": "ad4fc005d12072a42327ebb5e98c5f6c6a3a944c68cbf8675213255df43d6b97"
     },
     {
+      "name": "@gik-ai/controlface",
+      "version": "0.1.5",
+      "file": "gik-ai-controlface-0.1.5.tgz",
+      "bytes": 324736,
+      "sha256": "397d0ca39e6ae2eb250449479c1bacc15c53080d42d0c47afab9efc1f3033dfe"
+    },
+    {
+      "name": "@gik-ai/evaluators",
+      "version": "0.1.2",
+      "file": "gik-ai-evaluators-0.1.2.tgz",
+      "bytes": 81542,
+      "sha256": "210d9c84668ebf69042da0c8f6b3f3dcf96a2f8512505df254afa789f205e587"
+    },
+    {
       "name": "@gik-ai/kernel",
       "version": "0.1.2",
       "file": "gik-ai-kernel-0.1.2.tgz",
-      "bytes": 126094,
-      "sha256": "de1b4d49d501258eaf69d096c48df94cabc3f62ebc2872a8e22c11bc9074d8f1"
+      "bytes": 126159,
+      "sha256": "cb5215267f56d52f5014d73bc89e45d7965bd89d50f3117fa27cf461a839dd61"
     }
   ]
 }

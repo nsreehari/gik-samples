@@ -3129,16 +3129,17 @@
             "payloadSchema": {
               "type": "object",
               "required": [
-                "request",
+                "requestContext",
                 "outcome"
               ],
               "properties": {
-                "request": {
+                "requestContext": {
                   "type": "object",
                   "required": [
                     "requestType",
                     "correlationId",
-                    "revision"
+                    "revision",
+                    "effectId"
                   ],
                   "properties": {
                     "requestType": {
@@ -3152,24 +3153,12 @@
                     },
                     "prompt": {
                       "type": "string"
+                    },
+                    "effectId": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": true
-                },
-                "requestType": {
-                  "type": "string"
-                },
-                "correlationId": {
-                  "type": "string"
-                },
-                "revision": {
-                  "type": "integer"
-                },
-                "prompt": {
-                  "type": "string"
-                },
-                "effectId": {
-                  "type": "string"
                 },
                 "outcome": {
                   "type": "string",
@@ -3198,16 +3187,17 @@
             "payloadSchema": {
               "type": "object",
               "required": [
-                "request",
+                "requestContext",
                 "outcome"
               ],
               "properties": {
-                "request": {
+                "requestContext": {
                   "type": "object",
                   "required": [
                     "requestType",
                     "correlationId",
-                    "revision"
+                    "revision",
+                    "effectId"
                   ],
                   "properties": {
                     "requestType": {
@@ -3218,24 +3208,12 @@
                     },
                     "revision": {
                       "type": "integer"
+                    },
+                    "effectId": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": true
-                },
-                "requestType": {
-                  "type": "string"
-                },
-                "correlationId": {
-                  "type": "string"
-                },
-                "revision": {
-                  "type": "integer"
-                },
-                "prompt": {
-                  "type": "string"
-                },
-                "effectId": {
-                  "type": "string"
                 },
                 "outcome": {
                   "type": "string",
@@ -3249,16 +3227,17 @@
             "payloadSchema": {
               "type": "object",
               "required": [
-                "request",
+                "requestContext",
                 "outcome"
               ],
               "properties": {
-                "request": {
+                "requestContext": {
                   "type": "object",
                   "required": [
                     "requestType",
                     "correlationId",
-                    "revision"
+                    "revision",
+                    "effectId"
                   ],
                   "properties": {
                     "requestType": {
@@ -3269,24 +3248,12 @@
                     },
                     "revision": {
                       "type": "integer"
+                    },
+                    "effectId": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": true
-                },
-                "requestType": {
-                  "type": "string"
-                },
-                "correlationId": {
-                  "type": "string"
-                },
-                "revision": {
-                  "type": "integer"
-                },
-                "prompt": {
-                  "type": "string"
-                },
-                "effectId": {
-                  "type": "string"
                 },
                 "outcome": {
                   "type": "string",
@@ -3300,16 +3267,17 @@
             "payloadSchema": {
               "type": "object",
               "required": [
-                "request",
+                "requestContext",
                 "outcome"
               ],
               "properties": {
-                "request": {
+                "requestContext": {
                   "type": "object",
                   "required": [
                     "requestType",
                     "correlationId",
-                    "revision"
+                    "revision",
+                    "effectId"
                   ],
                   "properties": {
                     "requestType": {
@@ -3320,24 +3288,12 @@
                     },
                     "revision": {
                       "type": "integer"
+                    },
+                    "effectId": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": true
-                },
-                "requestType": {
-                  "type": "string"
-                },
-                "correlationId": {
-                  "type": "string"
-                },
-                "revision": {
-                  "type": "integer"
-                },
-                "prompt": {
-                  "type": "string"
-                },
-                "effectId": {
-                  "type": "string"
                 },
                 "outcome": {
                   "type": "string",
@@ -3381,6 +3337,9 @@
                   "requestType": "portfolio-risk-constraint",
                   "correlationId": "portfolio-risk-constraint",
                   "prompt": "What risk tolerance should govern future advisory analysis?"
+                },
+                "args": {
+                  "from": "{'revision':$event.revision}"
                 }
               }
             ],
@@ -3415,6 +3374,9 @@
                   "requestType": "portfolio-rebalance-proposal",
                   "correlationId": "portfolio-rebalance-proposal",
                   "prompt": "Should the advisory rebalance proposal be accepted for further review?"
+                },
+                "args": {
+                  "from": "{'revision':$event.revision}"
                 }
               }
             ],
@@ -3449,6 +3411,9 @@
                   "requestType": "portfolio-target-return",
                   "correlationId": "portfolio-target-return",
                   "prompt": "What annual target return should be used for progress assessment?"
+                },
+                "args": {
+                  "from": "{'revision':$event.revision}"
                 }
               }
             ],
@@ -3486,6 +3451,9 @@
                   "requestType": "portfolio-purpose-review",
                   "correlationId": "portfolio-purpose-review",
                   "prompt": "Does the current purpose statement, success measures, and constraints still reflect the owner's intent? The participant cannot change these itself."
+                },
+                "args": {
+                  "from": "{'revision':$event.revision}"
                 }
               }
             ],
@@ -3503,39 +3471,39 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.riskConstraint",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.revision,'status':'resolved','correlationId':'portfolio-risk-constraint','riskTolerance':$event.riskTolerance,'effectId':$event.effectId}"
+                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.requestContext.revision,'status':'resolved','correlationId':'portfolio-risk-constraint','riskTolerance':$event.riskTolerance,'effectId':$event.requestContext.effectId}"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.rebalanceDecision",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
                 "args": {
-                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'resolved','approved':$event.approved,'effectId':$event.effectId}])"
+                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'resolved','approved':$event.approved,'effectId':$event.requestContext.effectId}])"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.plan.actions",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
                 "args": {
                   "from": "$map(purposeParticipant.plan.actions, function($a){ $a.id = purposeParticipant.pendingRequests.rebalanceDecision.actionId and $a.status = 'proposed' ? $merge([$a, {'status': $event.approved ? 'accepted' : 'declined'}]) : $a })[]"
                 }
@@ -3543,39 +3511,39 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.targetReturn",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "{'requestType':'portfolio-target-return','revision':$event.revision,'status':'resolved','correlationId':'portfolio-target-return','annualTargetPercent':$event.annualTargetPercent,'effectId':$event.effectId}"
+                  "from": "{'requestType':'portfolio-target-return','revision':$event.requestContext.revision,'status':'resolved','correlationId':'portfolio-target-return','annualTargetPercent':$event.annualTargetPercent,'effectId':$event.requestContext.effectId}"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.purposeReview",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "{'requestType':'portfolio-purpose-review','revision':$event.revision,'status':'resolved','correlationId':'portfolio-purpose-review','purposeConfirmed':$event.purposeConfirmed,'effectId':$event.effectId}"
+                  "from": "{'requestType':'portfolio-purpose-review','revision':$event.requestContext.revision,'status':'resolved','correlationId':'portfolio-purpose-review','purposeConfirmed':$event.purposeConfirmed,'effectId':$event.requestContext.effectId}"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.purposeReview",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
                   "from": "{'status':$event.purposeConfirmed ? 'confirmed' : 'flagged','lastReviewedAt':purposeParticipant.cadences.purposeReview.lastAt,'lastConfirmed':$event.purposeConfirmed,'notes':$exists($event.notes) ? $event.notes : null}"
                 }
@@ -3585,7 +3553,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.riskConstraint",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'rejected'}])"
                 }
@@ -3593,15 +3561,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.rebalanceDecision",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'rejected'}])"
                 }
@@ -3609,15 +3577,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.targetReturn",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'rejected'}])"
                 }
@@ -3625,15 +3593,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.purposeReview",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'rejected'}])"
                 }
@@ -3641,9 +3609,9 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               }
             ],
@@ -3651,7 +3619,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.riskConstraint",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'cancelled'}])"
                 }
@@ -3659,15 +3627,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.rebalanceDecision",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'cancelled'}])"
                 }
@@ -3675,15 +3643,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.targetReturn",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'cancelled'}])"
                 }
@@ -3691,15 +3659,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.purposeReview",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'cancelled'}])"
                 }
@@ -3707,9 +3675,9 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               }
             ],
@@ -3717,7 +3685,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.riskConstraint",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'failed'}])"
                 }
@@ -3725,15 +3693,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.rebalanceDecision",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'failed'}])"
                 }
@@ -3741,15 +3709,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.targetReturn",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'failed'}])"
                 }
@@ -3757,15 +3725,15 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               },
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.purposeReview",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
                   "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'failed'}])"
                 }
@@ -3773,9 +3741,9 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.settledRequestIds",
-                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "guard": "$event.requestContext.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.requestContext.revision",
                 "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.requestContext.effectId)"
                 }
               }
             ]
