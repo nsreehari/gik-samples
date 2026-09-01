@@ -1,4 +1,5 @@
 import React from "react";
+import { parseBlueprintReference } from "@gik-ai/blueprint";
 import {
   Badge,
   Body1,
@@ -38,7 +39,14 @@ const useStyles = makeStyles({
 export function BlueprintTestsPage(): React.ReactElement {
   const styles = useStyles();
   const results = React.useMemo(
-    () => Object.values(getSampleBlueprintCatalog().tests).flatMap(runBlueprintTestDocument),
+    () => {
+      const catalog = getSampleBlueprintCatalog();
+      return Object.values(catalog.tests).flatMap((document) =>
+        runBlueprintTestDocument(document, {
+          blueprint: catalog.entries[document.blueprint],
+          resolveBlueprint: (reference) => catalog.entries[parseBlueprintReference(reference).id],
+        }));
+    },
     [],
   );
   const passed = results.filter((result) => result.passed).length;

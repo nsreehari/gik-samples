@@ -84,7 +84,7 @@ function sourceStatus(source: ProjectedSourceRunState | undefined): ScenarioData
   if (source.lastRequestFailed) return "failed";
   if (source.status === "running") return "running";
   if (source.hasPendingRequest) return "queued";
-  if (source.lastCompletionStatus === "success") return "completed";
+  if (source.lastCompletionStatus?.status === "success") return "completed";
   return "idle";
 }
 

@@ -25,23 +25,26 @@
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.312",
-    "@gik-ai/agent-lifecycle-exp": "file:vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.0.tgz",
-    "@gik-ai/blueprint": "0.2.1-next.1",
+    "@gik-ai/agent-lifecycle-exp": "file:vendor/gik-packages/gik-ai-agent-lifecycle-exp-0.1.1.tgz",
+    "@gik-ai/blueprint": "file:vendor/gik-packages/gik-ai-blueprint-0.2.1.tgz",
     "@gik-ai/blueprint-agent-host": "file:vendor/gik-packages/gik-ai-blueprint-agent-host-0.1.0.tgz",
-    "@gik-ai/controlface": "0.1.5-next.1",
+    "@gik-ai/controlface": "file:vendor/gik-packages/gik-ai-controlface-0.1.5.tgz",
     "@gik-ai/durable-runtime": "0.8.1-next.1",
-    "@gik-ai/evaluators": "0.1.2-next.1",
-    "@gik-ai/kernel": "0.1.2-next.1",
-    "@gik-ai/react": "0.3.1-next.1",
+    "@gik-ai/evaluators": "file:vendor/gik-packages/gik-ai-evaluators-0.1.2.tgz",
+    "@gik-ai/kernel": "file:vendor/gik-packages/gik-ai-kernel-0.1.2.tgz",
+    "@gik-ai/react": "file:vendor/gik-packages/gik-ai-react-0.3.1.tgz",
     "@xyflow/react": "^12.11.2",
     "mermaid": "^11.16.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "overrides": {
+    "@gik-ai/blueprint": "$@gik-ai/blueprint",
+    "@gik-ai/controlface": "$@gik-ai/controlface",
     "@gik-ai/durable-runtime": "0.8.1-next.1",
-    "@gik-ai/evaluators": "0.1.2-next.1",
-    "@gik-ai/kernel": "0.1.2-next.1"
+    "@gik-ai/evaluators": "$@gik-ai/evaluators",
+    "@gik-ai/kernel": "$@gik-ai/kernel",
+    "@gik-ai/react": "$@gik-ai/react"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "10.5.4",

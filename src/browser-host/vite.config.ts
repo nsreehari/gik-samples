@@ -37,7 +37,7 @@ function hostedAssets(): Plugin {
         sirv(finbookDirectory, { dev: true, etag: true, single: true }),
       );
     },
-    closeBundle() {
+    writeBundle() {
       if (!existsSync(storybookDirectory)) {
         throw new Error("Storybook output is missing. Run npm run build:storybook first.");
       }
