@@ -61,6 +61,46 @@ test("incident analysis hides report decorations until a report is available", a
   assert.equal(reportTimestamp.visible, false);
 });
 
+test("incident analysis presents terminal source failures and restores the retry action", async () => {
+  const materialized = materializeBlueprint({
+    blueprint: resolveSampleBlueprintSource("incident-analysis-new-shell"),
+    resolveBlueprint(reference) {
+      return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
+    },
+  });
+  const state = structuredClone(materialized.payload.initialState);
+  state["selected-source-content"] = "Incident source";
+  const runState = state.blueprintRunState as {
+    cells: Record<string, {
+      sources: Array<{
+        id: string;
+        lastCompletionStatus: {
+          status: "success" | "failure";
+          error: Record<string, unknown> | null;
+        } | null;
+      }>;
+    }>;
+  };
+  const source = runState.cells["incident-analysis"].sources.find(({ id }) => id === "incident-analysis.source");
+  assert.ok(source);
+  source.lastCompletionStatus = {
+    status: "failure",
+    error: { error: "Foundry proxy returned 429." },
+  };
+
+  const tree = await resolveStatelessPresentation(materialized, state);
+  const nodes = flattenTree(tree);
+  const analyzeButton = nodes.find(({ id }) => id === "incident-analysis--request--in-analysis-report");
+  const spinner = nodes.find(({ id }) => id === "incident-analysis--progress--in-analysis-report");
+  const error = nodes.find(({ id }) => id === "incident-analysis--error--in-analysis-report");
+
+  assert.equal(analyzeButton?.visible, true);
+  assert.equal(spinner?.visible, false);
+  assert.equal(error?.visible, true);
+  assert.equal(error?.props.value, "Foundry proxy returned 429.");
+  assert.equal(error?.props.level, "error");
+});
+
 test("incident analysis requests source report options on its initial transition", async () => {
   const materialized = materializeBlueprint({
     blueprint: resolveSampleBlueprintSource("incident-analysis-new-shell"),

@@ -12,6 +12,12 @@ import { executeAgentFunctionCall } from "@gik-ai/agent-lifecycle-exp";
 import { createFoundryProxy, FoundryProxyError, type FoundryChatResponseSchema } from "./foundry-proxy";
 import manifestJson from "./manifest.json";
 import { parseAgentJsonReply } from "../agent-json-response";
+import {
+	closeAgentResponseWorkspace,
+	openAgentResponseWorkspace,
+	parseAgentResponseWorkspaceSpec,
+	readAgentResponseProposal,
+} from "../agent-response-workspace";
 
 const manifest = manifestJson as ServiceKindManifest;
 
@@ -153,6 +159,8 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 			},
 			execute: async (request, adapterContext) => {
 				const input = record(request.input);
+				const responseWorkspace = parseAgentResponseWorkspaceSpec(input.authoringWorkspace);
+				if (responseWorkspace) openAgentResponseWorkspace(request.id, responseWorkspace);
 				try {
 					if (request.operation === "check-access") {
 						await (await client()).checkAccess();
@@ -185,9 +193,21 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 						if (turn >= 8) throw new Error("Foundry agent exceeded the lifecycle tool turn limit");
 						if (tools.length === 0) throw new Error("Foundry agent requested lifecycle tools that this host did not provide");
 						const outputs = await Promise.all(response.toolCalls.map(async (call) => {
-							const output = await executeAgentFunctionCall(tools, call, { requestId: request.id });
-							if (call.name.endsWith("_set_in_progress_proposal")) inProgressProposal = true;
-							return { callId: output.call_id, output: output.output };
+							try {
+								const output = await executeAgentFunctionCall(tools, call, { requestId: request.id });
+								if (!responseWorkspace && call.name.endsWith("_set_in_progress_proposal")) {
+									inProgressProposal = true;
+								}
+								return { callId: output.call_id, output: output.output };
+							} catch (error) {
+								return {
+									callId: call.callId,
+									output: JSON.stringify({
+										ok: false,
+										error: error instanceof Error ? error.message : String(error),
+									}),
+								};
+							}
 						}));
 						response = await foundry.chat({
 							agentName,
@@ -197,14 +217,19 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 							toolOutputs: outputs,
 						});
 					}
-					let structuredOutput: Json | undefined;
-					if (responseSchema) {
+					let structuredOutput: Json | undefined = responseWorkspace
+						? readAgentResponseProposal(request.id) as unknown as Json | undefined
+						: undefined;
+					if (responseWorkspace && !structuredOutput) {
+						throw new Error("Foundry agent completed without setting a validated response proposal");
+					}
+					if (!responseWorkspace && responseSchema) {
 						try {
 							structuredOutput = JSON.parse(response.reply) as Json;
 						} catch {
 							throw new Error("Foundry agent returned invalid structured JSON");
 						}
-					} else if (responseMode === "json") {
+					} else if (!responseWorkspace && responseMode === "json") {
 						structuredOutput = parseFoundryJsonReply(response.reply);
 					}
 					return {
@@ -227,6 +252,8 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 						);
 					}
 					throw error;
+				} finally {
+					if (responseWorkspace) closeAgentResponseWorkspace(request.id);
 				}
 			},
 		};

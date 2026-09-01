@@ -94,6 +94,7 @@ function useDurableBlueprint(props: DurableBlueprintProps) {
           externalContext: props.externalContext,
           materializedBlueprint,
           contexts: props.contexts,
+          effectRetry: { maxAttempts: 1 },
         })
       : undefined,
     [materializedBlueprint, native, props.blueprint, props.contexts, props.externalContext, runtime],
