@@ -1,5 +1,12 @@
 # @gik-ai/components
 
+## Unreleased
+
+### Patch Changes
+
+- Allow `GikComponentRuntimeProvider` to register capability descriptors for opt-in
+  application-owned component layers alongside their projection-view providers.
+
 ## 0.2.1
 
 ### Patch Changes

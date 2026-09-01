@@ -139,6 +139,31 @@ provider handlers.
 Projection providers remain explicit. A host registers each layer under a provider name, and a
 bundle imports only the capabilities it uses. Nothing is ambient.
 
+Application-owned component layers must provide both their projection views and capability
+descriptors. Pass the view resolver through `resolveProvider` and the matching descriptor resolver
+through `resolveCapabilityDescriptors`:
+
+```tsx
+<GikComponentRuntimeProvider
+  resolveProvider={(from) => from === "finance" ? financeComponentViews : undefined}
+  resolveCapabilityDescriptors={(from) =>
+    from === "finance" ? financeComponentCapabilities : undefined}
+>
+  <GikComponentDeclarative
+    nodeJson={{
+      id: "report",
+      capability: "finance:report",
+      props: { result },
+    }}
+  />
+</GikComponentRuntimeProvider>
+```
+
+The descriptor resolver is consulted only after the built-in Fluent, primitive, semantic,
+security, and software catalogs. Unknown capabilities still fail bundle construction. Supplying a
+custom view without its descriptor is intentionally insufficient because the generated vocabulary
+must contain the component's actual props, data, slot, and event contract.
+
 ## Agent authoring kit
 
 Generate instructions and tools for only the components an agent may author. Every catalog has a

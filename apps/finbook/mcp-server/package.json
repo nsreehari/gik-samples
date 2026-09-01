@@ -1,0 +1,16 @@
+{
+  "name": "@gik-ai/finbook-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node domain/scripts/generate-mcp-manifests.cjs && node domain/scripts/test-finbook-report.js && node domain/scripts/test-validate-finbook.js && node domain/scripts/validate-finbook.js domain/DB/finbook.sample.json && node --test test/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
