@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import {
   createBlueprintDurableEffectSettlementEvent,
   createBlueprintDurableTransitionAdapter,
@@ -92,7 +90,7 @@ export function createRequestSettlementEvent(
     );
   }
   return createBlueprintDurableEffectSettlementEvent(
-    options.messageId ?? randomUUID(),
+    options.messageId ?? globalThis.crypto.randomUUID(),
     {
       settlement: {
         effectId: effect.effectId,
@@ -121,7 +119,7 @@ export function createSourceSettlementEvent(
     throw new Error("createSourceSettlementEvent requires a source invoke effect (control.sourceRequestToken).");
   }
   return createBlueprintDurableEffectSettlementEvent(
-    options.messageId ?? randomUUID(),
+    options.messageId ?? globalThis.crypto.randomUUID(),
     { sourceOutput },
     effect,
   );
