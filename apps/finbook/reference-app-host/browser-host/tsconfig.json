@@ -14,7 +14,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "rootDir": ".",
+    "rootDir": "../..",
     "types": [
       "node",
       "vite/client"
@@ -23,6 +23,11 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "../**/*.ts",
+    "../../gik-components/**/*.ts",
+    "../../gik-components/**/*.tsx",
+    "../../test/**/*.ts",
+    "../../test/**/*.tsx",
     "vite.config.ts"
   ]
 }

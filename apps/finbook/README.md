@@ -9,10 +9,17 @@ domain, MCP server, SQLite adapter, seed data, tests, and build entry points.
 
 ```text
 apps/finbook/
-├── app/          minimal React host and finance projection
-├── blueprints/   application composition, state, events, and MCP sources
-├── scripts/      Blueprint validation
-└── server/       Finbook domain, SQLite persistence, and MCP/HTTP host
+├── reference-app-host/
+│   ├── browser-host/    minimal React/Vite composition root
+│   ├── service-host/    ServiceHost, MCP service kind, and MCP client
+│   ├── provider-registry.ts
+│   ├── policies.ts      endpoint and credential policy interfaces
+│   └── headless-harness.ts
+├── gik-components/     application-owned declarative components
+├── blueprints/         application composition, state, events, and MCP sources
+├── mcp-server/         Finbook domain, SQLite persistence, and MCP/HTTP host
+├── scripts/            validation and local development entry points
+└── test/               component and reference-host tests
 ```
 
 The React entry renders one `BlueprintHost` and supplies both the standard
@@ -29,24 +36,30 @@ closed props schema, validator, authoring guidance, trial materializer,
 capability descriptor, and projection view. Its implementation composes the
 governed `fluent:table` component instead of recreating table controls.
 
-The browser host includes a narrow app-owned MCP service adapter and has no
-dependency on Blueprint Studio.
+The browser host includes a narrow application-owned MCP service adapter and has no dependency on
+Blueprint Studio. The provider registry, policies, service composition, and optional headless
+harness are kept together under `reference-app-host` so another reference application can copy and
+replace the Finbook-specific Blueprint, components, and server without importing Studio code.
 
 ## Run locally
 
-Install the web and server dependencies through the registries approved for
-your environment:
+From the copied `apps/finbook` directory, install both workspace packages once:
 
 ```powershell
-npm install --prefix apps\finbook\app
-npm ci --prefix apps\finbook\server
+cd apps\finbook
+npm install
 ```
 
-Start the SQLite-backed MCP server and web application in separate terminals:
+The required GIK packages are vendored under `vendor/gik-packages` because the
+corporate package-feed proxy does not expose them. Other dependencies remain
+normal unpinned npm ranges, and `npm install` generates the application lockfile.
+The compatible XYFlow pair is also vendored because the proxy currently serves
+an incompatible React/System package combination.
+
+Start the SQLite-backed MCP server and browser host together:
 
 ```powershell
-npm run finbook:server
-npm run finbook:dev
+npm run dev
 ```
 
 Open `http://127.0.0.1:5176/finbook/`. The MCP endpoint is
@@ -55,8 +68,7 @@ Open `http://127.0.0.1:5176/finbook/`. The MCP endpoint is
 Useful checks:
 
 ```powershell
-npm run finbook:build
-npm run check --prefix apps\finbook\server
+npm run check
 ```
 
 `FINBOOK_DB_PATH`, `FINBOOK_HOST`, `FINBOOK_PORT`, and
@@ -78,8 +90,8 @@ preserving history:
 git subtree split --prefix=apps/finbook -b finbook-main
 ```
 
-After extraction, promote the app and server package scripts into the new
-repository root or keep the two-package layout.
+The extracted directory is already the package root. Run `npm install`, `npm run dev`, and
+`npm run check` without copying files or depending on the surrounding `gik-samples` source tree.
 
 ## Host in Azure or Firebase
 
@@ -94,5 +106,5 @@ Replace the local adapter with a managed relational implementation:
 
 Keep stable finance fields relational and retain genuinely extensible values as
 JSON/JSONB. The required persistence semantics are documented in
-`server/storage-contract.md`; hosted adapters must preserve the existing MCP
+`mcp-server/storage-contract.md`; hosted adapters must preserve the existing MCP
 tool names and envelopes so the Blueprint remains unchanged.

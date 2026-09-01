@@ -8,10 +8,14 @@ import {
 } from "@gik-ai/kernel";
 import type { LoadBundleOptions } from "@gik-ai/react";
 
-import { createFinbookServiceRegistry } from "./registry";
+import {
+  createReferenceServiceRegistry,
+  type ReferenceServiceRegistryOptions,
+} from "./registry";
 
-export function createFinbookServiceOrchestrator(
+export function createReferenceServiceOrchestrator(
   runtime: BlueprintRuntime,
+  options: ReferenceServiceRegistryOptions = {},
 ): NonNullable<LoadBundleOptions["wrapOrchestrator"]> {
   return (fallback, state) => {
     const declarations = (unwrap(runtime.vocabulary).externals?.services ?? {}) as Record<string, ServiceDeclaration>;
@@ -19,7 +23,7 @@ export function createFinbookServiceOrchestrator(
       blueprintId: runtime.blueprintId,
       blueprintRevision: runtime.revision,
       declarations,
-      registry: createFinbookServiceRegistry(),
+      registry: createReferenceServiceRegistry(options),
       state,
       expression: new JsonataExpressionProvider({ safe: true }),
       dependencyFailurePolicy: "throw",

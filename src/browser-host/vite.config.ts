@@ -7,7 +7,6 @@ import { defineConfig, type Plugin } from "vite";
 const hostDirectory = fileURLToPath(new URL(".", import.meta.url));
 const storybookDirectory = fileURLToPath(new URL("../../storybook-static/", import.meta.url));
 const bootstrapDirectory = fileURLToPath(new URL("../bootstrap/", import.meta.url));
-const finbookDirectory = fileURLToPath(new URL("../../apps/finbook/app/dist/", import.meta.url));
 
 function hostedAssets(): Plugin {
   return {
@@ -32,10 +31,6 @@ function hostedAssets(): Plugin {
         "/bootstrap",
         sirv(bootstrapDirectory, { dev: true, etag: true }),
       );
-      server.middlewares.use(
-        "/finbook",
-        sirv(finbookDirectory, { dev: true, etag: true, single: true }),
-      );
     },
     writeBundle() {
       if (!existsSync(storybookDirectory)) {
@@ -44,7 +39,6 @@ function hostedAssets(): Plugin {
 
       const distDirectory = `${hostDirectory}dist`;
       cpSync(storybookDirectory, `${distDirectory}/storybook`, { recursive: true });
-      cpSync(finbookDirectory, `${distDirectory}/finbook`, { recursive: true });
       mkdirSync(`${distDirectory}/bootstrap`, { recursive: true });
       cpSync(
         `${bootstrapDirectory}catalog.json`,

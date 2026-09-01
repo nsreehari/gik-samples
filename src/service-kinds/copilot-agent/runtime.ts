@@ -1,7 +1,7 @@
 import type { Json } from "@gik-ai/kernel";
 import { serviceConfig } from "@gik-ai/controlface/services";
 import type { WorkerServiceInvocation } from "../worker-service-kind";
-import { createMcpHttpClient } from "../mcp/runtime";
+import { executeMcpServiceInvocation } from "../mcp/runtime";
 import { parseAgentJsonReply } from "../agent-json-response";
 
 type McpResult = {
@@ -11,6 +11,27 @@ type McpResult = {
 
 const DEFAULT_COPILOT_TIMEOUT_MS = 120_000;
 
+function mcpInvocation(
+  request: WorkerServiceInvocation,
+  tool: string,
+  input: Record<string, Json>,
+): WorkerServiceInvocation {
+  const config = serviceConfig(request.declaration);
+  const server = String(config.server ?? "").trim();
+  if (!server) throw new Error("copilot-agent requires an MCP server");
+  return {
+    ...request,
+    kind: "mcp",
+    declaration: {
+      ...request.declaration,
+      kind: "mcp",
+      config: { server, tool },
+    },
+    operation: "call-tool",
+    input,
+  };
+}
+
 export async function executeCopilotAgentInvocation(
   request: WorkerServiceInvocation,
   fetchImpl: typeof globalThis.fetch = globalThis.fetch.bind(globalThis),
@@ -19,20 +40,13 @@ export async function executeCopilotAgentInvocation(
   const input = request.input && typeof request.input === "object" && !Array.isArray(request.input)
     ? request.input as Record<string, Json>
     : {};
-  const server = String(config.server ?? "").trim();
-  if (!server) throw new Error("copilot-agent requires an MCP server");
-  const client = createMcpHttpClient({
-    server: new URL(server),
-    clientInfo: {
-      name: "@gik-ai/samples-copilot-agent",
-      version: "0.1.0",
-    },
-    fetchImpl,
-  });
   const cwd = String(input.workspaceRef ?? config.workspaceRef ?? ".");
 
   if (request.operation === "discover") {
-    const result = await client.callTool("copilot.list_agents", { cwd }) as McpResult;
+    const result = await executeMcpServiceInvocation(
+      mcpInvocation(request, "copilot.list_agents", { cwd }),
+      fetchImpl,
+    ) as McpResult;
     const structured = result.structured && typeof result.structured === "object" && !Array.isArray(result.structured)
       ? result.structured as Record<string, Json>
       : {};
@@ -59,9 +73,8 @@ export async function executeCopilotAgentInvocation(
         },
       },
     });
-    const result = await client.callTool(
-      "copilot.run_agent",
-      {
+    const result = await executeMcpServiceInvocation(
+      mcpInvocation(request, "copilot.run_agent", {
         message: instructions ? `${message}\n\n${instructions}` : message,
         agent: String(input.agentName ?? config.agent ?? ""),
         cwd,
@@ -69,7 +82,8 @@ export async function executeCopilotAgentInvocation(
         runMode: "sync",
         timeoutMs,
         additionalMcpConfigs: [additionalMcpConfig],
-      },
+      }),
+      fetchImpl,
     ) as McpResult;
     const structured = result.structured && typeof result.structured === "object" && !Array.isArray(result.structured)
       ? result.structured as Record<string, Json>

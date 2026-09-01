@@ -2,16 +2,14 @@ import assert from "node:assert/strict";
 import React from "react";
 import { test } from "vitest";
 import { createGikComponentDeclarativeBundle, GikComponent } from "@gik-ai/components";
-import { primitiveComponentCapabilities } from "@gik-ai/components/primitives";
 import { unwrap } from "@gik-ai/kernel";
 
 import {
   FinbookExplorer,
+  financeComponentCapabilities,
   financeComponentViews,
   finbookExplorerDefinition,
-} from "./FinbookExplorer";
-import { financeComponentCapabilities } from "./FinbookExplorerContract";
-import { finbookPrimitiveComponentCapabilities } from "./PrimitiveComponentContracts";
+} from "../../gik-components/FinbookExplorer";
 
 test("Finbook explorer is a complete declarative component contract", () => {
   const trial = finbookExplorerDefinition.materializeTrial();
@@ -20,13 +18,6 @@ test("Finbook explorer is a complete declarative component contract", () => {
   assert.equal(finbookExplorerDefinition.validate(trial.props).ok, true);
   assert.ok(financeComponentCapabilities["finbook-explorer"].propsSchema);
   assert.deepEqual(finbookExplorerDefinition.events, []);
-});
-
-test("Finbook's headless form contract matches the governed primitive catalog", () => {
-  assert.deepEqual(
-    finbookPrimitiveComponentCapabilities.form,
-    primitiveComponentCapabilities.form,
-  );
 });
 
 test("Finbook explorer composes the governed Fluent table", () => {

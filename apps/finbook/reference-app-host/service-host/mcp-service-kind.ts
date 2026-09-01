@@ -6,7 +6,7 @@ import {
   type ServiceKindManifest,
 } from "@gik-ai/controlface/services";
 
-import { createMcpHttpClient } from "./mcp-runtime";
+import { createMcpHttpClient } from "./mcp-client";
 
 const manifest: ServiceKindManifest = {
   id: "mcp",

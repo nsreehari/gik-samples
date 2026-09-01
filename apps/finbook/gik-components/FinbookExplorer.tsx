@@ -1,6 +1,6 @@
 import React from "react";
 import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { Json } from "@gik-ai/kernel";
+import type { CapabilityDescriptor, Json } from "@gik-ai/kernel";
 import type { ProjectionView, ProjectionViewProps } from "@gik-ai/react";
 import {
   GikComponent,
@@ -9,7 +9,6 @@ import {
   type ComponentDescription,
   type ComponentValidationReport,
 } from "@gik-ai/components";
-import { finbookExplorerPropsSchema } from "./FinbookExplorerContract";
 
 interface ExplorerResult {
   title: string;
@@ -39,6 +38,32 @@ function readResult(value: Json | undefined): ExplorerResult {
 function tableCell(value: Json): string | number | boolean | null {
   return value !== null && typeof value === "object" ? JSON.stringify(value) : value;
 }
+
+const propsSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["result"],
+  properties: {
+    result: {
+      type: "object",
+      additionalProperties: false,
+      required: ["title", "rows"],
+      properties: {
+        title: { type: "string", minLength: 1 },
+        description: { type: "string" },
+        rows: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: true,
+          },
+        },
+      },
+    },
+    emptyMessage: { type: "string" },
+    className: { type: "string" },
+  },
+} as const;
 
 export function FinbookExplorer({ node }: ProjectionViewProps) {
   const result = readResult(node.props.result);
@@ -104,7 +129,7 @@ const description: ComponentDescription = {
 export function validateFinbookExplorer(props: unknown): ComponentValidationReport {
   return runDeclarativeValidators([{
     kind: "ajv-schema",
-    schema: finbookExplorerPropsSchema,
+    schema: propsSchema,
     message: "Invalid finance:finbook-explorer props",
     code: "finance-finbook-explorer-schema",
   }], props as Json);
@@ -126,15 +151,19 @@ export const finbookExplorerDefinition = defineComponent({
   description,
   version: "1.0.0",
   component: FinbookExplorer,
-  getSchema: () => finbookExplorerPropsSchema,
+  getSchema: () => propsSchema,
   validate: validateFinbookExplorer,
   materializeTrial: materializeFinbookExplorerTrial,
 });
 
-export const financeComponentDefinitions = {
-  "finbook-explorer": finbookExplorerDefinition,
-} as const;
-
 export const financeComponentViews: Record<string, ProjectionView> = {
   "finbook-explorer": FinbookExplorer,
+};
+
+export const financeComponentCapabilities: Record<string, CapabilityDescriptor> = {
+  "finbook-explorer": {
+    propsSchema: finbookExplorerDefinition.getSchema(),
+    dataProp: finbookExplorerDefinition.dataProp,
+    emits: [...finbookExplorerDefinition.events],
+  },
 };
