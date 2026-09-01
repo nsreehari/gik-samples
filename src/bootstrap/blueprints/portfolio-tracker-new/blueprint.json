@@ -1563,7 +1563,8 @@
           "portfolio:valuation",
           "portfolio:intelligence",
           "portfolio:intelligence-context",
-          "portfolio:intelligence-resolution"
+          "portfolio:intelligence-resolution",
+          "portfolio:purpose-status"
         ]
       },
       {
@@ -1575,7 +1576,8 @@
           "portfolio-market:valuation",
           "portfolio-market:intelligence",
           "portfolio-market:intelligence-context",
-          "portfolio-market:intelligence-resolution"
+          "portfolio-market:intelligence-resolution",
+          "portfolio-market:purpose-status"
         ]
       },
       {
@@ -1610,45 +1612,55 @@
                 {
                   "id": "intelligence",
                   "region": "board"
-                }
-              ],
-              "root": "board"
+              },
+              {
+                "id": "purpose",
+                "region": "board"
+              }
+            ],
+            "root": "board"
             },
             "views": {
-              "portfolio-holdings": {
-                "primary": {
-                  "capability": "portfolio-market:holdings",
-                  "region": "holdings"
-                }
-              },
-              "market-prices": {
-                "primary": {
-                  "capability": "portfolio-market:prices",
-                  "region": "market"
-                }
-              },
-              "portfolio-value-cell": {
-                "primary": {
-                  "capability": "portfolio-market:valuation",
-                  "region": "valuation"
-                }
-              },
-              "portfolio-intelligence": {
-                "primary": {
-                  "capability": "portfolio-market:intelligence",
-                  "region": "intelligence"
-                }
-              },
-              "portfolio-intelligence-context": {
-                "primary": {
-                  "capability": "portfolio-market:intelligence-context"
-                }
-              },
-              "portfolio-intelligence-resolution": {
-                "primary": {
-                  "capability": "portfolio-market:intelligence-resolution"
-                }
+            "portfolio-holdings": {
+              "primary": {
+                "capability": "portfolio-market:holdings",
+                "region": "holdings"
               }
+            },
+            "market-prices": {
+              "primary": {
+                "capability": "portfolio-market:prices",
+                "region": "market"
+              }
+            },
+            "portfolio-value-cell": {
+              "primary": {
+                "capability": "portfolio-market:valuation",
+                "region": "valuation"
+              }
+            },
+            "portfolio-intelligence": {
+              "primary": {
+                "capability": "portfolio-market:intelligence",
+                "region": "intelligence"
+              }
+            },
+            "portfolio-intelligence-context": {
+              "primary": {
+                "capability": "portfolio-market:intelligence-context"
+              }
+            },
+            "portfolio-intelligence-resolution": {
+              "primary": {
+                "capability": "portfolio-market:intelligence-resolution"
+              }
+            },
+            "portfolio-purpose-status": {
+              "primary": {
+                "capability": "portfolio-market:purpose-status",
+                "region": "purpose"
+              }
+            }
             }
           }
         ],
@@ -1791,6 +1803,17 @@
                   "capability": "primitive:container",
                   "visibility": "false"
                 }
+              },
+              "portfolio-purpose-status": {
+                "primary": {
+                  "capability": "primitive:markdown",
+                  "bindings": {
+                    "value": {
+                      "expression": "($p := purposeParticipant; $pending := $append($append($append($p.pendingRequests.riskConstraint != null and $p.pendingRequests.riskConstraint.status = 'pending' ? [$p.pendingRequests.riskConstraint.requestType] : [], $p.pendingRequests.rebalanceDecision != null and $p.pendingRequests.rebalanceDecision.status = 'pending' ? [$p.pendingRequests.rebalanceDecision.requestType] : []), $p.pendingRequests.targetReturn != null and $p.pendingRequests.targetReturn.status = 'pending' ? [$p.pendingRequests.targetReturn.requestType] : []), $p.pendingRequests.purposeReview != null and $p.pendingRequests.purposeReview.status = 'pending' ? [$p.pendingRequests.purposeReview.requestType] : []); $actions := $count($p.plan.actions) > 0 ? $join($p.plan.actions.('- ' & description & ' (**' & status & '**)'), '\n') : '_No plan actions yet._'; $flags := $count($p.investigation.riskFlags) > 0 ? $join($p.investigation.riskFlags, ', ') : 'none'; '### Purpose participant status\n\n' & '**Purpose:** ' & $p.purpose.statement & '\n\n' & '**Assessment:** ' & $p.assessment.status & ' — market value $' & $string($p.assessment.marketValue) & ', gain/loss $' & $string($p.assessment.gainLoss) & '\n\n' & '**Strategy:** ' & $p.strategy.posture & ' — ' & $p.strategy.rationale & '\n\n' & '**Plan actions:**' & '\n' & $actions & '\n\n' & '**Risk flags:** ' & $flags & '\n\n' & '**Awaiting owner input:** ' & ($count($pending) > 0 ? $join($pending, ', ') : 'none') & '\n\n' & '**Purpose review:** ' & $p.purposeReview.status & ($p.purposeReview.lastReviewedAt != null ? (' (last reviewed ' & $p.purposeReview.lastReviewedAt & ')') : ''))"
+                    }
+                  },
+                  "region": "purpose"
+                }
               }
             },
             "decorators": [
@@ -1822,6 +1845,10 @@
                 },
                 {
                   "id": "intelligence",
+                  "region": "board"
+                },
+                {
+                  "id": "purpose",
                   "region": "board"
                 }
               ],
@@ -1888,6 +1915,10 @@
                 },
                 {
                   "id": "intelligence",
+                  "region": "board"
+                },
+                {
+                  "id": "purpose",
                   "region": "board"
                 }
               ],
@@ -2009,6 +2040,10 @@
                 {
                   "id": "intelligence",
                   "region": "board"
+                },
+                {
+                  "id": "purpose",
+                  "region": "board"
                 }
               ],
               "root": "board",
@@ -2118,6 +2153,10 @@
                 },
                 {
                   "id": "intelligence",
+                  "region": "board"
+                },
+                {
+                  "id": "purpose",
                   "region": "board"
                 }
               ],
@@ -2835,6 +2874,14 @@
             "revision": 0,
             "actions": []
           },
+          "investigation": {
+            "revision": 0,
+            "riskFlags": [],
+            "concentrationTicker": null,
+            "concentrationWeightPercent": 0,
+            "unrealizedLossPercent": 0,
+            "lastAssessedAt": null
+          },
           "cadences": {
             "operational": {
               "generation": 0,
@@ -2847,12 +2894,23 @@
             "strategy": {
               "generation": 0,
               "lastAt": null
+            },
+            "purposeReview": {
+              "generation": 0,
+              "lastAt": null
             }
           },
           "pendingRequests": {
             "riskConstraint": null,
             "rebalanceDecision": null,
-            "targetReturn": null
+            "targetReturn": null,
+            "purposeReview": null
+          },
+          "purposeReview": {
+            "status": "not-reviewed",
+            "lastReviewedAt": null,
+            "lastConfirmed": null,
+            "notes": null
           },
           "settledRequestIds": []
         }
@@ -2882,6 +2940,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.cadences.operational",
+                "guard": "$event.at != purposeParticipant.cadences.operational.lastAt",
                 "args": {
                   "from": "{'generation':$number(purposeParticipant.cadences.operational.generation) + 1,'lastAt':$event.at}"
                 }
@@ -2889,6 +2948,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.assessment.lastObservedAt",
+                "guard": "$event.at != purposeParticipant.cadences.operational.lastAt",
                 "args": {
                   "from": "$event.at"
                 }
@@ -2920,6 +2980,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.cadences.progress",
+                "guard": "$event.at != purposeParticipant.cadences.progress.lastAt",
                 "args": {
                   "from": "{'generation':$number(purposeParticipant.cadences.progress.generation) + 1,'lastAt':$event.at}"
                 }
@@ -2927,6 +2988,7 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.assessment",
+                "guard": "$event.at != purposeParticipant.cadences.progress.lastAt",
                 "args": {
                   "from": "{'status':portfolio.value.summary.marketValue > 0 ? 'observed' : 'awaiting-valuation','lastObservedAt':$event.at,'marketValue':portfolio.value.summary.marketValue,'gainLoss':portfolio.value.summary.gainLoss}"
                 }
@@ -2958,13 +3020,23 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.cadences.strategy",
+                "guard": "$event.at != purposeParticipant.cadences.strategy.lastAt",
                 "args": {
                   "from": "{'generation':$number(purposeParticipant.cadences.strategy.generation) + 1,'lastAt':$event.at}"
                 }
               },
               {
                 "do": "assign",
+                "target": "purposeParticipant.investigation",
+                "guard": "$event.at != purposeParticipant.cadences.strategy.lastAt",
+                "args": {
+                  "from": "($marketValue := portfolio.value.summary.marketValue; $costBasis := portfolio.value.summary.costBasis; $gainLoss := portfolio.value.summary.gainLoss; $hasPositions := $count(portfolio.value.positions.*) > 0; $maxValue := $hasPositions ? $max(portfolio.value.positions.*.value) : 0; $topTicker := ($hasPositions and $marketValue > 0) ? $filter(portfolio.value.positions.*, function($p){ $p.value = $maxValue })[0].ticker : null; $concentrationPct := ($hasPositions and $marketValue > 0) ? $round(($maxValue / $marketValue) * 100, 1) : 0; $lossPct := $costBasis > 0 ? $round(($gainLoss / $costBasis) * 100, 1) : 0; $concentrationFlags := $concentrationPct > 40 ? ['concentration-risk'] : []; $lossFlags := $lossPct < -10 ? ['unrealized-loss-risk'] : []; {'revision':$number(purposeParticipant.investigation.revision) + 1,'riskFlags':$append($concentrationFlags, $lossFlags),'concentrationTicker':$topTicker,'concentrationWeightPercent':$concentrationPct,'unrealizedLossPercent':$lossPct,'lastAssessedAt':$event.at})"
+                }
+              },
+              {
+                "do": "assign",
                 "target": "purposeParticipant.strategy",
+                "guard": "$event.at != purposeParticipant.cadences.strategy.lastAt",
                 "args": {
                   "from": "{'revision':$number(purposeParticipant.strategy.revision) + 1,'posture':portfolio.value.summary.marketValue > 0 ? 'review' : 'observe','rationale':portfolio.value.summary.marketValue > 0 ? 'Review the settled valuation and ask the owner before any consequential change.' : 'Continue observing until a settled valuation is available.'}"
                 }
@@ -2972,8 +3044,9 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.plan",
+                "guard": "$event.at != purposeParticipant.cadences.strategy.lastAt",
                 "args": {
-                  "from": "{'revision':$number(purposeParticipant.plan.revision) + 1,'actions':portfolio.value.summary.marketValue > 0 ? [{'id':'review-portfolio-condition','kind':'advisory','status':'proposed','correlationId':'portfolio-condition-review','description':'Review current valuation, gain or loss, and concentration before proposing a change.'}] : [{'id':'await-settled-valuation','kind':'advisory','status':'waiting','correlationId':'portfolio-valuation-readiness','description':'Wait for a settled portfolio valuation before proposing any change.'}]}"
+                  "from": "($ready := portfolio.value.summary.marketValue > 0; $actionId := $ready ? 'review-portfolio-condition' : 'await-settled-valuation'; $current := purposeParticipant.plan.actions[id = $actionId][0]; $status := $exists($current) ? $current.status : ($ready ? 'proposed' : 'waiting'); {'revision':$exists($current) ? purposeParticipant.plan.revision : $number(purposeParticipant.plan.revision) + 1,'actions':$ready ? [{'id':'review-portfolio-condition','kind':'advisory','status':$status,'correlationId':'portfolio-condition-review','description':'Review current valuation, gain or loss, and concentration before proposing a change.'}] : [{'id':'await-settled-valuation','kind':'advisory','status':$status,'correlationId':'portfolio-valuation-readiness','description':'Wait for a settled portfolio valuation before proposing any change.'}]})"
                 }
               }
             ]
@@ -2993,27 +3066,6 @@
                 "revision": {
                   "type": "integer",
                   "minimum": 1
-                }
-              }
-            }
-          },
-          "risk-clarification-resolved": {
-            "payloadSchema": {
-              "type": "object",
-              "required": [
-                "requestRevision",
-                "settlementId",
-                "riskTolerance"
-              ],
-              "properties": {
-                "requestRevision": {
-                  "type": "integer"
-                },
-                "settlementId": {
-                  "type": "string"
-                },
-                "riskTolerance": {
-                  "type": "string"
                 }
               }
             }
@@ -3045,6 +3097,255 @@
                 }
               }
             }
+          },
+          "request-purpose-review": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "revision"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "purpose-review-heartbeat": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "at"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "resolved": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "request",
+                "outcome"
+              ],
+              "properties": {
+                "request": {
+                  "type": "object",
+                  "required": [
+                    "requestType",
+                    "correlationId",
+                    "revision"
+                  ],
+                  "properties": {
+                    "requestType": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "integer"
+                    },
+                    "prompt": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "requestType": {
+                  "type": "string"
+                },
+                "correlationId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "effectId": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "const": "resolved"
+                },
+                "riskTolerance": {
+                  "type": "string"
+                },
+                "approved": {
+                  "type": "boolean"
+                },
+                "annualTargetPercent": {
+                  "type": "number"
+                },
+                "purposeConfirmed": {
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "rejected": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "request",
+                "outcome"
+              ],
+              "properties": {
+                "request": {
+                  "type": "object",
+                  "required": [
+                    "requestType",
+                    "correlationId",
+                    "revision"
+                  ],
+                  "properties": {
+                    "requestType": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "requestType": {
+                  "type": "string"
+                },
+                "correlationId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "effectId": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "const": "rejected"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "cancelled": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "request",
+                "outcome"
+              ],
+              "properties": {
+                "request": {
+                  "type": "object",
+                  "required": [
+                    "requestType",
+                    "correlationId",
+                    "revision"
+                  ],
+                  "properties": {
+                    "requestType": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "requestType": {
+                  "type": "string"
+                },
+                "correlationId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "effectId": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "const": "cancelled"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "failed": {
+            "payloadSchema": {
+              "type": "object",
+              "required": [
+                "request",
+                "outcome"
+              ],
+              "properties": {
+                "request": {
+                  "type": "object",
+                  "required": [
+                    "requestType",
+                    "correlationId",
+                    "revision"
+                  ],
+                  "properties": {
+                    "requestType": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "requestType": {
+                  "type": "string"
+                },
+                "correlationId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "effectId": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "const": "failed"
+                }
+              },
+              "additionalProperties": false
+            }
           }
         },
         "behavior": {
@@ -3053,12 +3354,14 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "$type(purposeParticipant.pendingRequests.riskConstraint) != 'object' or $event.revision > purposeParticipant.pendingRequests.riskConstraint.revision",
                 "args": {
                   "from": "{'requestType':'portfolio-risk-constraint','revision':$event.revision,'status':'pending','correlationId':'portfolio-risk-constraint'}"
                 }
               },
               {
                 "do": "request",
+                "guard": "$type(purposeParticipant.pendingRequests.riskConstraint) != 'object' or $event.revision > purposeParticipant.pendingRequests.riskConstraint.revision",
                 "control": {
                   "kind": "clarification",
                   "responseSchema": {
@@ -3081,34 +3384,18 @@
                 }
               }
             ],
-            "risk-clarification-resolved": [
-              {
-                "do": "assign",
-                "target": "purposeParticipant.pendingRequests.riskConstraint",
-                "guard": "purposeParticipant.pendingRequests.riskConstraint.status = 'pending' ? purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestRevision : false",
-                "args": {
-                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.requestRevision,'status':'resolved','correlationId':'portfolio-risk-constraint','riskTolerance':$event.riskTolerance,'settlementId':$event.settlementId}"
-                }
-              },
-              {
-                "do": "assign",
-                "target": "purposeParticipant.settledRequestIds",
-                "guard": "purposeParticipant.pendingRequests.riskConstraint.status = 'pending' ? purposeParticipant.pendingRequests.riskConstraint.revision = $event.requestRevision : false",
-                "args": {
-                  "from": "$append(purposeParticipant.settledRequestIds, $event.settlementId)"
-                }
-              }
-            ],
             "request-rebalance-decision": [
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "guard": "($type(purposeParticipant.pendingRequests.rebalanceDecision) != 'object' or $event.revision > purposeParticipant.pendingRequests.rebalanceDecision.revision) and $count(purposeParticipant.plan.actions[id = 'review-portfolio-condition' and status = 'proposed']) > 0",
                 "args": {
-                  "from": "{'requestType':'portfolio-rebalance-proposal','revision':$event.revision,'status':'pending','correlationId':'portfolio-rebalance-proposal'}"
+                  "from": "{'requestType':'portfolio-rebalance-proposal','revision':$event.revision,'status':'pending','correlationId':'portfolio-rebalance-proposal','planRevision':purposeParticipant.plan.revision,'actionId':'review-portfolio-condition'}"
                 }
               },
               {
                 "do": "request",
+                "guard": "($type(purposeParticipant.pendingRequests.rebalanceDecision) != 'object' or $event.revision > purposeParticipant.pendingRequests.rebalanceDecision.revision) and $count(purposeParticipant.plan.actions[id = 'review-portfolio-condition' and status = 'proposed']) > 0",
                 "control": {
                   "kind": "decision",
                   "responseSchema": {
@@ -3135,12 +3422,14 @@
               {
                 "do": "assign",
                 "target": "purposeParticipant.pendingRequests.targetReturn",
+                "guard": "$type(purposeParticipant.pendingRequests.targetReturn) != 'object' or $event.revision > purposeParticipant.pendingRequests.targetReturn.revision",
                 "args": {
                   "from": "{'requestType':'portfolio-target-return','revision':$event.revision,'status':'pending','correlationId':'portfolio-target-return'}"
                 }
               },
               {
                 "do": "request",
+                "guard": "$type(purposeParticipant.pendingRequests.targetReturn) != 'object' or $event.revision > purposeParticipant.pendingRequests.targetReturn.revision",
                 "control": {
                   "kind": "data",
                   "responseSchema": {
@@ -3162,7 +3451,349 @@
                   "prompt": "What annual target return should be used for progress assessment?"
                 }
               }
+            ],
+            "request-purpose-review": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.purposeReview",
+                "guard": "$type(purposeParticipant.pendingRequests.purposeReview) != 'object' or $event.revision > purposeParticipant.pendingRequests.purposeReview.revision",
+                "args": {
+                  "from": "{'requestType':'portfolio-purpose-review','revision':$event.revision,'status':'pending','correlationId':'portfolio-purpose-review'}"
+                }
+              },
+              {
+                "do": "request",
+                "guard": "$type(purposeParticipant.pendingRequests.purposeReview) != 'object' or $event.revision > purposeParticipant.pendingRequests.purposeReview.revision",
+                "control": {
+                  "kind": "decision",
+                  "responseSchema": {
+                    "type": "object",
+                    "required": [
+                      "purposeConfirmed"
+                    ],
+                    "properties": {
+                      "purposeConfirmed": {
+                        "type": "boolean"
+                      },
+                      "notes": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "data": {
+                  "requestType": "portfolio-purpose-review",
+                  "correlationId": "portfolio-purpose-review",
+                  "prompt": "Does the current purpose statement, success measures, and constraints still reflect the owner's intent? The participant cannot change these itself."
+                }
+              }
+            ],
+            "purpose-review-heartbeat": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.cadences.purposeReview",
+                "guard": "$event.at != purposeParticipant.cadences.purposeReview.lastAt",
+                "args": {
+                  "from": "{'generation':$number(purposeParticipant.cadences.purposeReview.generation) + 1,'lastAt':$event.at}"
+                }
+              }
+            ],
+            "resolved": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "{'requestType':'portfolio-risk-constraint','revision':$event.revision,'status':'resolved','correlationId':'portfolio-risk-constraint','riskTolerance':$event.riskTolerance,'effectId':$event.effectId}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'resolved','approved':$event.approved,'effectId':$event.effectId}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.plan.actions",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision and purposeParticipant.pendingRequests.rebalanceDecision.planRevision = purposeParticipant.plan.revision",
+                "args": {
+                  "from": "$map(purposeParticipant.plan.actions, function($a){ $a.id = purposeParticipant.pendingRequests.rebalanceDecision.actionId and $a.status = 'proposed' ? $merge([$a, {'status': $event.approved ? 'accepted' : 'declined'}]) : $a })[]"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.targetReturn",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "{'requestType':'portfolio-target-return','revision':$event.revision,'status':'resolved','correlationId':'portfolio-target-return','annualTargetPercent':$event.annualTargetPercent,'effectId':$event.effectId}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.purposeReview",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "{'requestType':'portfolio-purpose-review','revision':$event.revision,'status':'resolved','correlationId':'portfolio-purpose-review','purposeConfirmed':$event.purposeConfirmed,'effectId':$event.effectId}"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.purposeReview",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "{'status':$event.purposeConfirmed ? 'confirmed' : 'flagged','lastReviewedAt':purposeParticipant.cadences.purposeReview.lastAt,'lastConfirmed':$event.purposeConfirmed,'notes':$exists($event.notes) ? $event.notes : null}"
+                }
+              }
+            ],
+            "rejected": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'rejected'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'rejected'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.targetReturn",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'rejected'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.purposeReview",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'rejected'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              }
+            ],
+            "cancelled": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'cancelled'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'cancelled'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.targetReturn",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'cancelled'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.purposeReview",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'cancelled'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              }
+            ],
+            "failed": [
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.riskConstraint",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.riskConstraint, {'status':'failed'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-risk-constraint' and $exists(purposeParticipant.pendingRequests.riskConstraint) and purposeParticipant.pendingRequests.riskConstraint.status = 'pending' and purposeParticipant.pendingRequests.riskConstraint.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.rebalanceDecision",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.rebalanceDecision, {'status':'failed'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-rebalance-proposal' and $exists(purposeParticipant.pendingRequests.rebalanceDecision) and purposeParticipant.pendingRequests.rebalanceDecision.status = 'pending' and purposeParticipant.pendingRequests.rebalanceDecision.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.targetReturn",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.targetReturn, {'status':'failed'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-target-return' and $exists(purposeParticipant.pendingRequests.targetReturn) and purposeParticipant.pendingRequests.targetReturn.status = 'pending' and purposeParticipant.pendingRequests.targetReturn.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.pendingRequests.purposeReview",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$merge([purposeParticipant.pendingRequests.purposeReview, {'status':'failed'}])"
+                }
+              },
+              {
+                "do": "assign",
+                "target": "purposeParticipant.settledRequestIds",
+                "guard": "$event.requestType = 'portfolio-purpose-review' and $exists(purposeParticipant.pendingRequests.purposeReview) and purposeParticipant.pendingRequests.purposeReview.status = 'pending' and purposeParticipant.pendingRequests.purposeReview.revision = $event.revision",
+                "args": {
+                  "from": "$append(purposeParticipant.settledRequestIds, $event.effectId)"
+                }
+              }
             ]
+          }
+        }
+      },
+      "portfolio-purpose-status": {
+        "id": "portfolio-purpose-status",
+        "outputs": [
+          {
+            "token": "purpose-status",
+            "from": "purposeParticipant"
+          }
+        ],
+        "potentialViews": {
+          "primary": {
+            "capability": "portfolio:purpose-status",
+            "region": "purpose"
           }
         }
       },
@@ -3522,6 +4153,10 @@
         },
         {
           "id": "status",
+          "region": "board"
+        },
+        {
+          "id": "purpose",
           "region": "board"
         }
       ],

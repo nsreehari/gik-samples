@@ -28,7 +28,7 @@
     "@gik-ai/controlface": "0.1.5-next.1",
     "@gik-ai/durable-runtime": "0.8.1-next.1",
     "@gik-ai/evaluators": "0.1.2-next.1",
-    "@gik-ai/kernel": "0.1.2-next.1",
+    "@gik-ai/kernel": "file:vendor/gik-packages/gik-ai-kernel-0.1.2.tgz",
     "@gik-ai/react": "0.3.1-next.1",
     "@xyflow/react": "^12.11.2",
     "mermaid": "^11.16.0",
@@ -38,7 +38,7 @@
   "overrides": {
     "@gik-ai/durable-runtime": "0.8.1-next.1",
     "@gik-ai/evaluators": "0.1.2-next.1",
-    "@gik-ai/kernel": "0.1.2-next.1"
+    "@gik-ai/kernel": "$@gik-ai/kernel"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "10.5.4",
