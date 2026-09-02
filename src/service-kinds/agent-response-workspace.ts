@@ -9,6 +9,7 @@ import type {
 } from "@gik-ai/agent-lifecycle-exp";
 import type { CapabilityDescriptor, Json } from "@gik-ai/kernel";
 import { resolveSampleCapabilityDescriptors } from "../shared/capability-descriptors";
+import { agentResponseToolContracts } from "./agent-response-tool-contracts";
 
 interface ResponseSlot {
   field: string;
@@ -217,15 +218,6 @@ function workspace(context: AgentToolExecutionContext | undefined): AgentRespons
   return value;
 }
 
-const fragmentSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    fragmentJson: { type: "string", minLength: 2 },
-  },
-  required: ["fragmentJson"],
-} as const;
-
 function fragmentFromToolArgs(args: unknown, name: string): Json {
   const input = record(args, name);
   if (typeof input.fragmentJson !== "string") throw new Error(`${name}.fragmentJson must be a JSON string`);
@@ -240,8 +232,7 @@ export function createAgentResponseTools(): readonly AgentTool[] {
   return [
     {
       name: "compose_response_validate",
-      description: "Compose an authored response fragment into the trusted scaffold and validate the complete candidate.",
-      inputSchema: fragmentSchema,
+      ...agentResponseToolContracts.compose_response_validate,
       lifecycle: "agent",
       handler: (args, context) => {
         const candidate = composeAgentResponse(
@@ -253,8 +244,7 @@ export function createAgentResponseTools(): readonly AgentTool[] {
     },
     {
       name: "compose_response_simulate",
-      description: "Compose, validate, and materialize an authored response fragment without storing it.",
-      inputSchema: fragmentSchema,
+      ...agentResponseToolContracts.compose_response_simulate,
       lifecycle: "agent",
       handler: (args, context) => {
         const candidate = composeAgentResponse(
@@ -274,20 +264,13 @@ export function createAgentResponseTools(): readonly AgentTool[] {
     },
     {
       name: "compose_response_read_in_progress_proposal",
-      description: "Read the complete scaffolded response proposal currently stored for this request.",
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {},
-        required: [],
-      },
+      ...agentResponseToolContracts.compose_response_read_in_progress_proposal,
       lifecycle: "agent",
       handler: (_args, context) => workspace(context).proposal ?? null,
     },
     {
       name: "compose_response_set_in_progress_proposal",
-      description: "Compose and validate an authored response fragment, then replace the request-scoped complete proposal.",
-      inputSchema: fragmentSchema,
+      ...agentResponseToolContracts.compose_response_set_in_progress_proposal,
       lifecycle: "agent",
       handler: (args, context) => {
         const current = workspace(context);

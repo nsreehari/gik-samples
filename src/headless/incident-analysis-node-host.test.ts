@@ -161,9 +161,10 @@ test("Fixed-presentation analysis requests and accepts one inert multi-view repo
   assert.equal(request.presentationMode, "fixed-presentation");
   assert.deepEqual(request.acceptedCapabilities, fixedPresentationCapabilities);
   assert.doesNotMatch(JSON.stringify(request.acceptedCapabilities), /primitive:markdown/);
-  assert.match(String(request.instructions), /compose_response_validate/);
-  assert.match(String(request.instructions), /compose_response_simulate/);
-  assert.match(String(request.instructions), /compose_response_set_in_progress_proposal/);
+  assert.match(String(request.instructions), /authoritative requirements for this invocation/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_set_in_progress_proposal/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_validate/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_simulate/);
   assert.deepEqual(
     ((request.authoringBrief as Record<string, Json>).blueprintProfile as Record<string, Json>)
       .presentation,
@@ -363,6 +364,7 @@ test("Node host carries an Incident Analysis response through cache update to re
                 throw new Error(`Unexpected Node-host service operation '${executingEffect.control.tool}'`);
             }
           });
+
         },
       }),
     },
@@ -412,6 +414,82 @@ test("Node host carries an Incident Analysis response through cache update to re
     assert.ok(report);
     assert.equal(report.visible, true);
     assert.deepEqual(report.props.blueprint, generatedReport);
+  } finally {
+    controller.stop();
+  }
+});
+
+test("Node host terminally settles a 429 after one configured source attempt", async () => {
+  const blueprint = resolveSampleBlueprintSource("incident-analysis-new-shell");
+  const materializedBlueprint = materializeBlueprint({
+    blueprint,
+    resolveBlueprint(reference) {
+      return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
+    },
+  });
+  let analysisAttempts = 0;
+  const controller = new BlueprintController(blueprint, {
+    materializedBlueprint,
+    effectRetry: { maxAttempts: 1 },
+    native: {
+      wrapOrchestrator: (fallback, state) => ({
+        ...fallback,
+        invoke: async (effect, control) => {
+          if (effect.kind !== "invoke" || !effect.control.sourceId) {
+            return fallback?.invoke?.(effect, control);
+          }
+          return executeQueuedCellSourceEffect(effect, state.snapshot(), (executingEffect): OrchestratorResult => {
+            if (executingEffect.kind !== "invoke" || !("tool" in executingEffect.control)) {
+              throw new Error(`Unexpected Node-host effect '${executingEffect.kind}'`);
+            }
+            switch (executingEffect.control.tool) {
+              case "listSourceReports":
+                return { sourceOutput: { sources: [{ id: "password-spray-mailbox", label: "Password spray" }] } };
+              case "getSourceReport":
+                return { sourceOutput: { content: sourceReport } };
+              case "getSavedReport":
+                return { sourceOutput: null };
+              case "analyzeReportBlueprint":
+                analysisAttempts += 1;
+                throw new Error("Too many requests");
+              default:
+                throw new Error(`Unexpected Node-host service operation '${executingEffect.control.tool}'`);
+            }
+          });
+        },
+      }),
+    },
+  });
+
+  try {
+    await controller.start();
+    await controller.emit("analysis-params--primary--in-params-form", "save", {
+      values: { source: "password-spray-mailbox", model: "refinement" },
+    });
+    await eventually(() => {
+      const tree = controller.getTree();
+      assert.ok(tree);
+      const analyzeButton = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--request--in-analysis-report");
+      assert.equal(analyzeButton?.visible, true);
+    });
+
+    await controller.emit("incident-analysis--request--in-analysis-report", "press", {});
+    await eventually(() => {
+      const tree = controller.getTree();
+      assert.ok(tree);
+      const analysisSpinner = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--progress--in-analysis-report");
+      const analysisError = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--error--in-analysis-report");
+      const analyzeButton = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--request--in-analysis-report");
+      assert.equal(analysisAttempts, 1);
+      assert.equal(analysisSpinner?.visible, false);
+      assert.equal(analysisError?.visible, true);
+      assert.equal(analysisError?.props.value, "Too many requests");
+      assert.equal(analyzeButton?.visible, true);
+    });
   } finally {
     controller.stop();
   }

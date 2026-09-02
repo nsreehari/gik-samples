@@ -124,10 +124,10 @@
                   },
                   "bindings": {
                     "value": {
-                      "expression": "$lookup(systemInputs.sourceErrors, inputs.selectedModel = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : inputs.selectedModel = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
+                      "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
                     }
                   },
-                  "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, inputs.selectedModel = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : inputs.selectedModel = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
+                  "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
                 }
               },
               "report-viewer": {
@@ -298,7 +298,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "($instructions := 'Author only the variable report content for the trusted static Blueprint scaffold. The response fragment has exactly two fields: potentialViews and reportState. Treat the supplied source report as the closed factual boundary. Attach one potential view to every required region and use only accepted capabilities. Pass the complete fragment as the fragmentJson string argument to compose_response_validate and compose_response_simulate, correct any reported problem, then call compose_response_set_in_progress_proposal with the final fragmentJson. The host parses, composes, and validates the complete Blueprint; do not return or reproduce the fixed shell.'; $sourceScaffold := input.authoringBrief.blueprintProfile.artifactScaffold; $terminalRuntime := $merge([$sourceScaffold.payload.runtime, {'externals':{'projectionViews':{}},'state':{'report':{}}}]); $terminalPayload := $merge([$sourceScaffold.payload, {'serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[],'cells':{'report':{'id':'report','potentialViews':{}}},'runtime':$terminalRuntime}]); $terminalScaffold := $merge([$sourceScaffold, {'payload':$terminalPayload}]); $profile := $merge([input.authoringBrief.blueprintProfile, {'artifactScaffold':$terminalScaffold,'responseFragment':{'potentialViews':'<named views attached to required regions>','reportState':'<static source-grounded report state>'},'slotPolicy':'Author only the two response-fragment fields. The host owns and reconstructs the enclosing scaffold.'}]); $brief := $merge([input.authoringBrief, {'constraints':['author exactly potentialViews and reportState','one or more views may reuse an accepted capability when that capability fits the section','every named section region has an attached view','no primitive:markdown'],'blueprintProfile':$profile}]); {'message':'Assignment: ' & $string($brief) & ' Source report: ' & input.incident_report & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'instructions':$instructions,'agentName':input.agentName,'maxOutputTokens':8000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':$brief,'authoringWorkspace':{'scaffold':$terminalScaffold,'slots':[{'field':'potentialViews','pointer':'/payload/cells/report/potentialViews'},{'field':'reportState','pointer':'/payload/runtime/state/report'}],'capabilityDerivation':{'viewsField':'potentialViews','acceptedCapabilities':input.acceptedCapabilities,'tierPointer':'/payload/projectionTiers/0/capabilities','importsPointer':'/payload/runtime/externals/projectionViews'}}})"
+                "expr": "($sourceScaffold := input.authoringBrief.blueprintProfile.artifactScaffold; $terminalRuntime := $merge([$sourceScaffold.payload.runtime, {'externals':{'projectionViews':{}},'state':{'report':{}}}]); $terminalPayload := $merge([$sourceScaffold.payload, {'serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[],'cells':{'report':{'id':'report','potentialViews':{}}},'runtime':$terminalRuntime}]); $terminalScaffold := $merge([$sourceScaffold, {'payload':$terminalPayload}]); $profile := $merge([input.authoringBrief.blueprintProfile, {'artifactScaffold':$terminalScaffold,'responseFragment':{'potentialViews':'<named views attached to required regions>','reportState':'<static source-grounded report state>'},'slotPolicy':'Author only the two response-fragment fields. The host owns and reconstructs the enclosing scaffold.'}]); $brief := $merge([input.authoringBrief, {'constraints':['author exactly potentialViews and reportState','one or more views may reuse an accepted capability when that capability fits the section','every named section region has an attached view','no primitive:markdown'],'blueprintProfile':$profile}]); {'message':'Author the fixed-presentation report fragment for this assignment: ' & $string($brief) & ' Source report: ' & input.incident_report,'instructions':'Use the supplied assignment and source report as the authoritative requirements for this invocation.','agentName':input.agentName,'maxOutputTokens':8000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':$brief,'authoringWorkspace':{'scaffold':$terminalScaffold,'slots':[{'field':'potentialViews','pointer':'/payload/cells/report/potentialViews'},{'field':'reportState','pointer':'/payload/runtime/state/report'}],'capabilityDerivation':{'viewsField':'potentialViews','acceptedCapabilities':input.acceptedCapabilities,'tierPointer':'/payload/projectionTiers/0/capabilities','importsPointer':'/payload/runtime/externals/projectionViews'}}})"
               }
             },
             "settlement": {
@@ -316,6 +316,11 @@
         "config": {
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "credentialRef": "foundry-agent/access-key",
+          "maxOutputTokens": 5000,
+          "agentTools": [
+            "describe",
+            "compose_response_set_in_progress_proposal"
+          ],
           "responseMode": "json"
         },
         "scope": "per-blueprint"
@@ -757,10 +762,10 @@
             },
             "bindings": {
               "value": {
-                "expression": "$lookup(systemInputs.sourceErrors, inputs.selectedModel = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : inputs.selectedModel = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
+                "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
               }
             },
-            "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, inputs.selectedModel = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : inputs.selectedModel = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
+            "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
           }
         },
         "events": {

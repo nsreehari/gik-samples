@@ -8,11 +8,13 @@ import { createBrowserBlueprintStorageConnectionFactory } from "./blueprint-stor
 import type { BlueprintProposalStore } from "@gik-ai/blueprint-agent-host";
 import type { UseProposal } from "./blueprint-agent-lifecycle";
 import type { BlueprintStorageConnectionFactory } from "../../../shared/blueprint-storage";
+import type { SampleServiceRegistryOptions } from "../../../service-kinds";
 
 export interface ResolveBlueprintNativeOptions {
   proposalStore?: BlueprintProposalStore<UseProposal>;
   instanceId?: string;
   blueprintStorage?: BlueprintStorageConnectionFactory;
+  registryOptions?: SampleServiceRegistryOptions;
 }
 
 export function resolveBlueprintNative(id: string, options: ResolveBlueprintNativeOptions = {}): BundleNative {
@@ -38,7 +40,10 @@ function resolveBlueprintNativeFromRuntime(
   options: ResolveBlueprintNativeOptions,
 ): BundleNative {
   const serviceOrchestrator = declarativeServiceOrchestrator(runtime, {
-    registryOptions: browserServiceRegistryOptions,
+    registryOptions: {
+      ...browserServiceRegistryOptions,
+      ...options.registryOptions,
+    },
     proposalStore: options.proposalStore,
     hostPolicy: { dependencyFailurePolicy: "throw" },
     instanceId: options.instanceId ?? id,

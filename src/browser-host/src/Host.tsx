@@ -72,7 +72,13 @@ function hostedBlueprintLoading(): React.ReactElement {
 }
 
 function InMemoryHost(props: BlueprintHostProps): React.ReactElement {
-  return <InMemoryBlueprintHost {...props} renderHostedBlueprintLoading={hostedBlueprintLoading} />;
+  return (
+    <InMemoryBlueprintHost
+      {...props}
+      effectRetry={{ maxAttempts: 1 }}
+      renderHostedBlueprintLoading={hostedBlueprintLoading}
+    />
+  );
 }
 
 function ResolvedTargetHost({

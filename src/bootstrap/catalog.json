@@ -39,6 +39,7 @@
     {
       "id": "incident-analysis-new-shell",
       "artifact": "blueprints/incident-analysis-new-shell/blueprint.json",
+      "scenarios": "blueprints/incident-analysis-new-shell/scenarios.json",
       "tests": "blueprints/incident-analysis-new-shell/tests.json",
       "launch": {
         "id": "incident-analysis-new-shell",

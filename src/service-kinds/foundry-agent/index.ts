@@ -4,6 +4,8 @@ import {
 	UnsatisfiedServiceDependencyError,
 	type ServiceAdapter,
 	type ServiceAdapterContext,
+	type ServiceAgentTool,
+	type ServiceAgentToolExecutionContext,
 	type ServiceRequest,
 	type ServiceKindFactory,
 	type ServiceKindManifest,
@@ -24,6 +26,91 @@ const manifest = manifestJson as ServiceKindManifest;
 function record(value: Json | undefined): Record<string, Json> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 	return value as Record<string, Json>;
+}
+
+function acceptedCapabilityIds(input: Record<string, Json>): string[] | undefined {
+	if (!Object.prototype.hasOwnProperty.call(input, "acceptedCapabilities")) return undefined;
+	if (!Array.isArray(input.acceptedCapabilities)) return [];
+	return [...new Set(input.acceptedCapabilities.filter(
+		(value): value is string => typeof value === "string" && value.length > 0,
+	))];
+}
+
+export function scopeDescribeArgs(args: unknown, acceptedCapabilities: readonly string[] | undefined): unknown {
+	if (acceptedCapabilities === undefined || !args || typeof args !== "object" || Array.isArray(args)) return args;
+	const input = args as Record<string, unknown>;
+	if (input.kind !== "catalog-capabilities" && input.kind !== "multiple-capabilities") return args;
+	if (input.capabilities !== undefined && !Array.isArray(input.capabilities)) return args;
+	const accepted = new Set(acceptedCapabilities);
+	const requested = Array.isArray(input.capabilities)
+		? input.capabilities.filter((value): value is string => typeof value === "string")
+		: [];
+	const scoped = requested.filter((capability) => accepted.has(capability));
+	return {
+		...input,
+		capabilities: requested.length > 0 ? [...new Set(scoped)] : [...acceptedCapabilities],
+	};
+}
+
+function emptyDescribeSelection(args: unknown): boolean {
+	if (!args || typeof args !== "object" || Array.isArray(args)) return false;
+	const input = args as Record<string, unknown>;
+	return (input.kind === "catalog-capabilities" || input.kind === "multiple-capabilities")
+		&& Array.isArray(input.capabilities)
+		&& input.capabilities.length === 0;
+}
+
+export function filterDescribeResult(
+	value: unknown,
+	acceptedCapabilities: readonly string[] | undefined,
+): unknown {
+	if (acceptedCapabilities === undefined || !value || typeof value !== "object" || Array.isArray(value)) return value;
+	const result = value as Record<string, unknown>;
+	if (!result.capabilities || typeof result.capabilities !== "object" || Array.isArray(result.capabilities)) return value;
+	const accepted = new Set(acceptedCapabilities);
+	return {
+		...result,
+		capabilities: Object.fromEntries(
+			Object.entries(result.capabilities).filter(([id]) => accepted.has(id)),
+		),
+	};
+}
+
+export function selectAgentTools(
+	tools: readonly ServiceAgentTool[],
+	allowedTools: readonly string[] | undefined,
+): readonly ServiceAgentTool[] {
+	if (allowedTools === undefined) return tools;
+	const allowed = new Set(allowedTools);
+	return tools.filter(({ name }) => allowed.has(name));
+}
+
+export function createRequestAgentTools(
+	tools: readonly ServiceAgentTool[],
+	input: Record<string, Json>,
+	context: ServiceAgentToolExecutionContext,
+): readonly AgentTool[] {
+	const acceptedCapabilities = acceptedCapabilityIds(input);
+	return tools.map((tool) => ({
+		...tool,
+		handler: async (args: unknown) => {
+			if (tool.name !== "describe") return tool.handler(args, context);
+			const scopedArgs = scopeDescribeArgs(args, acceptedCapabilities);
+			if (acceptedCapabilities !== undefined && emptyDescribeSelection(scopedArgs)) {
+				return { capabilities: {} };
+			}
+			return filterDescribeResult(
+				await tool.handler(scopedArgs, context),
+				acceptedCapabilities,
+			);
+		},
+	}));
+}
+
+function requestedMaxOutputTokens(input: Record<string, Json>, configuredCap: number | undefined): number | undefined {
+	const requested = typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined;
+	if (configuredCap === undefined) return requested;
+	return requested === undefined ? configuredCap : Math.min(requested, configuredCap);
 }
 
 /** Accepts an explicit responseSchema passed by the caller through `request.input`. Useful when
@@ -114,6 +201,12 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 		const endpoint = String(config.endpoint);
 		const credentialRef = String(config.credentialRef);
 		const configuredAgent = typeof config.agent === "string" ? config.agent : "";
+		const configuredMaxOutputTokens = typeof config.maxOutputTokens === "number"
+			? config.maxOutputTokens
+			: undefined;
+		const configuredAgentTools = Array.isArray(config.agentTools)
+			? config.agentTools.filter((value): value is string => typeof value === "string")
+			: undefined;
 		const responseMode = config.responseMode === "json" ? "json" : "text";
 		const operations = [...new Set(Object.values(declaration.operations).map(({ operation }) => operation))];
 		const resolveAccessKey = async () => {
@@ -174,24 +267,47 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 					if (!agentName) throw new Error("foundry-agent requires config.agent or input.agentName");
 					const responseSchema = inputResponseSchema(input)
 						?? (responseMode === "json" ? undefined : declaredResponseSchema(request, adapterContext));
+					const availableTools = selectAgentTools(adapterContext.agentTools ?? [], configuredAgentTools);
+					if (configuredAgentTools !== undefined) {
+						const availableNames = new Set(availableTools.map(({ name }) => name));
+						const unavailable = configuredAgentTools.filter((name) => !availableNames.has(name));
+						if (unavailable.length > 0) {
+							throw new Error(`foundry-agent config.agentTools contains unavailable tool(s): ${unavailable.join(", ")}`);
+						}
+					}
+					const tools = createRequestAgentTools(availableTools, input, {
+						requestId: request.id,
+						service: request.service,
+						operation: request.operation,
+						providerId: request.providerId,
+						capabilityId: request.capabilityId,
+						actorId: request.actorId,
+						correlationId: request.correlationId,
+						idempotencyKey: request.idempotencyKey,
+						deadline: request.deadline,
+						target: request.target,
+						blueprintId: request.blueprintId,
+						blueprintRevision: request.blueprintRevision,
+						serviceRef: request.serviceRef,
+						signal: adapterContext.signal,
+					});
 					const instructions = instructionsWithGuardrailCorrection(
 						typeof input.instructions === "string" ? input.instructions : undefined,
 						request.eventPayload,
 					);
+					const maxOutputTokens = requestedMaxOutputTokens(input, configuredMaxOutputTokens);
+					const allowedTools = tools.map(({ name }) => name);
 					const foundry = await client();
 					let response = await foundry.chat({
 							message: String(input.message ?? ""),
 							agentName,
 							conversationId: typeof input.conversationId === "string" ? input.conversationId : undefined,
 							instructions,
-							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
+							maxOutputTokens,
 							responseSchema,
+							allowedTools,
 						});
-					const tools: readonly AgentTool[] = (adapterContext.agentTools ?? []).map((tool) => ({
-						...tool,
-						handler: (args: unknown) => tool.handler(args),
-					}));
-						let inProgressProposal = false;
+					let inProgressProposal = false;
 					for (let turn = 0; response.toolCalls.length > 0; turn += 1) {
 						if (turn >= 8) throw new Error("Foundry agent exceeded the lifecycle tool turn limit");
 						if (tools.length === 0) throw new Error("Foundry agent requested lifecycle tools that this host did not provide");
@@ -215,8 +331,9 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 						response = await foundry.chat({
 							agentName,
 							conversationId: response.conversationId,
-							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
+							maxOutputTokens,
 							responseSchema,
+							allowedTools,
 							toolOutputs: outputs,
 						});
 					}

@@ -1,0 +1,71 @@
+{
+  "format": "gik-scenarios/1",
+  "blueprint": "incident-analysis-new-shell",
+  "contextPresets": {
+    "fixed-presentation": {
+      "label": "Fixed presentation",
+      "context": {
+        "model": "semantic"
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "id": "scenario-1",
+      "title": "Analyze the first incident with fixed presentation",
+      "description": "Selects the first source report, requests fixed-presentation analysis, and waits for the nested report Blueprint.",
+      "contextPreset": "fixed-presentation",
+      "applicableContexts": [
+        "fixed-presentation"
+      ],
+      "resetAtStart": true,
+      "steps": [
+        {
+          "id": "request-analysis",
+          "title": "Request fixed-presentation analysis",
+          "acts": [
+            {
+              "id": "select-source-and-model",
+              "title": "Select the first source and fixed-presentation model",
+              "event": {
+                "node": "analysis-params--primary--in-params-form",
+                "name": "save",
+                "payload": {
+                  "values": {
+                    "source": "password-spray-mailbox",
+                    "model": "fixed-presentation"
+                  }
+                }
+              }
+            },
+            {
+              "id": "refresh-analysis",
+              "title": "Analyze the selected incident",
+              "event": {
+                "node": "incident-analysis--request--in-analysis-report",
+                "name": "press",
+                "payload": {}
+              }
+            },
+            {
+              "id": "wait-for-source-response",
+              "title": "Wait for the fixed-presentation source response",
+              "wait": {
+                "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)"
+              }
+            },
+            {
+              "id": "observe-incident-id",
+              "title": "Verify the report contains the incident ID",
+              "observe": {
+                "select": {
+                  "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

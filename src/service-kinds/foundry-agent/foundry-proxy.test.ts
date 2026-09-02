@@ -62,6 +62,7 @@ test("Foundry proxy chat sends agent name, conversation, and per-turn instructio
     agentName: "SOC-Correlation-Agent",
     conversationId: "conv-1",
     instructions: "Return schema version 1.",
+    allowedTools: ["describe", "compose_response_set_in_progress_proposal"],
   });
 
   assert.deepEqual(JSON.parse(String(request?.body)), {
@@ -69,6 +70,7 @@ test("Foundry proxy chat sends agent name, conversation, and per-turn instructio
     agentName: "SOC-Correlation-Agent",
     conversationId: "conv-1",
     instructions: "Return schema version 1.",
+    allowedTools: ["describe", "compose_response_set_in_progress_proposal"],
   });
   assert.equal((request?.headers as Record<string, string>)["x-functions-key"], "function-key");
   assert.equal(result.responseId, "resp-1");
