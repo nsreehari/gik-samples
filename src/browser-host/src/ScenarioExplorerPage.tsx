@@ -405,11 +405,17 @@ export function ScenarioExplorerPage(): React.ReactElement {
   );
   const requestedSelection = entries.findIndex(({ document }) =>
     document.blueprint === initialBlueprintId);
+  const defaultBlueprintSelection = entries.findIndex(({ document }) =>
+    document.blueprint === catalog.defaultBlueprint);
   const authoredScenarioSelection = entries.findIndex(({ document }) =>
     Boolean(catalog.scenarios[document.blueprint]?.scenarios.length));
   const initialSelection = Math.max(
     0,
-    requestedSelection >= 0 ? requestedSelection : authoredScenarioSelection,
+    requestedSelection >= 0
+      ? requestedSelection
+      : defaultBlueprintSelection >= 0
+        ? defaultBlueprintSelection
+        : authoredScenarioSelection,
   );
   const [selection, setSelection] = React.useState(initialSelection);
   const entry = entries[selection] ?? entries[0];
