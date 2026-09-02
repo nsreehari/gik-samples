@@ -24,7 +24,7 @@ function verify() {
   const vendorManifest = JSON.parse(readFileSync(vendorManifestPath, "utf8"));
   const tarballPath = path.join(vendorDir, vendorManifest.file);
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-  if (vendorManifest.package !== "@gik-ai/durable-runtime") throw new Error("Unexpected vendored package name.");
+  if (vendorManifest.package !== "gik-durable-runtime") throw new Error("Unexpected vendored package name.");
   if (!existsSync(tarballPath)) throw new Error(`Vendored package is missing: ${tarballPath}`);
   if (checksum(tarballPath) !== vendorManifest.sha256) throw new Error("Vendored package checksum mismatch.");
   if (packageJson.dependencies?.[vendorManifest.package] !== `file:vendor/${vendorManifest.file}`) {
@@ -46,25 +46,25 @@ if (!source || !existsSync(source)) {
   throw new Error("Usage: npm run vendor:durable-runtime -- <path-to-gik-durable-runtime.tgz>");
 }
 const filename = path.basename(source);
-const match = /^gik-ai-durable-runtime-(.+)\.tgz$/.exec(filename);
-if (!match) throw new Error("Expected a gik-ai-durable-runtime-<version>.tgz artifact.");
+const match = /^gik-durable-runtime-(.+)\.tgz$/.exec(filename);
+if (!match) throw new Error("Expected a gik-durable-runtime-<version>.tgz artifact.");
 
 for (const entry of readdirSync(vendorDir)) {
-  if (/^gik-ai-durable-runtime-.*\.tgz$/.test(entry) && entry !== filename) rmSync(path.join(vendorDir, entry));
+  if (/^gik-durable-runtime-.*\.tgz$/.test(entry) && entry !== filename) rmSync(path.join(vendorDir, entry));
 }
 copyFileSync(source, path.join(vendorDir, filename));
 const sha256 = checksum(path.join(vendorDir, filename));
 writeFileSync(vendorManifestPath, `${JSON.stringify({
-  package: "@gik-ai/durable-runtime",
+  package: "gik-durable-runtime",
   version: match[1],
   file: filename,
   sha256,
 }, null, 2)}\n`);
 
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-packageJson.dependencies["@gik-ai/durable-runtime"] = `file:vendor/${filename}`;
+packageJson.dependencies["gik-durable-runtime"] = `file:vendor/${filename}`;
 writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-rmSync(path.join(packageDir, "node_modules", "@gik-ai", "durable-runtime"), { recursive: true, force: true });
+rmSync(path.join(packageDir, "node_modules", "gik-durable-runtime"), { recursive: true, force: true });
 const installed = spawnSync(process.execPath, [npmCli, "install", "--ignore-scripts"], {
   cwd: packageDir,
   stdio: "inherit",

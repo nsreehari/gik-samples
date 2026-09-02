@@ -4,7 +4,7 @@ import {
   materializeBlueprint,
   parseBlueprintReference,
   runMaterializedTransition,
-} from "@gik-ai/blueprint";
+} from "gik-blueprint";
 
 import {
   getSampleBlueprintCatalog,

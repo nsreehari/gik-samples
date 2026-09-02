@@ -3,14 +3,14 @@ import {
   createBlueprintDurableTransitionAdapter,
   type DurableBlueprintSpec,
   type ExternalContext,
-} from "@gik-ai/blueprint";
-import type { BlueprintRuntime } from "@gik-ai/controlface/blueprint";
+} from "gik-blueprint";
+import type { BlueprintRuntime } from "gik-controlface/blueprint";
 import {
   InMemoryStateModel,
   type GIKEvent,
   type Json,
   type OrchestratorEffect,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 
 import {
   materializeSampleBlueprint,

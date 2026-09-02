@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { sourceViewerDefinition } from "@gik-ai/components/primitives";
+import { sourceViewerDefinition } from "gik-components/primitives";
 import { ComponentStory, type ComponentStoryExample } from "./ComponentStory";
 
 const examples: ComponentStoryExample[] = [

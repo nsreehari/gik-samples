@@ -31,7 +31,7 @@ before the longer build.
 npm run build
 ```
 
-The build compiles `@gik-ai/components`, validates the bootstrap catalog and the
+The build compiles `gik-components`, validates the bootstrap catalog and the
 vendored packages, and produces the browser app and Storybook output.
 
 ## 4. Typecheck

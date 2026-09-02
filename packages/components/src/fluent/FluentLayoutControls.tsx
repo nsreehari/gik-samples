@@ -1,6 +1,6 @@
 import React from "react";
 import { makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
-import { readProps, type ProjectionView } from "@gik-ai/react";
+import { readProps, type ProjectionView } from "gik-react";
 
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";
 import { type ComponentDescription } from "../shared/definition";

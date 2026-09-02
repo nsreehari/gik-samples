@@ -6,7 +6,7 @@ import {
   type DocNode,
   type Json,
   type ProjectedVocabularyManifest,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 import {
   BundleHost,
   bundleFromJson,
@@ -14,7 +14,7 @@ import {
   type BundleContextBindings,
   type EffectHandlerMap,
   type ProviderResolver,
-} from "@gik-ai/react";
+} from "gik-react";
 
 import {
   fluentComponentCapabilities,

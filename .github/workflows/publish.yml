@@ -84,7 +84,7 @@ jobs:
         run: npm test
 
       - name: Inspect Components package
-        run: npm pack --workspace @gik-ai/components --dry-run
+        run: npm pack --workspace gik-components --dry-run
 
       - name: Verify published GIK dependencies
         shell: bash
@@ -93,7 +93,7 @@ jobs:
           node <<'NODE' |
           const pkg = require("./packages/components/package.json");
           for (const [name, version] of Object.entries(pkg.dependencies ?? {})) {
-            if (name.startsWith("@gik-ai/")) console.log(`${name}@${version}`);
+            if (name.startsWith("gik-")) console.log(`${name}@${version}`);
           }
           NODE
           while IFS= read -r dependency; do
@@ -143,7 +143,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Publish Components with trusted publishing
-        run: npm publish --workspace @gik-ai/components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
+        run: npm publish --workspace gik-components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
 
       - name: Record release summary
         if: always()
@@ -156,7 +156,7 @@ jobs:
             echo "## npm publication"
             echo
             echo "- Release: [$TAG]($RELEASE)"
-            echo "- Package: \`@gik-ai/components\`"
+            echo "- Package: \`gik-components\`"
             echo "- Channel: \`$CHANNEL\`"
             echo "- Authentication: npm trusted publishing"
           } >> "$GITHUB_STEP_SUMMARY"

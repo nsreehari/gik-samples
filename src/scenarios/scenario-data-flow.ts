@@ -1,11 +1,11 @@
-import type { MaterializedBlueprint } from "@gik-ai/blueprint";
+import type { MaterializedBlueprint } from "gik-blueprint";
 import {
   projectCellRunState,
   type BlueprintRunState,
   type CellRunState,
   type Json,
   type ProjectedSourceRunState,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 
 export interface ScenarioDataFlowNode {
   [key: string]: unknown;

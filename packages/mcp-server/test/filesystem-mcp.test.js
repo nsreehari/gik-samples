@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { applyRuntimeSnapshotChanges } from '@gik-ai/durable-runtime';
+import { applyRuntimeSnapshotChanges } from 'gik-durable-runtime';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { NotificationSchema } from '@modelcontextprotocol/sdk/types.js';

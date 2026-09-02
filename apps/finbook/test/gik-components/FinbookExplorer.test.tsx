@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import React from "react";
 import { test } from "vitest";
-import { createGikComponentDeclarativeBundle, GikComponent } from "@gik-ai/components";
-import { unwrap } from "@gik-ai/kernel";
+import { createGikComponentDeclarativeBundle, GikComponent } from "gik-components";
+import { unwrap } from "gik-kernel";
 
 import {
   FinbookExplorer,

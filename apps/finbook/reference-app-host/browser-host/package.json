@@ -1,5 +1,5 @@
 {
-  "name": "@gik-ai/finbook-browser-host",
+  "name": "gik-finbook-browser-host",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,12 +10,12 @@
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.312",
-    "@gik-ai/blueprint": "*",
-    "@gik-ai/components": "file:../../vendor/gik-packages/gik-ai-components-0.2.1.tgz",
-    "@gik-ai/controlface": "*",
-    "@gik-ai/evaluators": "*",
-    "@gik-ai/kernel": "*",
-    "@gik-ai/react": "*",
+    "gik-blueprint": "*",
+    "gik-components": "file:../../vendor/gik-packages/gik-components-0.2.1.tgz",
+    "gik-controlface": "*",
+    "gik-evaluators": "*",
+    "gik-kernel": "*",
+    "gik-react": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,55 +1,55 @@
 {
   "format": "finbook-vendored-gik-packages/1",
-  "sourceCommit": "90cf08a19295296d5902ad0d6beb04af93b6af6c",
+  "sourceCommit": "e50bc621bc96f9fb08e8e0a639e6fa8e90ad8bfc",
   "packages": [
     {
-      "name": "@gik-ai/kernel",
-      "version": "0.1.2",
-      "file": "gik-ai-kernel-0.1.2.tgz",
-      "bytes": 484937,
-      "sha256": "a50111524c1772784d80a6d029306c9d4cbd605a6bc90b67bb2cdd1df49f57c9"
+      "name": "gik-kernel",
+      "version": "0.2.0",
+      "file": "gik-kernel-0.2.0.tgz",
+      "bytes": 484928,
+      "sha256": "304058c7a38b2eb5f145a5b4e31be1ae27bf8e2652dd8f880a365509cbd7cf39"
     },
     {
-      "name": "@gik-ai/evaluators",
-      "version": "0.1.2",
-      "file": "gik-ai-evaluators-0.1.2.tgz",
-      "bytes": 296422,
-      "sha256": "423f847a7a1d9a19a5b3a37bdd3a9142d454df22089e848b8de70aca3d681349"
+      "name": "gik-evaluators",
+      "version": "0.1.3",
+      "file": "gik-evaluators-0.1.3.tgz",
+      "bytes": 296400,
+      "sha256": "5bad17835eb1bd5d11b5dc4f89ae2f4758c1bcc21d4da8f46fbabd8319d1713d"
     },
     {
-      "name": "@gik-ai/durable-runtime",
+      "name": "gik-durable-runtime",
       "version": "0.8.1",
-      "file": "gik-ai-durable-runtime-0.8.1.tgz",
-      "bytes": 116632,
-      "sha256": "09afc7d3237ee413331e0c4f51b1901df49cbaa86b321c20787389a925b980b7"
+      "file": "gik-durable-runtime-0.8.1.tgz",
+      "bytes": 116638,
+      "sha256": "81bec3181ea17be48003dc9aa34e13918a068b38f3126773e9e59ffb72997922"
     },
     {
-      "name": "@gik-ai/blueprint",
+      "name": "gik-blueprint",
+      "version": "0.2.2",
+      "file": "gik-blueprint-0.2.2.tgz",
+      "bytes": 104274,
+      "sha256": "a576b438e7fbc166fa40a8e273820713c80e13df7844391dc90ab22bd560ecf8"
+    },
+    {
+      "name": "gik-controlface",
+      "version": "0.2.0",
+      "file": "gik-controlface-0.2.0.tgz",
+      "bytes": 1350394,
+      "sha256": "c37c79f67454b8d9d7a2dcf8cd1863a63db4ce568269f7297eb870b1e38e9a38"
+    },
+    {
+      "name": "gik-react",
+      "version": "0.3.2",
+      "file": "gik-react-0.3.2.tgz",
+      "bytes": 68159,
+      "sha256": "3636d79d1b3e6167123e6277f178a53fed8a8b667ac4733e0dfa82250d688451"
+    },
+    {
+      "name": "gik-components",
       "version": "0.2.1",
-      "file": "gik-ai-blueprint-0.2.1.tgz",
-      "bytes": 104304,
-      "sha256": "257aa04d4f6e577cc9626ea99ce9a9877e31db0ca615af3234db71542af9eb7f"
-    },
-    {
-      "name": "@gik-ai/controlface",
-      "version": "0.1.5",
-      "file": "gik-ai-controlface-0.1.5.tgz",
-      "bytes": 1350362,
-      "sha256": "70255eff4c23b40ca4ff4a6dfbb2c0fb0b1335774016b0cc7f6fe8d7a5d1c890"
-    },
-    {
-      "name": "@gik-ai/react",
-      "version": "0.3.1",
-      "file": "gik-ai-react-0.3.1.tgz",
-      "bytes": 68083,
-      "sha256": "b5944965051452512df17b86434930f95654c78a7c5a2ee1a46f2e3110368067"
-    },
-    {
-      "name": "@gik-ai/components",
-      "version": "0.2.1",
-      "file": "gik-ai-components-0.2.1.tgz",
-      "bytes": 385637,
-      "sha256": "8346387ad1190c78d85ba0b22683cfde6efd39725629b8b0b7f0cb9da71d8d17"
+      "file": "gik-components-0.2.1.tgz",
+      "bytes": 385664,
+      "sha256": "cb847a18c4aa50d6b722d0c13fbee96d45db3174a6cd53e06164905634fe9c23"
     }
   ]
 }

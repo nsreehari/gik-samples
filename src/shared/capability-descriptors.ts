@@ -1,9 +1,9 @@
-import type { CapabilityDescriptor } from "@gik-ai/kernel";
-import { fluentComponentCapabilities } from "@gik-ai/components/fluent";
-import { primitiveComponentCapabilities } from "@gik-ai/components/primitives";
-import { semanticComponentCapabilities } from "@gik-ai/components/semantic";
-import { securityComponentCapabilities } from "@gik-ai/components/security";
-import { softwareComponentCapabilities } from "@gik-ai/components/software";
+import type { CapabilityDescriptor } from "gik-kernel";
+import { fluentComponentCapabilities } from "gik-components/fluent";
+import { primitiveComponentCapabilities } from "gik-components/primitives";
+import { semanticComponentCapabilities } from "gik-components/semantic";
+import { securityComponentCapabilities } from "gik-components/security";
+import { softwareComponentCapabilities } from "gik-components/software";
 
 const providers: Record<string, Record<string, CapabilityDescriptor>> = {
   fluent: fluentComponentCapabilities,

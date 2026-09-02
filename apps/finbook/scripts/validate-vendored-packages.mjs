@@ -24,7 +24,7 @@ for (const artifact of manifest.packages) {
 }
 
 const localDependencies = Object.entries(packageJson.dependencies ?? {})
-  .filter(([name]) => name.startsWith("@gik-ai/"));
+  .filter(([name]) => name.startsWith("gik-"));
 if (localDependencies.length !== manifest.packages.length) {
   throw new Error("Finbook GIK dependencies and vendor manifest are inconsistent.");
 }
