@@ -77,7 +77,7 @@
                   ],
                   "bindings": {
                     "fields": {
-                      "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
+                      "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation (WIP)'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
                     },
                     "value": {
                       "from": "incident.selection"
@@ -475,7 +475,7 @@
             ],
             "bindings": {
               "fields": {
-                "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
+                "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation (WIP)'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
               },
               "value": {
                 "from": "incident.selection"
