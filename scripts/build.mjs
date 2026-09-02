@@ -20,6 +20,7 @@ await Promise.all([
   run(process.execPath, [npmCli, "run", "build", "--workspace", "@gik-ai/components"]),
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
   run(process.execPath, ["scripts/validate-vendored-packages.mjs"]),
+  run(process.execPath, [npmCli, "run", "finbook:build"]),
 ]);
 if (!dev) {
   await run(process.execPath, [

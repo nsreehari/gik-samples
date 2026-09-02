@@ -1,0 +1,51 @@
+{
+  "name": "@gik-ai/finbook-reference-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "reference-app-host/browser-host",
+    "mcp-server"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:browser": "npm run dev --workspace @gik-ai/finbook-browser-host",
+    "dev:server": "npm run start --workspace @gik-ai/finbook-server",
+    "vendor:gik": "node scripts/vendor-gik-packages.mjs",
+    "validate:vendor": "node scripts/validate-vendored-packages.mjs",
+    "validate": "tsx scripts/validate-blueprint.ts",
+    "build": "npm run validate:vendor && npm run validate && npm run build --workspace @gik-ai/finbook-browser-host",
+    "typecheck": "tsc -p reference-app-host/browser-host/tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts && npm run check --workspace @gik-ai/finbook-server",
+    "check": "npm run typecheck && npm run build && npm test"
+  },
+  "dependencies": {
+    "@gik-ai/blueprint": "file:vendor/gik-packages/gik-ai-blueprint-0.2.1.tgz",
+    "@gik-ai/components": "file:vendor/gik-packages/gik-ai-components-0.2.1.tgz",
+    "@gik-ai/controlface": "file:vendor/gik-packages/gik-ai-controlface-0.1.5.tgz",
+    "@gik-ai/durable-runtime": "file:vendor/gik-packages/gik-ai-durable-runtime-0.8.1.tgz",
+    "@gik-ai/evaluators": "file:vendor/gik-packages/gik-ai-evaluators-0.1.2.tgz",
+    "@gik-ai/kernel": "file:vendor/gik-packages/gik-ai-kernel-0.1.2.tgz",
+    "@gik-ai/react": "file:vendor/gik-packages/gik-ai-react-0.3.1.tgz",
+    "@xyflow/react": "file:vendor/npm-packages/xyflow-react-12.11.1.tgz",
+    "@xyflow/system": "file:vendor/npm-packages/xyflow-system-0.0.78.tgz",
+    "@fluentui/react-components": "^9.74.3",
+    "@fluentui/react-icons": "^2.0.312",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "overrides": {
+    "@xyflow/react": "$@xyflow/react",
+    "@xyflow/system": "$@xyflow/system"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
