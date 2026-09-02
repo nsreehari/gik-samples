@@ -9,6 +9,32 @@
         { "path": "runtime.blueprintId", "equals": "incident-analysis-new-shell" },
         { "path": "state.incident", "exists": true }
       ]
+    },
+    {
+      "id": "renders-saved-report-envelope",
+      "context": { "model": "semantic" },
+      "evaluation": {
+        "cell": "report-viewer",
+        "state": {
+          "saved-report-envelope": {
+            "found": true,
+            "analysisReport": { "marker": "saved" },
+            "asOn": "2026-08-31T10:30:00Z",
+            "asOnStamp": "2026-08-31T10:29:00Z"
+          }
+        }
+      },
+      "assertions": [
+        {
+          "path": "evaluation.computed.incident.savedReportEnvelope",
+          "equals": {
+            "found": true,
+            "analysisReport": { "marker": "saved" },
+            "asOn": "2026-08-31T10:30:00Z",
+            "asOnStamp": "2026-08-31T10:29:00Z"
+          }
+        }
+      ]
     }
   ]
 }

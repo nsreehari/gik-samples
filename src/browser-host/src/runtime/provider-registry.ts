@@ -1,10 +1,10 @@
-import type { CapabilityDescriptor } from "@gik-ai/kernel";
 import type { ProjectionView } from "@gik-ai/react";
-import { fluentComponentCapabilities, fluentComponentViews } from "@gik-ai/components/fluent";
-import { primitiveComponentCapabilities, primitiveComponentViews } from "@gik-ai/components/primitives";
-import { semanticComponentCapabilities, semanticComponentViews } from "@gik-ai/components/semantic";
-import { securityComponentCapabilities, securityComponentViews } from "@gik-ai/components/security";
-import { softwareComponentCapabilities, softwareComponentViews } from "@gik-ai/components/software";
+import { fluentComponentViews } from "@gik-ai/components/fluent";
+import { primitiveComponentViews } from "@gik-ai/components/primitives";
+import { semanticComponentViews } from "@gik-ai/components/semantic";
+import { securityComponentViews } from "@gik-ai/components/security";
+import { softwareComponentViews } from "@gik-ai/components/software";
+import { resolveSampleCapabilityDescriptors } from "../../../shared/capability-descriptors";
 import { credentialAccessViews } from "./credential-access";
 
 const projectionProviders: Record<string, Record<string, ProjectionView>> = {
@@ -20,14 +20,4 @@ export function resolveProjectionViews(id: string): Record<string, ProjectionVie
   return projectionProviders[id];
 }
 
-const capabilityDescriptorProviders: Record<string, Record<string, CapabilityDescriptor>> = {
-  fluent: fluentComponentCapabilities,
-  primitive: primitiveComponentCapabilities,
-  semantic: semanticComponentCapabilities,
-  security: securityComponentCapabilities,
-  software: softwareComponentCapabilities,
-};
-
-export function resolveCapabilityDescriptors(id: string): Record<string, CapabilityDescriptor> | undefined {
-  return capabilityDescriptorProviders[id];
-}
+export const resolveCapabilityDescriptors = resolveSampleCapabilityDescriptors;

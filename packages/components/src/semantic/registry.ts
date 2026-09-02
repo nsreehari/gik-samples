@@ -2,6 +2,10 @@ import type { CapabilityDescriptor } from "@gik-ai/kernel";
 import type { ProjectionView } from "@gik-ai/react";
 
 import { Argument, argumentDefinition } from "./argument";
+import { Assessment, assessmentDefinition } from "./assessment";
+import { ChangeProposal, changeProposalDefinition } from "./change-proposal";
+import { ConsistencyCase, consistencyCaseDefinition } from "./consistency-case";
+import { FindingSet, findingSetDefinition } from "./finding-set";
 import { MeasureSet, measureSetDefinition } from "./measure-set";
 import { Milestones, milestonesDefinition } from "./milestones";
 import { Narrative, narrativeDefinition } from "./narrative";
@@ -15,6 +19,10 @@ import {
 
 export const semanticComponentViews: Record<string, ProjectionView> = {
   argument: Argument,
+  assessment: Assessment,
+  "change-proposal": ChangeProposal,
+  "consistency-case": ConsistencyCase,
+  "finding-set": FindingSet,
   "measure-set": MeasureSet,
   milestones: Milestones,
   narrative: Narrative,
@@ -29,6 +37,10 @@ export const semanticComponentViews: Record<string, ProjectionView> = {
 
 export const semanticComponentDefinitions = {
   argument: argumentDefinition,
+  assessment: assessmentDefinition,
+  "change-proposal": changeProposalDefinition,
+  "consistency-case": consistencyCaseDefinition,
+  "finding-set": findingSetDefinition,
   "measure-set": measureSetDefinition,
   milestones: milestonesDefinition,
   narrative: narrativeDefinition,

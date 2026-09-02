@@ -1,7 +1,7 @@
 {
   "format": "gik-vendored-packages/1",
   "sourceRepository": "https://github.com/nsreehari/generative-interaction-kernel.git",
-  "sourceCommit": "94a749c22c831941c38db4c711428ace8c91e6ca",
+  "sourceCommit": "90cf08a19295296d5902ad0d6beb04af93b6af6c",
   "excluded": [
     "source map files",
     "sourceMappingURL comments"
@@ -9,17 +9,52 @@
   "packages": [
     {
       "name": "@gik-ai/agent-lifecycle-exp",
-      "version": "0.1.0",
-      "file": "gik-ai-agent-lifecycle-exp-0.1.0.tgz",
-      "bytes": 24075,
-      "sha256": "3870935fe86bcc2793d31e159da241c90653cbea10547d8190d9b32400679ed5"
+      "version": "0.1.1",
+      "file": "gik-ai-agent-lifecycle-exp-0.1.1.tgz",
+      "bytes": 23856,
+      "sha256": "ea14fdc1997e15888717ff8b84e294ee6bf4386f67b8d0a09247bf7eaf00c2ef"
+    },
+    {
+      "name": "@gik-ai/blueprint",
+      "version": "0.2.1",
+      "file": "gik-ai-blueprint-0.2.1.tgz",
+      "bytes": 40465,
+      "sha256": "49140b7e410309d838bdc4dddb47ec16f58fa97d438b428311ba39e0b97962ca"
     },
     {
       "name": "@gik-ai/blueprint-agent-host",
       "version": "0.1.0",
       "file": "gik-ai-blueprint-agent-host-0.1.0.tgz",
-      "bytes": 5425,
-      "sha256": "50a204444cef8de5124956704e0cdbddb909e0e08d6f1e679f03e98d24bed0c4"
+      "bytes": 5399,
+      "sha256": "ad4fc005d12072a42327ebb5e98c5f6c6a3a944c68cbf8675213255df43d6b97"
+    },
+    {
+      "name": "@gik-ai/controlface",
+      "version": "0.1.5",
+      "file": "gik-ai-controlface-0.1.5.tgz",
+      "bytes": 325075,
+      "sha256": "6a74534a5102431eed1840c51f92d63cc176ec8fdeab7799e97207765e92a014"
+    },
+    {
+      "name": "@gik-ai/evaluators",
+      "version": "0.1.2",
+      "file": "gik-ai-evaluators-0.1.2.tgz",
+      "bytes": 81688,
+      "sha256": "cdf3e810be80234a82372cb32c989188ac7ddd656dea25b1471d10937a64ec45"
+    },
+    {
+      "name": "@gik-ai/kernel",
+      "version": "0.1.2",
+      "file": "gik-ai-kernel-0.1.2.tgz",
+      "bytes": 126310,
+      "sha256": "b7a685b965ffc5039ee5c3c3f0b2e7ca161eb14c134b4b74b540ca1f84a3da94"
+    },
+    {
+      "name": "@gik-ai/react",
+      "version": "0.3.1",
+      "file": "gik-ai-react-0.3.1.tgz",
+      "bytes": 25162,
+      "sha256": "ead4c190647a74008bfb51d945911e697e163f16b4c7e30d1025076131422a4f"
     }
   ]
 }

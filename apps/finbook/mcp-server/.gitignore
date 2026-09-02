@@ -1,0 +1,3 @@
+domain/DB/*.sqlite
+domain/DB/*.sqlite-*
+node_modules/
