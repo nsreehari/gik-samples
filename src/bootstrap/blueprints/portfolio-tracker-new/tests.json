@@ -12,7 +12,12 @@
         "view": "desktop"
       },
       "assertions": [
-        { "path": "runtime.blueprintId", "equals": "portfolio-tracker-new" }
+        { "path": "runtime.blueprintId", "equals": "portfolio-tracker-new" },
+        { "path": "state.purposeParticipant.schemaVersion", "equals": 1 },
+        { "path": "state.purposeParticipant.purpose.revision", "equals": "portfolio-purpose/v1" },
+        { "path": "state.purposeParticipant.strategy.posture", "equals": "observe" },
+        { "path": "state.purposeParticipant.plan.actions", "equals": [] },
+        { "path": "state.purposeParticipant.pendingRequests.riskConstraint", "equals": null }
       ]
     }
   ]

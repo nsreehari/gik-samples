@@ -1,0 +1,116 @@
+name: Bootstrap first Components publish (token)
+
+# ONE-TIME bootstrap to publish the components package under the new unscoped npm
+# name "gik-components" (the @gik-ai scope is blocked by the corporate npm proxy).
+#
+# This workflow renames the package to gik-components ONLY inside the runner, right
+# before publishing. The repository itself keeps the package named gik-components,
+# so nothing in the repo (consumers, build, CI) changes and the full consumer migration
+# stays deferred. npm trusted publishing (OIDC) cannot create a brand-new package name,
+# so this first publish is token-authenticated.
+#
+# After a successful run:
+#   1. Configure a trusted publisher for gik-components on npmjs.com
+#      (repo nsreehari/gik-samples, environment npm-publish).
+#   2. Revoke / delete the NPM_TOKEN secret.
+#   3. Do not run this workflow again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run inspects and packs only; publish performs the real first publish"
+        type: choice
+        options:
+          - dry-run
+          - publish
+        default: dry-run
+      confirm:
+        description: 'Type "PUBLISH gik-components" to allow a real publish (ignored for dry-run)'
+        type: string
+        default: ""
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-publish:
+    name: Bootstrap Components publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: npm-publish
+    steps:
+      - name: Guard confirmation for real publish
+        if: inputs.mode == 'publish' && inputs.confirm != 'PUBLISH gik-components'
+        run: |
+          echo "::error::Real publish requires the confirm input to equal 'PUBLISH gik-components'." >&2
+          exit 1
+
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Use compatible npm resolver
+        run: npm install --global npm@11.19.0
+
+      - name: Install dependencies
+        # npm install (not npm ci) tolerates transitive optional-dependency lockfile
+        # drift on the runner; this is an ephemeral publish job, not a reproducible build.
+        run: npm install --no-audit --no-fund
+
+      - name: Validate vendored packages
+        run: npm run validate:vendor
+
+      - name: Build gik components package
+        run: npm run build --workspace gik-components
+
+      - name: Rename package to gik-components for publishing
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const path = "packages/components/package.json";
+          const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+          pkg.name = "gik-components";
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+          console.log(`Renamed to ${pkg.name}@${pkg.version} for publishing (runner only).`);
+          NODE
+
+      - name: Inspect package contents
+        run: npm pack ./packages/components --dry-run
+
+      - name: Publish (token) to create gik-components
+        if: inputs.mode == 'publish'
+        working-directory: packages/components
+        run: npm publish --tag latest --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Provenance is intentionally OFF for the bootstrap publish; the recurring
+          # release flow can produce provenance for subsequent releases.
+
+      - name: Record summary
+        if: always()
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          {
+            echo "## Bootstrap first Components publish"
+            echo
+            echo "- Mode: \`$MODE\`"
+            echo "- Published name: \`gik-components\` (renamed in-runner from \`gik-components\`)"
+            echo "- Authentication: token (\`NPM_TOKEN\` secret)"
+            echo "- Next: configure trusted publishing for gik-components on npmjs.com, then revoke \`NPM_TOKEN\`."
+          } >> "$GITHUB_STEP_SUMMARY"

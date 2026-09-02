@@ -1,25 +1,67 @@
 {
   "format": "gik-vendored-packages/1",
   "sourceRepository": "https://github.com/nsreehari/generative-interaction-kernel.git",
-  "sourceCommit": "94a749c22c831941c38db4c711428ace8c91e6ca",
+  "sourceCommit": "e50bc621bc96f9fb08e8e0a639e6fa8e90ad8bfc",
   "excluded": [
     "source map files",
     "sourceMappingURL comments"
   ],
   "packages": [
     {
-      "name": "@gik-ai/agent-lifecycle-exp",
-      "version": "0.1.0",
-      "file": "gik-ai-agent-lifecycle-exp-0.1.0.tgz",
-      "bytes": 24075,
-      "sha256": "3870935fe86bcc2793d31e159da241c90653cbea10547d8190d9b32400679ed5"
+      "name": "gik-agent-lifecycle-exp",
+      "version": "0.1.1",
+      "file": "gik-agent-lifecycle-exp-0.1.1.tgz",
+      "bytes": 23850,
+      "sha256": "8d8c452863cecf942945490972ab509324a76c24d4ede7f137389d0fd7c7646b"
     },
     {
-      "name": "@gik-ai/blueprint-agent-host",
+      "name": "gik-blueprint",
+      "version": "0.2.2",
+      "file": "gik-blueprint-0.2.2.tgz",
+      "bytes": 40455,
+      "sha256": "91d861fe47046ec6f6e7e821b59d68aa93217de642cd19be10715a21cc34317e"
+    },
+    {
+      "name": "gik-blueprint-agent-host",
       "version": "0.1.0",
-      "file": "gik-ai-blueprint-agent-host-0.1.0.tgz",
-      "bytes": 5425,
-      "sha256": "50a204444cef8de5124956704e0cdbddb909e0e08d6f1e679f03e98d24bed0c4"
+      "file": "gik-blueprint-agent-host-0.1.0.tgz",
+      "bytes": 5389,
+      "sha256": "2056e51946f774280123f22cda68a0239284cde6a8339b686a757358a49a40f4"
+    },
+    {
+      "name": "gik-controlface",
+      "version": "0.2.0",
+      "file": "gik-controlface-0.2.0.tgz",
+      "bytes": 325057,
+      "sha256": "c4e2be4e82957f108dd9cde09dc2b5c5b074ef3a4eb5bc5a32e60c9b18e9597f"
+    },
+    {
+      "name": "gik-durable-runtime",
+      "version": "0.8.1",
+      "file": "gik-durable-runtime-0.8.1.tgz",
+      "bytes": 39267,
+      "sha256": "fd358d619c7dc72bfb97c545f401d01aa7f90a5b360f543fd0f9ebc473ba0a5c"
+    },
+    {
+      "name": "gik-evaluators",
+      "version": "0.1.3",
+      "file": "gik-evaluators-0.1.3.tgz",
+      "bytes": 81669,
+      "sha256": "0ffe4143b0a23d9b88bfc0a342722055c3acb00b03a3b83813c888dffaf23b9d"
+    },
+    {
+      "name": "gik-kernel",
+      "version": "0.2.0",
+      "file": "gik-kernel-0.2.0.tgz",
+      "bytes": 126302,
+      "sha256": "ba07aaf1280728037aaa922ab07d27a042d9205dfdcfb47897d876f2186ab5f4"
+    },
+    {
+      "name": "gik-react",
+      "version": "0.3.2",
+      "file": "gik-react-0.3.2.tgz",
+      "bytes": 25217,
+      "sha256": "281c0c7f9912a5e6e450ffbfdb0ea757f70fd220bc1f44c51541d6de149dc97f"
     }
   ]
 }

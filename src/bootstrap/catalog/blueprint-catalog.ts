@@ -5,11 +5,12 @@ import {
   type BlueprintArtifact,
   type BlueprintHostRegistry,
   type ExternalContext,
-} from "@gik-ai/blueprint";
-import { resolveDeclarativeFormInitialValue } from "@gik-ai/evaluators";
-import { openBlueprint, type BlueprintRuntime } from "@gik-ai/controlface/blueprint";
-import { createIndexedDbRecordLibrary } from "@gik-ai/durable-runtime/storage/indexed-db";
-import type { Json } from "@gik-ai/kernel";
+  type MaterializedBlueprint,
+} from "gik-blueprint";
+import { resolveDeclarativeFormInitialValue } from "gik-evaluators";
+import { openBlueprint, type BlueprintRuntime } from "gik-controlface/blueprint";
+import { createIndexedDbRecordLibrary } from "gik-durable-runtime/storage/indexed-db";
+import type { Json } from "gik-kernel";
 import { loadBlueprintCatalogBundle } from "../load-catalog";
 import {
   parseBlueprintBootstrapAssets,
@@ -133,7 +134,14 @@ export function openSampleBlueprint(
   id: string,
   externalContext?: ExternalContext,
 ): BlueprintRuntime {
-  const materialized = materializeBlueprint({
+  return openBlueprint(materializeSampleBlueprint(id, externalContext).payload.terminalBlueprint);
+}
+
+export function materializeSampleBlueprint(
+  id: string,
+  externalContext?: ExternalContext,
+): MaterializedBlueprint {
+  return materializeBlueprint({
     blueprint: resolveSampleBlueprintSource(id),
     externalContext,
     resolveBlueprint(reference) {
@@ -145,7 +153,6 @@ export function openSampleBlueprint(
       return child;
     },
   });
-  return openBlueprint(materialized.payload.terminalBlueprint);
 }
 
 export function installUserBlueprints(blueprints: Record<string, BlueprintArtifact>): void {

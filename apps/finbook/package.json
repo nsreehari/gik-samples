@@ -1,0 +1,51 @@
+{
+  "name": "gik-finbook-reference-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "reference-app-host/browser-host",
+    "mcp-server"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:browser": "npm run dev --workspace gik-finbook-browser-host",
+    "dev:server": "npm run start --workspace gik-finbook-server",
+    "vendor:gik": "node scripts/vendor-gik-packages.mjs",
+    "validate:vendor": "node scripts/validate-vendored-packages.mjs",
+    "validate": "tsx scripts/validate-blueprint.ts",
+    "build": "npm run validate:vendor && npm run validate && npm run build --workspace gik-finbook-browser-host",
+    "typecheck": "tsc -p reference-app-host/browser-host/tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts && npm run check --workspace gik-finbook-server",
+    "check": "npm run typecheck && npm run build && npm test"
+  },
+  "dependencies": {
+    "gik-blueprint": "file:vendor/gik-packages/gik-blueprint-0.2.2.tgz",
+    "gik-components": "file:vendor/gik-packages/gik-components-0.2.1.tgz",
+    "gik-controlface": "file:vendor/gik-packages/gik-controlface-0.2.0.tgz",
+    "gik-durable-runtime": "file:vendor/gik-packages/gik-durable-runtime-0.8.1.tgz",
+    "gik-evaluators": "file:vendor/gik-packages/gik-evaluators-0.1.3.tgz",
+    "gik-kernel": "file:vendor/gik-packages/gik-kernel-0.2.0.tgz",
+    "gik-react": "file:vendor/gik-packages/gik-react-0.3.2.tgz",
+    "@xyflow/react": "file:vendor/npm-packages/xyflow-react-12.11.1.tgz",
+    "@xyflow/system": "file:vendor/npm-packages/xyflow-system-0.0.78.tgz",
+    "@fluentui/react-components": "^9.74.3",
+    "@fluentui/react-icons": "^2.0.312",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "overrides": {
+    "@xyflow/react": "$@xyflow/react",
+    "@xyflow/system": "$@xyflow/system"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

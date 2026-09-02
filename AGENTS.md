@@ -20,6 +20,16 @@ These instructions apply to every coding agent working in this repository.
 - Inspect related production code and tests before changing behavior.
 - Stop for human clarification when product behavior is materially ambiguous.
 
+## Application boundary
+
+- Blueprints own application composition and cross-component behavior:
+  sequencing, navigation, review workflows, and coordinating write actions.
+- Components are projection leaves: they render authored data declaratively
+  and emit declared events; they do not perform writes or own workflow state.
+- Imperative code provides infrastructure and domain mechanics (data access,
+  calculations, integrations) that Blueprints and components consume through
+  well-defined props and events.
+
 ## Implementation
 
 - Make the smallest complete change that addresses the root cause.
@@ -38,7 +48,7 @@ These instructions apply to every coding agent working in this repository.
 
 ## Validation
 
-- Build `@gik-ai/components` before checking consumers when its `dist` is absent.
+- Build `gik-components` before checking consumers when its `dist` is absent.
 - Run the smallest relevant tests while developing.
 - Before completing a code change, run:
 

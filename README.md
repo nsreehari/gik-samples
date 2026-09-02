@@ -2,6 +2,12 @@
 
 Community-facing components, Blueprint samples, and the browser App Host for the Generative Interaction Kernel.
 
+## Reference applications
+
+- [`apps/finbook`](./apps/finbook) is a carve-out-ready declarative finance
+  application with its own Blueprint, web host, MCP server, domain logic,
+  SQLite persistence, seeds, and tests.
+
 The app publishes `/provisioning/` and `/in-memory/provisioning/`. These routes
 use the same repository/user Blueprint catalog as the Studio and store
 user-owned provisioning profiles in IndexedDB or memory respectively. They
@@ -11,9 +17,9 @@ the copied scripts, or reviewed and applied through the loopback companion.
 
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies resolve
-from the public npm registry; only the unpublished `@gik-ai/agent-lifecycle-exp`
-and `@gik-ai/blueprint-agent-host` packages still resolve from
+Storybook is published at `/storybook/`. Core `gik-*` dependencies resolve
+from the public npm registry; only the unpublished `gik-agent-lifecycle-exp`
+and `gik-blueprint-agent-host` packages still resolve from
 integrity-checked archives under `vendor/gik-packages`.
 
 Blueprint service declarations own their concrete non-secret configuration,
@@ -21,6 +27,15 @@ including service endpoints and logical `credentialRef` values. The browser
 host authorizes endpoints declared by repository-seeded Blueprints and resolves
 the referenced secret from browser credential storage when the service is used.
 Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
+
+## Application boundary
+
+Blueprints own application composition and cross-component behavior:
+sequencing, navigation, review workflows, and coordinating write actions.
+Components are projection leaves: they render authored data declaratively and
+emit declared events, but do not perform writes or own workflow state.
+Imperative code provides infrastructure and domain mechanics that Blueprints
+and components consume through well-defined props and events.
 
 ## Live site
 
@@ -71,6 +86,7 @@ npm run typecheck
 npm test
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
+See [VALIDATION.md](VALIDATION.md) for the full deterministic local validation
+sequence, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
 [SUPPORT.md](SUPPORT.md) for support boundaries, and [SECURITY.md](SECURITY.md)
 for private vulnerability reporting.

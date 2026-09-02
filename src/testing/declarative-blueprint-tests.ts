@@ -1,5 +1,11 @@
-import type { ExternalContext } from "@gik-ai/blueprint";
-import type { Json } from "@gik-ai/kernel";
+import {
+  evaluateBlueprintCellId,
+  materializeBlueprint,
+  type BlueprintArtifact,
+  type BlueprintReferenceResolver,
+  type ExternalContext,
+} from "gik-blueprint";
+import type { Json } from "gik-kernel";
 
 import { openHeadlessBlueprint } from "../headless/blueprint-harness";
 import { isRecord, jsonValuesEqual, readJsonPath } from "../shared/json-path";
@@ -13,6 +19,10 @@ export interface BlueprintTestAssertion {
 export interface BlueprintTestCase {
   id: string;
   context?: ExternalContext;
+  evaluation?: {
+    cell: string;
+    state: Record<string, Json>;
+  };
   assertions: BlueprintTestAssertion[];
 }
 
@@ -43,6 +53,11 @@ export function parseBlueprintTestDocument(value: unknown): BlueprintTestDocumen
       || typeof candidate.id !== "string"
       || !candidate.id
       || (candidate.context !== undefined && !isRecord(candidate.context))
+      || (candidate.evaluation !== undefined
+        && (!isRecord(candidate.evaluation)
+          || typeof candidate.evaluation.cell !== "string"
+          || !candidate.evaluation.cell
+          || !isRecord(candidate.evaluation.state)))
       || !Array.isArray(candidate.assertions)
       || candidate.assertions.length === 0) {
       throw new Error(`Invalid test case in Blueprint '${value.blueprint}'.`);
@@ -68,6 +83,14 @@ export function parseBlueprintTestDocument(value: unknown): BlueprintTestDocumen
       ...(candidate.context === undefined
         ? {}
         : { context: structuredClone(candidate.context) as ExternalContext }),
+      ...(candidate.evaluation === undefined
+        ? {}
+        : {
+            evaluation: {
+              cell: candidate.evaluation.cell as string,
+              state: structuredClone(candidate.evaluation.state) as Record<string, Json>,
+            },
+          }),
       assertions,
     };
   });
@@ -77,15 +100,43 @@ export function parseBlueprintTestDocument(value: unknown): BlueprintTestDocumen
   return { format: "gik-blueprint-tests/1", blueprint: value.blueprint, cases };
 }
 
-export function runBlueprintTestDocument(document: BlueprintTestDocument): BlueprintTestResult[] {
+export function runBlueprintTestDocument(
+  document: BlueprintTestDocument,
+  options?: {
+    blueprint: BlueprintArtifact;
+    resolveBlueprint: BlueprintReferenceResolver;
+  },
+): BlueprintTestResult[] {
   return document.cases.map((testCase) => {
     const session = openHeadlessBlueprint(document.blueprint, testCase.context);
+    const evaluation = testCase.evaluation
+      ? (() => {
+          if (!options) {
+            throw new Error(`Blueprint test '${testCase.id}' requires a Blueprint resolver for Cell evaluation.`);
+          }
+          const materialized = materializeBlueprint({
+            blueprint: options.blueprint,
+            externalContext: testCase.context,
+            resolveBlueprint: options.resolveBlueprint,
+          });
+          return evaluateBlueprintCellId({
+            blueprint: materialized.payload.terminalBlueprint,
+            state: {
+              ...structuredClone(materialized.payload.initialState),
+              ...structuredClone(testCase.evaluation.state),
+            },
+            cellId: testCase.evaluation.cell,
+            externalContext: materialized.payload.externalContext,
+          });
+        })()
+      : undefined;
     const subject = {
       runtime: {
         blueprintId: session.runtime.blueprintId,
         revision: session.runtime.revision,
       },
       state: session.snapshot(),
+      ...(evaluation === undefined ? {} : { evaluation }),
     };
     const errors = testCase.assertions.flatMap((assertion) => {
       const actual = readJsonPath(subject, assertion.path);

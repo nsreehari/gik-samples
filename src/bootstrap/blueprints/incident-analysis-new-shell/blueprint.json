@@ -6,36 +6,6 @@
     "kind": "incident-analysis-shell",
     "version": "1.0.0",
     "structureMode": "fixed",
-    "contextFormSpec": {
-      "fields": {
-        "type": "object",
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Analysis model",
-            "enum": [
-              "semantic",
-              "source-faithful",
-              "refinement"
-            ],
-            "enumNames": [
-              "Semantic",
-              "Source faithful",
-              "Refinement"
-            ]
-          }
-        },
-        "required": [
-          "model"
-        ],
-        "additionalProperties": true
-      },
-      "initialValue": {
-        "model": "semantic"
-      },
-      "saveLabel": "Apply context",
-      "discardLabel": "Discard"
-    },
     "serviceTiers": [
       {
         "id": "incident-analysis",
@@ -53,59 +23,11 @@
         "to": "runtime-document",
         "implementationPrograms": [
           {
-            "id": "semantic",
-            "when": "externalContext.model = 'semantic'"
-          },
-          {
-            "id": "source-faithful",
-            "when": "externalContext.model = 'source-faithful'",
-            "cells": {
-              "analysis-selection": {
-                "compute": [
-                  {
-                    "id": "selected-model",
-                    "expression": "'source-faithful'",
-                    "assign": "model"
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "refinement",
-            "when": "externalContext.model = 'refinement'",
-            "cells": {
-              "analysis-selection": {
-                "compute": [
-                  {
-                    "id": "selected-model",
-                    "expression": "'refinement'",
-                    "assign": "model"
-                  }
-                ]
-              },
-              "report-analysis": {
-                "sources": [
-                  {
-                    "id": "report-analysis.source",
-                    "service": "incident-report-refinement",
-                    "operation": "analyzeReportBlueprint",
-                    "when": "inputs.analysisRequest.selectedReport = inputs.selectedReport and inputs.analysisRequest.selectedModel = inputs.selectedModel",
-                    "input": {
-                      "kind": "jsonata",
-                      "expr": "{'incident_report':inputs.reportContent,'model':inputs.selectedModel}"
-                    },
-                    "output": {
-                      "kind": "jsonata",
-                      "expr": "response"
-                    }
-                  }
-                ]
-              }
-            }
+            "id": "reactive",
+            "when": "true"
           }
         ],
-        "fallback": "semantic"
+        "fallback": "reactive"
       }
     ],
     "projectionTiers": [
@@ -114,6 +36,7 @@
         "kind": "incident-analysis",
         "capabilities": [
           "incident-analysis:selection",
+          "incident-analysis:source-content",
           "incident-analysis:request",
           "incident-analysis:report"
         ]
@@ -133,12 +56,12 @@
           {
             "id": "shared-shell",
             "views": {
-              "analysis-selection": {
+              "analysis-params": {
                 "primary": {
                   "capability": "primitive:form",
-                  "region": "shell",
+                  "region": "params-form",
                   "props": {
-                    "saveLabel": "Select report",
+                    "saveLabel": "Select source",
                     "discardLabel": "Discard",
                     "initiallyDirty": true
                   },
@@ -154,46 +77,81 @@
                   ],
                   "bindings": {
                     "fields": {
-                      "expression": "{'properties':{'sourceReport':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12}},'required':['sourceReport']}"
+                      "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation (WIP)'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
                     },
                     "value": {
                       "from": "incident.selection"
                     }
-                  },
-                  "visibility": "$count(incident.sourceOptions) > 0"
+                  }
                 }
               },
-              "report-analysis": {
+              "source-retrieve": {
                 "primary": {
+                  "capability": "primitive:markdown",
+                  "region": "source-content",
+                  "bindings": {
+                    "value": {
+                      "from": "selectedSourceContent"
+                    }
+                  }
+                }
+              },
+              "incident-analysis": {
+                "request": {
                   "capability": "fluent:button",
-                  "region": "shell",
+                  "region": "analysis-report",
                   "props": {
                     "label": "Analyze / refresh report",
                     "appearance": "primary"
                   },
-                  "before": [
-                    {
-                      "capability": "fluent:spinner",
-                      "props": {
-                        "label": "Analyzing report",
-                        "size": "medium"
-                      },
-                      "visibility": "systemInputs.numSourcesRunning > 0"
+                  "visibility": "systemInputs.numSourcesRunning = 0"
+                },
+                "progress": {
+                  "capability": "fluent:spinner",
+                  "region": "analysis-report",
+                  "props": {
+                    "label": "Analyzing report",
+                    "size": "medium"
+                  },
+                  "visibility": "systemInputs.numSourcesRunning > 0"
+                },
+                "error": {
+                  "capability": "primitive:alert",
+                  "region": "analysis-report",
+                  "props": {
+                    "label": "Analysis failed",
+                    "level": "error"
+                  },
+                  "bindings": {
+                    "value": {
+                      "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source').error"
                     }
-                  ]
+                  },
+                  "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source') != null"
                 }
               },
-              "report-resolution": {
+              "report-viewer": {
                 "primary": {
                   "capability": "gik:blueprint",
-                  "region": "shell",
-                  "visibility": "incident.resolvedSavedReportEnvelope.found and incident.resolvedSavedReportEnvelope.analysisReport != null",
+                  "region": "analysis-report",
+                  "visibility": "incident.savedReportEnvelope.found and incident.savedReportEnvelope.analysisReport != null",
                   "bindings": {
                     "blueprint": {
-                      "expression": "incident.resolvedSavedReportEnvelope.analysisReport"
+                      "expression": "incident.savedReportEnvelope.analysisReport"
+                    },
+                    "instanceKey": {
+                      "expression": "incident.savedReportEnvelope.asOnStamp"
                     }
                   },
                   "before": [
+                    {
+                      "capability": "fluent:text",
+                      "props": {
+                        "value": "No analysis report available.",
+                        "block": true
+                      },
+                      "visibility": "incident.savedReportEnvelope = null"
+                    },
                     {
                       "capability": "primitive:datetime",
                       "props": {
@@ -201,9 +159,10 @@
                       },
                       "bindings": {
                         "value": {
-                          "expression": "incident.resolvedSavedReportEnvelope.asOn"
+                          "expression": "incident.savedReportEnvelope.asOn"
                         }
-                      }
+                      },
+                      "visibility": "incident.savedReportEnvelope.asOn != null"
                     }
                   ]
                 }
@@ -278,7 +237,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "{'source_report_key':input.source_report_key,'analysis_key':input.model,'saved_report_envelope':{'asOn':$now(),'analysisReport':input.analysis_report}}"
+                "expr": "{'source_report_key':input.source_report_key,'analysis_key':input.model,'saved_report_envelope':{'asOn':input.as_on,'asOnStamp':input.as_on_stamp,'analysisReport':input.analysis_response}}"
               }
             },
             "settlement": {
@@ -288,6 +247,42 @@
               }
             }
           }
+        },
+        "scope": "per-blueprint"
+      },
+      "incident-report-agent-generated-presentation": {
+        "kind": "foundry-agent",
+        "version": "1",
+        "operations": {
+          "authorReportBlueprint": {
+            "operation": "chat",
+            "contract": "incident-report-blueprint/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "($accepted := ['semantic:decision','semantic:narrative','security:attack-path','semantic:event-series','semantic:entity-set','semantic:evidence-case']; $templates := {'semantic:decision':{'useFor':'One source-supported decision or determination and its justification.','view':{'capability':'semantic:decision','props':{'variant':'summary','spec':{'eyebrow':'Decision','density':'comfortable','fields':{'title':'title','summary':'summary','outcome':'verdict.outcome','confidence':'verdict.confidence','rationale':'verdict.rationale','impact':'impact'}}},'bindings':{'decision':{'from':'<state-path>'}}}},'semantic:narrative':{'useFor':'Explanatory content organized into stable sections.','view':{'capability':'semantic:narrative','props':{'variant':'article','spec':{'title':'Incident narrative','density':'comfortable','fields':{'id':'id','heading':'heading','body':'body','parent':'parentId','order':'order','role':'role','tone':'tone'}}},'bindings':{'sections':{'from':'<state-path>'}}}},'security:attack-path':{'useFor':'Directed adversarial activity connecting security entities.','view':{'capability':'security:attack-path','props':{'variant':'canvas','stateKey':'incident-attack-path','spec':{'title':'Attack path','density':'comfortable','entityFields':{'id':'id','label':'label','detail':'detail','type':'type','tone':'status'},'relationshipFields':{'id':'id','source':'sourceId','target':'targetId','label':'label','start':'start','end':'end'}}},'bindings':{'graph':{'from':'<state-path>'}}}},'semantic:event-series':{'useFor':'Timestamped events forming the primary relationship.','view':{'capability':'semantic:event-series','props':{'variant':'chronology','spec':{'title':'Investigation timeline','density':'comfortable','fields':{'id':'eventKey','title':'title','timestamp':'at','detail':'detail','status':'state'},'scale':{'kind':'datetime'},'sort':{'direction':'ascending'}}},'bindings':{'items':{'from':'<state-path>'}}}},'semantic:entity-set':{'useFor':'A population of incident entities.','view':{'capability':'semantic:entity-set','props':{'variant':'clusters','spec':{'title':'Entities','density':'comfortable','fields':{'id':'key','label':'name','type':'kind','status':'condition','group':'group','description':'detail'}}},'bindings':{'items':{'from':'<state-path>'}}}},'semantic:evidence-case':{'useFor':'Evidence collectively supporting or challenging a case.','view':{'capability':'semantic:evidence-case','props':{'variant':'case','spec':{'title':'Evidence case','density':'comfortable','fields':{'id':'id','title':'title','source':'source','timestamp':'at','excerpt':'excerpt','tone':'role'}}},'bindings':{'evidence':{'from':'<state-path>'}}}}}; $scaffold := {'gik':'0.1','type':'blueprint','payload':{'id':'generated-incident-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[],'cells':{'report':{'id':'report','potentialViews':{}}},'runtime':{'externals':{'projectionViews':{}},'state':{'report':{}}},'presentation':{'slots':['report'],'root':'report','allowedCapabilities':$accepted}}}; $brief := {'objective':'Design a source-grounded incident report presentation whose structure follows the supplied incident rather than a predefined section template.','viewTemplates':$templates,'toolPlan':['Choose only from the supplied viewTemplates.','Call compose_response_set_in_progress_proposal once with the complete fragment. The host ends the lifecycle on success.'],'responseFragment':{'presentationSlots':'<complete presentation slot hierarchy>','presentationRoot':'<root slot id>','potentialViews':'<named views attached to generated slots>','reportState':'<static source-grounded report state>'},'constraints':['author exactly presentationSlots, presentationRoot, potentialViews, and reportState','copy selected template capability, props, and binding-property shape; replace state path and add region','create a connected presentation hierarchy derived from the source','attach an appropriate view to every declared content slot; the root may be a container','use only accepted capabilities','exactly one inert report Cell','no services or executable data flow','no primitive:markdown']}; {'message':'Author the agent-generated incident report presentation for this assignment: ' & $string($brief) & ' Source report: ' & input.incident_report,'instructions':'Use the supplied assignment, view templates, and source report as the complete authoritative requirements. Submit one complete final proposal; no discovery step is needed.','agentName':'Incident-Report-Agent-Generated-Presentation-Agent','maxOutputTokens':8000,'presentationMode':'agent-generated-presentation','acceptedCapabilities':$accepted,'authoringBrief':$brief,'authoringWorkspace':{'scaffold':$scaffold,'slots':[{'field':'presentationSlots','pointer':'/payload/presentation/slots'},{'field':'presentationRoot','pointer':'/payload/presentation/root'},{'field':'potentialViews','pointer':'/payload/cells/report/potentialViews'},{'field':'reportState','pointer':'/payload/runtime/state/report'}],'capabilityDerivation':{'viewsField':'potentialViews','acceptedCapabilities':$accepted,'tierPointer':'/payload/projectionTiers/0/capabilities','importsPointer':'/payload/runtime/externals/projectionViews'}}})"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            },
+            "onViolation": {
+              "action": "correction-prompt",
+              "maxAttempts": 2
+            }
+          }
+        },
+        "config": {
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
+          "credentialRef": "foundry-agent/access-key",
+          "maxOutputTokens": 5000,
+          "agentTools": [
+            "compose_response_set_in_progress_proposal"
+          ],
+          "responseMode": "json"
         },
         "scope": "per-blueprint"
       },
@@ -301,412 +296,14 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "($mode := input.model; $guidance := $mode = 'refinement' ? 'Preserve every source section, fact, identifier, value, relationship, order, and uncertainty while improving report organization and clarity.' : ($mode = 'source-faithful' ? 'Preserve only facts, relationships, verdicts, impacts, priorities, actions, ordering, identifiers, evidence, and uncertainty explicitly asserted by the source. Do not infer causality, compromise status, severity, urgency, attribution, or recommendations.' : 'Normalize the supplied incident facts, relationships, evidence, uncertainty, impacts, and actions without inventing content.'); {'message':'Create a self-contained GIK incident analysis report Blueprint from this source report:\n\n' & input.incident_report,'instructions':'Return the complete Blueprint artifact directly. ' & $guidance & ' Put the complete report in payload.runtime.state.report.markdown. Use exactly the schema-authored terminal service tier with no service recipes, two projection tiers with one projection recipe, primitive:markdown catalog, runtime state, and report Cell. Do not add services, effects, native code, references, controls, host mutation instructions, or projection alternatives.','maxOutputTokens':8000})"
+                "expr": "{'message':'Refine this incident analysis report while preserving every source section, fact, identifier, value, relationship, order, and uncertainty:\\n\\n' & input.incident_report,'instructions':'Return only one JSON object containing the complete refined report Markdown in the markdown property. Do not construct a Blueprint, service, projection, Cell, or presentation.','agentName':'Incident-Report-Refinement-Agent','maxOutputTokens':8000}"
               }
             },
             "response": {
-              "validators": [
-                {
-                  "kind": "ajv-schema",
-                  "code": "provider-structured-output",
-                  "message": "Incident report Blueprint is invalid",
-                  "schema": {
-                    "type": "object",
-                    "required": [
-                      "gik",
-                      "type",
-                      "payload"
-                    ],
-                    "properties": {
-                      "gik": {
-                        "type": "string",
-                        "const": "0.1"
-                      },
-                      "type": {
-                        "type": "string",
-                        "const": "blueprint"
-                      },
-                      "payload": {
-                        "type": "object",
-                        "required": [
-                          "id",
-                          "kind",
-                          "version",
-                          "structureMode",
-                          "serviceTiers",
-                          "serviceRecipes",
-                          "projectionTiers",
-                          "projectionRecipes",
-                          "runtime",
-                          "cells"
-                        ],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "const": "generated-incident-report"
-                          },
-                          "kind": {
-                            "type": "string",
-                            "const": "semantic-report"
-                          },
-                          "version": {
-                            "type": "string",
-                            "const": "1.0.0"
-                          },
-                          "structureMode": {
-                            "type": "string",
-                            "const": "fixed"
-                          },
-                          "serviceTiers": {
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 1,
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "id",
-                                "kind"
-                              ],
-                              "properties": {
-                                "id": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "type": "string"
-                                }
-                              },
-                              "additionalProperties": false
-                            }
-                          },
-                          "serviceRecipes": {
-                            "type": "array",
-                            "maxItems": 0,
-                            "items": {
-                              "type": "object",
-                              "required": [],
-                              "properties": {},
-                              "additionalProperties": false
-                            }
-                          },
-                          "projectionTiers": {
-                            "type": "array",
-                            "minItems": 2,
-                            "maxItems": 2,
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "id",
-                                "kind"
-                              ],
-                              "properties": {
-                                "id": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "type": "string"
-                                }
-                              },
-                              "additionalProperties": false
-                            }
-                          },
-                          "projectionRecipes": {
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 1,
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "id",
-                                "from",
-                                "to",
-                                "representations",
-                                "fallback"
-                              ],
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "const": "semantic-report-to-runtime"
-                                },
-                                "from": {
-                                  "type": "string",
-                                  "const": "report-semantic"
-                                },
-                                "to": {
-                                  "type": "string",
-                                  "const": "runtime-document"
-                                },
-                                "representations": {
-                                  "type": "array",
-                                  "minItems": 1,
-                                  "maxItems": 1,
-                                  "items": {
-                                    "type": "object",
-                                    "required": [
-                                      "id",
-                                      "views",
-                                      "presentation"
-                                    ],
-                                    "properties": {
-                                      "id": {
-                                        "type": "string",
-                                        "const": "report"
-                                      },
-                                      "views": {
-                                        "type": "object",
-                                        "required": [
-                                          "report"
-                                        ],
-                                        "properties": {
-                                          "report": {
-                                            "type": "object",
-                                            "required": [
-                                              "capability",
-                                              "bindings"
-                                            ],
-                                            "properties": {
-                                              "capability": {
-                                                "type": "string",
-                                                "const": "primitive:markdown"
-                                              },
-                                              "bindings": {
-                                                "type": "object",
-                                                "required": [
-                                                  "value"
-                                                ],
-                                                "properties": {
-                                                  "value": {
-                                                    "type": "object",
-                                                    "required": [
-                                                      "from"
-                                                    ],
-                                                    "properties": {
-                                                      "from": {
-                                                        "type": "string",
-                                                        "const": "report.markdown"
-                                                      }
-                                                    },
-                                                    "additionalProperties": false
-                                                  }
-                                                },
-                                                "additionalProperties": false
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "presentation": {
-                                        "type": "object",
-                                        "required": [
-                                          "roots",
-                                          "composition"
-                                        ],
-                                        "properties": {
-                                          "roots": {
-                                            "type": "array",
-                                            "minItems": 1,
-                                            "maxItems": 1,
-                                            "items": {
-                                              "type": "string",
-                                              "const": "report"
-                                            }
-                                          },
-                                          "composition": {
-                                            "type": "object",
-                                            "required": [],
-                                            "properties": {},
-                                            "additionalProperties": false
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  }
-                                },
-                                "fallback": {
-                                  "type": "string",
-                                  "const": "report"
-                                }
-                              },
-                              "additionalProperties": false
-                            }
-                          },
-                          "runtime": {
-                            "type": "object",
-                            "required": [
-                              "expression",
-                              "namespaces",
-                              "actions",
-                              "capabilities",
-                              "externals",
-                              "state"
-                            ],
-                            "properties": {
-                              "expression": {
-                                "type": "string",
-                                "const": "jsonata"
-                              },
-                              "namespaces": {
-                                "type": "array",
-                                "minItems": 1,
-                                "maxItems": 1,
-                                "items": {
-                                  "type": "string",
-                                  "const": "report"
-                                }
-                              },
-                              "actions": {
-                                "type": "array",
-                                "maxItems": 0,
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "capabilities": {
-                                "type": "object",
-                                "required": [
-                                  "primitive:markdown"
-                                ],
-                                "properties": {
-                                  "primitive:markdown": {
-                                    "type": "object",
-                                    "required": [
-                                      "propsSchema"
-                                    ],
-                                    "properties": {
-                                      "propsSchema": {
-                                        "type": "object",
-                                        "required": [
-                                          "type",
-                                          "additionalProperties"
-                                        ],
-                                        "properties": {
-                                          "type": {
-                                            "type": "string",
-                                            "const": "object"
-                                          },
-                                          "additionalProperties": {
-                                            "type": "boolean",
-                                            "const": true
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  }
-                                },
-                                "additionalProperties": false
-                              },
-                              "externals": {
-                                "type": "object",
-                                "required": [
-                                  "projectionViews"
-                                ],
-                                "properties": {
-                                  "projectionViews": {
-                                    "type": "object",
-                                    "required": [
-                                      "primitive"
-                                    ],
-                                    "properties": {
-                                      "primitive": {
-                                        "type": "object",
-                                        "required": [
-                                          "from",
-                                          "use"
-                                        ],
-                                        "properties": {
-                                          "from": {
-                                            "type": "string",
-                                            "const": "primitive"
-                                          },
-                                          "use": {
-                                            "type": "array",
-                                            "minItems": 1,
-                                            "maxItems": 1,
-                                            "items": {
-                                              "type": "string",
-                                              "const": "markdown"
-                                            }
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  }
-                                },
-                                "additionalProperties": false
-                              },
-                                "state": {
-                                  "type": "object",
-                                  "required": [
-                                    "report"
-                                  ],
-                                  "properties": {
-                                    "report": {
-                                      "type": "object",
-                                      "required": [
-                                        "markdown"
-                                      ],
-                                      "properties": {
-                                        "markdown": {
-                                          "type": "string",
-                                          "minLength": 1
-                                        }
-                                      },
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                }
-                              },
-                              "additionalProperties": false
-                            },
-                            "cells": {
-                              "type": "object",
-                              "required": [
-                                "report"
-                              ],
-                              "properties": {
-                                "report": {
-                                  "type": "object",
-                                  "required": [
-                                    "id",
-                                    "kind"
-                                  ],
-                                  "properties": {
-                                    "id": {
-                                      "type": "string",
-                                      "const": "report"
-                                    },
-                                    "kind": {
-                                      "type": "string",
-                                      "const": "semantic-report"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                }
-                              },
-                              "additionalProperties": false
-                            }
-                          },
-                          "additionalProperties": false
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                {
-                  "kind": "jsonata",
-                  "expr": "data.payload.projectionTiers[0].id = 'report-semantic' and data.payload.projectionTiers[0].kind = 'incident-report-semantic-model' and data.payload.projectionTiers[1].id = 'runtime-document' and data.payload.projectionTiers[1].kind = 'runtime-document'",
-                  "message": "Incident report Blueprint must contain semantic and runtime-document projection tiers",
-                  "code": "report-blueprint-projection-tiers"
-                }
-              ]
+              "transform": {
+                "kind": "jsonata",
+                "expr": "($markdown := $type(response.markdown) = 'string' ? response.markdown : response.payload.runtime.state.report.markdown; {'gik':'0.1','type':'blueprint','payload':{'id':'generated-incident-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'incident-report-semantic-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':{'primary':{'capability':'primitive:markdown','bindings':{'value':{'from':'report.markdown'}},'region':'report'}}},'presentation':{'slots':['report'],'root':'report'}}],'fallback':'report'}],'runtime':{'externals':{'projectionViews':{'primitive':{'from':'primitive','use':['markdown']}}},'state':{'report':{'markdown':$markdown}}},'cells':{'report':{'id':'report'}},'presentation':{'slots':['report'],'root':'report','allowedCapabilities':['primitive:markdown']}}})"
+              }
             },
             "settlement": {
               "transform": {
@@ -715,28 +312,29 @@
               }
             },
             "onViolation": {
-              "action": "fail"
+              "action": "correction-prompt",
+              "maxAttempts": 2
             }
           }
         },
         "config": {
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
-          "agent": "Incident-Report-Semantic-Agent",
-          "credentialRef": "foundry-agent/access-key"
+          "credentialRef": "foundry-agent/access-key",
+          "responseMode": "json"
         },
         "scope": "per-blueprint"
       },
-      "incident-report-refinement": {
+      "incident-report-fixed-presentation": {
         "kind": "foundry-agent",
         "version": "1",
         "operations": {
-          "analyzeReportBlueprint": {
+          "authorReportBlueprint": {
             "operation": "chat",
             "contract": "incident-report-blueprint/v1",
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "{'message':'Create a self-contained GIK incident analysis report Blueprint from this source report:\\n\\n' & input.incident_report,'instructions':'Return the complete Blueprint artifact directly. Preserve every source section, fact, identifier, value, relationship, order, and uncertainty while improving report organization and clarity. Put the complete report in payload.runtime.state.report.markdown. Use exactly the schema-authored terminal service tier with no service recipes, two projection tiers with one projection recipe, primitive:markdown catalog, runtime state, and report Cell. Do not add services, effects, native code, references, controls, host mutation instructions, or projection alternatives.','maxOutputTokens':8000}"
+                "expr": "($sourceScaffold := input.authoringBrief.blueprintProfile.artifactScaffold; $terminalRuntime := $merge([$sourceScaffold.payload.runtime, {'externals':{'projectionViews':{}},'state':{'report':{}}}]); $terminalPayload := $merge([$sourceScaffold.payload, {'serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[],'cells':{'report':{'id':'report','potentialViews':{}}},'runtime':$terminalRuntime}]); $terminalScaffold := $merge([$sourceScaffold, {'payload':$terminalPayload}]); $profile := $merge([input.authoringBrief.blueprintProfile, {'artifactScaffold':$terminalScaffold,'responseFragment':{'potentialViews':'<named views attached to required regions>','reportState':'<static source-grounded report state>'},'slotPolicy':'Author only the two response-fragment fields. The host owns and reconstructs the enclosing scaffold.'}]); $brief := $merge([input.authoringBrief, {'constraints':['author exactly potentialViews and reportState','one or more views may reuse an accepted capability when that capability fits the section','every named section region has an attached view','no primitive:markdown'],'blueprintProfile':$profile}]); {'message':'Author the fixed-presentation report fragment for this assignment: ' & $string($brief) & ' Source report: ' & input.incident_report,'instructions':'Use the supplied assignment and source report as the authoritative requirements for this invocation.','agentName':input.agentName,'maxOutputTokens':8000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':$brief,'authoringWorkspace':{'scaffold':$terminalScaffold,'slots':[{'field':'potentialViews','pointer':'/payload/cells/report/potentialViews'},{'field':'reportState','pointer':'/payload/runtime/state/report'}],'capabilityDerivation':{'viewsField':'potentialViews','acceptedCapabilities':input.acceptedCapabilities,'tierPointer':'/payload/projectionTiers/0/capabilities','importsPointer':'/payload/runtime/externals/projectionViews'}}})"
               }
             },
             "settlement": {
@@ -746,14 +344,20 @@
               }
             },
             "onViolation": {
-              "action": "fail"
+              "action": "correction-prompt",
+              "maxAttempts": 2
             }
           }
         },
         "config": {
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
-          "agent": "Incident-Report-Refinement-Agent",
-          "credentialRef": "foundry-agent/access-key"
+          "credentialRef": "foundry-agent/access-key",
+          "maxOutputTokens": 5000,
+          "agentTools": [
+            "describe",
+            "compose_response_set_in_progress_proposal"
+          ],
+          "responseMode": "json"
         },
         "scope": "per-blueprint"
       }
@@ -765,14 +369,17 @@
             "from": "fluent",
             "use": [
               "button",
-              "spinner"
+              "spinner",
+              "text"
             ]
           },
           "primitive": {
             "from": "primitive",
             "use": [
               "form",
-              "datetime"
+              "datetime",
+              "markdown",
+              "alert"
             ]
           }
         }
@@ -780,31 +387,27 @@
       "state": {
         "incident": {
           "selection": {
-            "sourceReport": ""
+            "source": "",
+            "model": "agent-generated-presentation"
           },
-          "analysisRequest": null,
           "sourceOptions": [],
-          "resolvedSavedReportEnvelope": null
+          "refresherStamp": 0,
+          "savedReportEnvelope": null
         }
       }
     },
     "cells": {
-      "analysis-selection": {
-        "id": "analysis-selection",
+      "analysis-params": {
+        "id": "analysis-params",
         "systemInputs": [
           "numSourcesRunning"
         ],
-        "inputs": [
-          {
-            "token": "incident.selection",
-            "as": "selection"
-          }
-        ],
         "sources": [
           {
-            "id": "analysis-selection.source",
+            "id": "analysis-params.source",
             "service": "incident-sources",
             "operation": "listSourceReports",
+            "when": "true",
             "output": {
               "kind": "jsonata",
               "expr": "response.sources"
@@ -814,27 +417,21 @@
         "compute": [
           {
             "id": "source-options",
-            "expression": "$exists(sources.`analysis-selection.source`) ? sources.`analysis-selection.source`.{'value':id,'label':label} : []",
+            "expression": "$exists(sources.`analysis-params.source`) ? sources.`analysis-params.source`.{'value':id,'label':label} : []",
             "assign": "incident.sourceOptions",
             "dependencies": [
-              "sources.analysis-selection.source"
+              "sources.analysis-params.source"
             ]
-          },
-          {
-            "id": "selected-model",
-            "expression": "'semantic'",
-            "assign": "model"
           }
         ],
         "outputs": [
           {
-            "token": "selected-report",
-            "from": "inputs.selection.sourceReport",
-            "when": "$exists(inputs.selection) and $length(inputs.selection.sourceReport) > 0"
+            "token": "selected-source",
+            "from": "incident.selection.source"
           },
           {
             "token": "selected-model",
-            "from": "computed.model"
+            "from": "incident.selection.model"
           }
         ],
         "behavior": {
@@ -846,6 +443,13 @@
                 "args": {
                   "from": "$event.values"
                 }
+              },
+              {
+                "do": "assign",
+                "target": "incident.refresherStamp",
+                "args": {
+                  "value": 0
+                }
               }
             ]
           }
@@ -853,9 +457,9 @@
         "potentialViews": {
           "primary": {
             "capability": "incident-analysis:selection",
-            "region": "shell",
+            "region": "params-form",
             "props": {
-              "saveLabel": "Select report",
+              "saveLabel": "Select source",
               "discardLabel": "Discard",
               "initiallyDirty": true
             },
@@ -871,13 +475,12 @@
             ],
             "bindings": {
               "fields": {
-                "expression": "{'properties':{'sourceReport':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12}},'required':['sourceReport']}"
+                "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation (WIP)'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
               },
               "value": {
                 "from": "incident.selection"
               }
-            },
-            "visibility": "$count(incident.sourceOptions) > 0"
+            }
           }
         },
         "events": {
@@ -888,15 +491,66 @@
           }
         }
       },
-      "report-analysis": {
-        "id": "report-analysis",
-        "systemInputs": [
-          "numSourcesRunning"
-        ],
+      "source-retrieve": {
+        "id": "source-retrieve",
         "inputs": [
           {
-            "token": "selected-report",
-            "as": "selectedReport",
+            "token": "selected-source",
+            "as": "selectedSource",
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-retrieve.source",
+            "service": "incident-sources",
+            "operation": "getSourceReport",
+            "when": "$type(inputs.selectedSource) = 'string' and inputs.selectedSource != ''",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'source_report_key':inputs.selectedSource}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "response.content"
+            }
+          }
+        ],
+        "compute": [
+          {
+            "id": "selected-source-content",
+            "expression": "sources.`source-retrieve.source`",
+            "assign": "selectedSourceContent",
+            "dependencies": [
+              "sources.source-retrieve.source"
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "token": "selected-source-content",
+            "from": "computed.selectedSourceContent",
+            "when": "$type(computed.selectedSourceContent) = 'string' and computed.selectedSourceContent != ''"
+          }
+        ],
+        "potentialViews": {
+          "primary": {
+            "capability": "incident-analysis:source-content",
+            "region": "source-content",
+            "bindings": {
+              "value": {
+                "from": "selectedSourceContent"
+              }
+            }
+          }
+        }
+      },
+      "cache-envelope-retrieve": {
+        "id": "cache-envelope-retrieve",
+        "inputs": [
+          {
+            "token": "selected-source",
+            "as": "selectedSource",
             "required": true
           },
           {
@@ -905,51 +559,213 @@
             "required": true
           },
           {
-            "token": "selected-report-content",
-            "as": "reportContent",
-            "required": true
-          },
-          {
-            "token": "saved-report-lookup-envelope",
-            "as": "savedReportEnvelope",
-            "required": true
-          },
-          {
-            "token": "incident.analysisRequest",
-            "as": "analysisRequest"
+            "token": "incident.refresherStamp",
+            "as": "refresherStamp"
           }
         ],
         "sources": [
           {
-            "id": "report-analysis.source",
-            "service": "incident-report-analysis",
-            "operation": "analyzeReportBlueprint",
-            "when": "inputs.analysisRequest.selectedReport = inputs.selectedReport and inputs.analysisRequest.selectedModel = inputs.selectedModel",
+            "id": "cache-envelope-retrieve.source",
+            "service": "incident-saved-reports",
+            "operation": "getSavedReport",
+            "when": "$type(inputs.selectedSource) = 'string' and inputs.selectedSource != '' and $type(inputs.selectedModel) = 'string' and inputs.selectedModel != ''",
             "input": {
               "kind": "jsonata",
-              "expr": "{'incident_report':inputs.reportContent,'model':inputs.selectedModel}"
+              "expr": "{'source_report_key':inputs.selectedSource,'model':inputs.selectedModel}"
             },
             "output": {
               "kind": "jsonata",
-              "expr": "response"
+              "expr": "{'found':response != null,'analysisReport':response ? response.analysisReport : null,'asOn':response ? response.asOn : null,'asOnStamp':response ? response.asOnStamp : null}"
             }
           }
         ],
         "compute": [
           {
-            "id": "analysis-report",
-            "expression": "sources.`report-analysis.source`",
-            "assign": "analysisReport",
+            "id": "saved-report-envelope",
+            "expression": "sources.`cache-envelope-retrieve.source`",
+            "assign": "savedReportEnvelope",
             "dependencies": [
-              "sources.report-analysis.source"
+              "sources.cache-envelope-retrieve.source"
+            ]
+          },
+          {
+            "id": "saved-refresher-stamp",
+            "expression": "inputs.refresherStamp != null ? inputs.refresherStamp : 0",
+            "assign": "savedRefresherStamp",
+            "dependencies": [
+              "inputs.refresherStamp",
+              "sources.cache-envelope-retrieve.source"
             ]
           }
         ],
         "outputs": [
           {
-            "token": "analysis-report-blueprint",
-            "from": "computed.analysisReport",
-            "when": "computed.analysisReport != null"
+            "token": "saved-report-envelope",
+            "from": "computed.savedReportEnvelope"
+          },
+          {
+            "token": "saved-refresher-stamp",
+            "from": "computed.savedRefresherStamp",
+            "when": "computed.savedRefresherStamp != null"
+          }
+        ],
+        "potentialViews": {}
+      },
+      "incident-analysis": {
+        "id": "incident-analysis",
+        "systemInputs": [
+          "numSourcesRunning",
+          "sourceErrors"
+        ],
+        "inputs": [
+          {
+            "token": "selected-model",
+            "as": "selectedModel",
+            "required": true
+          },
+          {
+            "token": "selected-source-content",
+            "as": "selectedSourceContent",
+            "required": true
+          },
+          {
+            "token": "saved-refresher-stamp",
+            "as": "savedRefresherStamp",
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "incident-analysis.agent-generated-presentation-source",
+            "service": "incident-report-agent-generated-presentation",
+            "operation": "authorReportBlueprint",
+            "when": "inputs.savedRefresherStamp != 0 and inputs.selectedModel = 'agent-generated-presentation'",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'incident_report':inputs.selectedSourceContent}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "{'analysisResponse':response,'asOn':$now()}"
+            },
+            "acceptanceCriteria": [
+              {
+                "kind": "blueprint",
+                "code": "incident-report-blueprint",
+                "message": "Agent-generated presentation did not produce a valid Blueprint"
+              },
+              {
+                "kind": "blueprint-capability-acceptance",
+                "code": "incident-report-capability-acceptance",
+                "message": "Agent-generated presentation uses a capability outside its accepted set"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "$count(data.payload.serviceTiers) = 1 and data.payload.serviceTiers[0].id = 'runtime-document' and $count(data.payload.projectionTiers) = 1 and data.payload.projectionTiers[0].id = 'runtime-document' and $count(data.payload.serviceRecipes) = 0 and $count(data.payload.projectionRecipes) = 0",
+                "code": "incident-report-projection-capability-ownership",
+                "message": "Agent-generated report must be terminal with one runtime-document tier per axis and no lowering recipes"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "($cells := data.payload.cells; $cell := $cells.report; $views := $cell.potentialViews; $slots := data.payload.presentation.slots; $slotIds := $slots.($exists(id) ? id : $); $root := data.payload.presentation.root; $contentSlots := $slotIds[$ != $root]; $regions := $views.*.region; $count($keys($cells)) = 1 and $cell.id = 'report' and $not($exists($cell.sources)) and $not($exists($cell.inputs)) and $not($exists($cell.outputs)) and $not($exists($cell.compute)) and $not($exists($cell.behavior)) and $not($exists($cell.events)) and ($not($exists(data.payload.services)) or $count($keys(data.payload.services)) = 0) and $count($slotIds) > 1 and $root in $slotIds and $count($views) > 0 and $count($contentSlots[$not($ in $regions)]) = 0 and $count($regions[$not($ in $slotIds)]) = 0)",
+                "code": "incident-report-agent-generated-presentation-shape",
+                "message": "Agent-generated report must be one inert report Cell with a connected presentation and a view in every slot"
+              }
+            ]
+          },
+          {
+            "id": "incident-analysis.fixed-presentation-source",
+            "service": "incident-report-fixed-presentation",
+            "operation": "authorReportBlueprint",
+            "when": "inputs.savedRefresherStamp != 0 and inputs.selectedModel = 'fixed-presentation'",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'incident_report':inputs.selectedSourceContent,'model':inputs.selectedModel,'agentName':'Incident-Report-Fixed-Presentation-Agent','presentationMode':'fixed-presentation','acceptedCapabilities':['semantic:decision','semantic:narrative','security:attack-path','semantic:event-series','semantic:entity-set','semantic:evidence-case'],'instructions':'Author a complete source-grounded static report Blueprint with the supplied fixed presentation. Treat the supplied source report as the closed factual boundary. Use exactly one inert Cell with id report. Put every report projection view under views.report in one projection representation and attach each view to one supplied named section region. Use only accepted capabilities. Do not add services, Cell sources, inputs, outputs, compute, behavior, events, or executable data flow. Preserve the scaffold identity, fixed presentation slots, and one-Cell shape. Return only the complete Blueprint JSON.','authoringBrief':{'objective':'Render the supplied incident report as a source-grounded static report Blueprint using the fixed presentation without inferring facts, causality, compromise status, severity, urgency, attribution, or recommendations.','presentation':{'root':'report','sectionRegions':['header','verdict','summary','attack-graph','correlated-alerts','timeline','compromised-entities','ttps-and-key-activities','iocs','recommended-actions'],'sectionGuidance':{'header':'Incident identity and report orientation.','verdict':'Source-stated classification, determination, and confidence.','summary':'Concise source-grounded incident summary.','attack-graph':'Directed entities and relationships explicitly supported by the source.','correlated-alerts':'Source-listed alerts and their evidence.','timeline':'Chronological source events.','compromised-entities':'Affected, targeted, compromised, and observed entities using only source-stated status.','ttps-and-key-activities':'Source-listed techniques, tactics, and key activities.','iocs':'Source-listed indicators of compromise.','recommended-actions':'Only actions explicitly recommended by the source.'}},'constraints':['exactly one Cell named report','all projection views belong to the report Cell','one or more views may reuse an accepted capability when that capability fits the section','every named section region has an attached view','no primitive:markdown','no services or executable data flow'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-incident-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'incident-report-semantic-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':'<replace with named projection views attached to the fixed section regions>'},'presentation':{'slots':['report',{'id':'header','region':'report'},{'id':'verdict','region':'report'},{'id':'summary','region':'report'},{'id':'attack-graph','region':'report'},{'id':'correlated-alerts','region':'report'},{'id':'timeline','region':'report'},{'id':'compromised-entities','region':'report'},{'id':'ttps-and-key-activities','region':'report'},{'id':'iocs','region':'report'},{'id':'recommended-actions','region':'report'}],'root':'report'}}],'fallback':'report'}],'cells':{'report':{'id':'report'}},'runtime':{'externals':{'projectionViews':'<replace with imports matching capabilities used>'},'state':{'report':'<replace with static source-grounded report data>'}},'presentation':{'slots':['report',{'id':'header','region':'report'},{'id':'verdict','region':'report'},{'id':'summary','region':'report'},{'id':'attack-graph','region':'report'},{'id':'correlated-alerts','region':'report'},{'id':'timeline','region':'report'},{'id':'compromised-entities','region':'report'},{'id':'ttps-and-key-activities','region':'report'},{'id':'iocs','region':'report'},{'id':'recommended-actions','region':'report'}],'root':'report','allowedCapabilities':['semantic:decision','semantic:narrative','security:attack-path','semantic:event-series','semantic:entity-set','semantic:evidence-case']}}},'slotPolicy':'Replace every angle-bracket slot with a valid artifact fragment; preserve the enclosing scaffold, fixed section slots, and one-Cell shape.','presentation':{'root':'report','sectionRegions':['header','verdict','summary','attack-graph','correlated-alerts','timeline','compromised-entities','ttps-and-key-activities','iocs','recommended-actions']},'behavior':'inert'}}}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "{'analysisResponse':response,'asOn':$now()}"
+            },
+            "acceptanceCriteria": [
+              {
+                "kind": "blueprint",
+                "code": "incident-report-blueprint",
+                "message": "Fixed-presentation analysis did not produce a valid Blueprint"
+              },
+              {
+                "kind": "blueprint-capability-acceptance",
+                "code": "incident-report-capability-acceptance",
+                "message": "Fixed-presentation report uses a capability outside its accepted set"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "$count(data.payload.serviceTiers) = 1 and data.payload.serviceTiers[0].id = 'runtime-document' and $count(data.payload.projectionTiers) = 1 and data.payload.projectionTiers[0].id = 'runtime-document' and $count(data.payload.serviceRecipes) = 0 and $count(data.payload.projectionRecipes) = 0",
+                "code": "incident-report-projection-capability-ownership",
+                "message": "Fixed-presentation report must be terminal with one runtime-document tier per axis and no lowering recipes"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "($required := $request.authoringBrief.blueprintProfile.presentation.sectionRegions; $cells := data.payload.cells; $cell := $cells.report; $views := $cell.potentialViews; $regions := $views.*.region; $slotIds := data.payload.presentation.slots.($exists(id) ? id : $); $count($keys($cells)) = 1 and $cell.id = 'report' and $not($exists($cell.sources)) and $not($exists($cell.inputs)) and $not($exists($cell.outputs)) and $not($exists($cell.compute)) and $not($exists($cell.behavior)) and $not($exists($cell.events)) and ($not($exists(data.payload.services)) or $count($keys(data.payload.services)) = 0) and $count($regions) = $count($required) and $count($required[$not($ in $regions)]) = 0 and $count($regions[$not($ in $required)]) = 0 and $count($required[$not($ in $slotIds)]) = 0)",
+                "code": "incident-report-fixed-presentation-shape",
+                "message": "Fixed-presentation report must be one inert report Cell with one view attached to every required section region"
+              }
+            ]
+          },
+          {
+            "id": "incident-analysis.refinement-source",
+            "service": "incident-report-analysis",
+            "operation": "analyzeReportBlueprint",
+            "when": "inputs.savedRefresherStamp != 0 and inputs.selectedModel = 'refinement'",
+            "input": {
+              "kind": "jsonata",
+              "expr": "{'incident_report':inputs.selectedSourceContent,'model':inputs.selectedModel}"
+            },
+            "output": {
+              "kind": "jsonata",
+              "expr": "{'analysisResponse':response,'asOn':$now()}"
+            },
+            "acceptanceCriteria": [
+              {
+                "kind": "blueprint",
+                "code": "incident-report-blueprint",
+                "message": "Incident analysis source did not produce a valid Blueprint"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "$type(data.payload.runtime.state.report.markdown) = 'string' and $length(data.payload.runtime.state.report.markdown) > 0",
+                "code": "incident-report-markdown",
+                "message": "Incident analysis source produced an empty report"
+              }
+            ]
+          }
+        ],
+        "compute": [
+          {
+            "id": "analysis-result",
+            "expression": "$exists(sources.`incident-analysis.refinement-source`) ? sources.`incident-analysis.refinement-source` : ($exists(sources.`incident-analysis.fixed-presentation-source`) ? sources.`incident-analysis.fixed-presentation-source` : sources.`incident-analysis.agent-generated-presentation-source`)",
+            "assign": "analysisResult",
+            "dependencies": [
+              "sources.incident-analysis.agent-generated-presentation-source",
+              "sources.incident-analysis.fixed-presentation-source",
+              "sources.incident-analysis.refinement-source"
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "token": "analysis-response",
+            "from": "computed.analysisResult.analysisResponse",
+            "when": "computed.analysisResult.analysisResponse != null"
+          },
+          {
+            "token": "asOn",
+            "from": "computed.analysisResult.asOn",
+            "when": "computed.analysisResult.asOn != null"
+          },
+          {
+            "token": "asOnStamp",
+            "from": "inputs.savedRefresherStamp",
+            "when": "computed.analysisResult.analysisResponse != null and inputs.savedRefresherStamp != null"
           }
         ],
         "behavior": {
@@ -957,32 +773,46 @@
             "press": [
               {
                 "do": "assign",
-                "target": "incident.analysisRequest",
+                "target": "incident.refresherStamp",
                 "args": {
-                  "from": "{'selectedReport':inputs.selectedReport,'selectedModel':inputs.selectedModel,'requestedAt':$now()}"
+                  "from": "$number(incident.refresherStamp) + 1"
                 }
               }
             ]
           }
         },
         "potentialViews": {
-          "primary": {
+          "request": {
             "capability": "incident-analysis:request",
-            "region": "shell",
+            "region": "analysis-report",
             "props": {
               "label": "Analyze / refresh report",
               "appearance": "primary"
             },
-            "before": [
-              {
-                "capability": "fluent:spinner",
-                "props": {
-                  "label": "Analyzing report",
-                  "size": "medium"
-                },
-                "visibility": "systemInputs.numSourcesRunning > 0"
+            "visibility": "systemInputs.numSourcesRunning = 0"
+          },
+          "progress": {
+            "capability": "fluent:spinner",
+            "region": "analysis-report",
+            "props": {
+              "label": "Analyzing report",
+              "size": "medium"
+            },
+            "visibility": "systemInputs.numSourcesRunning > 0"
+          },
+          "error": {
+            "capability": "primitive:alert",
+            "region": "analysis-report",
+            "props": {
+              "label": "Analysis failed",
+              "level": "error"
+            },
+            "bindings": {
+              "value": {
+                "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source').error"
               }
-            ]
+            },
+            "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source') != null"
           }
         },
         "events": {
@@ -993,142 +823,109 @@
           }
         }
       },
-      "analysis-context": {
-        "id": "analysis-context",
+      "cache-envelope-update": {
+        "id": "cache-envelope-update",
         "inputs": [
           {
-            "token": "selected-report",
-            "as": "selectedReport",
+            "token": "selected-source",
+            "as": "selectedSource",
             "required": true
           },
           {
             "token": "selected-model",
             "as": "selectedModel",
             "required": true
+          },
+          {
+            "token": "analysis-response",
+            "as": "analysisResponse",
+            "required": true
+          },
+          {
+            "token": "asOn",
+            "as": "asOn",
+            "required": true
+          },
+          {
+            "token": "asOnStamp",
+            "as": "asOnStamp",
+            "required": true
           }
         ],
         "sources": [
           {
-            "id": "analysis-context.source-report",
-            "service": "incident-sources",
-            "operation": "getSourceReport",
-            "when": "$length(inputs.selectedReport) > 0",
-            "input": {
-              "kind": "jsonata",
-              "expr": "{'source_report_key':inputs.selectedReport}"
-            },
-            "output": {
-              "kind": "jsonata",
-              "expr": "response"
-            }
-          },
-          {
-            "id": "analysis-context.saved-report",
+            "id": "cache-envelope-update.source",
             "service": "incident-saved-reports",
-            "operation": "getSavedReport",
-            "when": "$length(inputs.selectedReport) > 0 and $length(inputs.selectedModel) > 0",
+            "operation": "putSavedReport",
+            "when": "inputs.analysisResponse != null and inputs.asOn != null and inputs.asOnStamp != null",
             "input": {
               "kind": "jsonata",
-              "expr": "{'source_report_key':inputs.selectedReport,'model':inputs.selectedModel}"
+              "expr": "{'source_report_key':inputs.selectedSource,'model':inputs.selectedModel,'analysis_response':inputs.analysisResponse,'as_on':inputs.asOn,'as_on_stamp':inputs.asOnStamp}"
             },
             "output": {
               "kind": "jsonata",
-              "expr": "{'found':response != null,'analysisReport':response ? response.analysisReport : null,'asOn':response ? response.asOn : null}"
+              "expr": "{'found':response != null,'analysisReport':response ? response.analysisReport : null,'asOn':response ? response.asOn : null,'asOnStamp':response ? response.asOnStamp : null}"
             }
           }
         ],
         "compute": [
           {
-            "id": "selected-source-content",
-            "expression": "$exists(sources.`analysis-context.source-report`) ? sources.`analysis-context.source-report`.content : ''",
-            "assign": "incidentReport",
+            "id": "saved-report-envelope",
+            "expression": "sources.`cache-envelope-update.source`",
+            "assign": "savedReportEnvelope",
             "dependencies": [
-              "sources.analysis-context.source-report"
-            ]
-          },
-          {
-            "id": "saved-report-result",
-            "expression": "sources.`analysis-context.saved-report`",
-            "assign": "savedReportResult",
-            "dependencies": [
-              "sources.analysis-context.saved-report"
+              "sources.cache-envelope-update.source"
             ]
           }
         ],
         "outputs": [
           {
-            "token": "selected-report-content",
-            "from": "computed.incidentReport",
-            "when": "$length(computed.incidentReport) > 0"
-          },
-          {
-            "token": "saved-report-lookup-envelope",
-            "from": "computed.savedReportResult"
+            "token": "saved-report-envelope",
+            "from": "computed.savedReportEnvelope",
+            "when": "computed.savedReportEnvelope != null"
           }
         ]
       },
-      "report-resolution": {
-        "id": "report-resolution",
+      "report-viewer": {
+        "id": "report-viewer",
         "inputs": [
           {
-            "token": "selected-report",
-            "as": "selectedReport",
-            "required": true
-          },
-          {
-            "token": "selected-model",
-            "as": "selectedModel",
-            "required": true
-          },
-          {
-            "token": "saved-report-lookup-envelope",
-            "as": "savedReportEnvelope",
-            "required": true
-          },
-          {
-            "token": "analysis-report-blueprint",
-            "as": "analysisReport",
-            "required": false
-          }
-        ],
-        "sources": [
-          {
-            "id": "report-resolution.source",
-            "service": "incident-saved-reports",
-            "operation": "putSavedReport",
-            "when": "inputs.analysisReport != null",
-            "input": {
-              "kind": "jsonata",
-              "expr": "{'source_report_key':inputs.selectedReport,'model':inputs.selectedModel,'analysis_report':inputs.analysisReport}"
-            },
-            "output": {
-              "kind": "jsonata",
-              "expr": "response"
-            }
+            "token": "saved-report-envelope",
+            "as": "savedReportEnvelope"
           }
         ],
         "compute": [
           {
-            "id": "resolved-saved-report-envelope",
-            "expression": "$exists(sources.`report-resolution.source`) and sources.`report-resolution.source` != null ? {'found':true,'analysisReport':sources.`report-resolution.source`.analysisReport,'asOn':sources.`report-resolution.source`.asOn} : inputs.savedReportEnvelope",
-            "assign": "incident.resolvedSavedReportEnvelope",
+            "id": "saved-report-envelope",
+            "expression": "inputs.savedReportEnvelope",
+            "assign": "incident.savedReportEnvelope",
             "dependencies": [
-              "inputs.savedReportEnvelope",
-              "sources.report-resolution.source"
+              "inputs.savedReportEnvelope"
             ]
           }
         ],
         "potentialViews": {
           "primary": {
             "capability": "incident-analysis:report",
-            "region": "shell",
-            "visibility": "incident.resolvedSavedReportEnvelope.found and incident.resolvedSavedReportEnvelope.analysisReport != null",
+            "region": "analysis-report",
+            "visibility": "incident.savedReportEnvelope.found and incident.savedReportEnvelope.analysisReport != null",
             "bindings": {
               "blueprint": {
-                "expression": "incident.resolvedSavedReportEnvelope.analysisReport"
+                "expression": "incident.savedReportEnvelope.analysisReport"
+              },
+              "instanceKey": {
+                "expression": "incident.savedReportEnvelope.asOnStamp"
               }
             },
             "before": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "No analysis report available.",
+                  "block": true
+                },
+                "visibility": "incident.savedReportEnvelope = null"
+              },
               {
                 "capability": "primitive:datetime",
                 "props": {
@@ -1136,9 +933,10 @@
                 },
                 "bindings": {
                   "value": {
-                    "expression": "incident.resolvedSavedReportEnvelope.asOn"
+                    "expression": "incident.savedReportEnvelope.asOn"
                   }
-                }
+                },
+                "visibility": "incident.savedReportEnvelope.asOn != null"
               }
             ]
           }
@@ -1147,13 +945,41 @@
     },
     "presentation": {
       "slots": [
-        "shell"
+        "shell",
+        {
+          "id": "params-form",
+          "region": "shell"
+        },
+        {
+          "id": "content",
+          "region": "shell"
+        },
+        {
+          "id": "source-content",
+          "region": "content"
+        },
+        {
+          "id": "analysis-report",
+          "region": "content"
+        }
       ],
       "root": "shell",
       "layout": {
         "shell": {
           "direction": "column",
           "gap": "l"
+        },
+        "content": {
+          "gap": "l",
+          "align": "stretch"
+        },
+        "source-content": {
+          "direction": "column",
+          "gap": "m"
+        },
+        "analysis-report": {
+          "direction": "column",
+          "gap": "m"
         }
       },
       "allowedCapabilities": [
@@ -1162,13 +988,16 @@
         },
         "fluent:button",
         "fluent:spinner",
+        "fluent:text",
         "gik:blueprint",
         "primitive:datetime",
-        "primitive:form"
+        "primitive:alert",
+        "primitive:form",
+        "primitive:markdown"
       ]
     },
     "metadata": {
-      "compositionPattern": "external-model-selected-analysis-with-nested-report"
+      "compositionPattern": "reactive-source-analysis-with-durable-report"
     }
   }
 }

@@ -2,10 +2,11 @@ import React from "react";
 import {
   authorProjectedProgram,
   type Action,
+  type CapabilityDescriptor,
   type DocNode,
   type Json,
   type ProjectedVocabularyManifest,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 import {
   BundleHost,
   bundleFromJson,
@@ -13,7 +14,7 @@ import {
   type BundleContextBindings,
   type EffectHandlerMap,
   type ProviderResolver,
-} from "@gik-ai/react";
+} from "gik-react";
 
 import {
   fluentComponentCapabilities,
@@ -38,6 +39,7 @@ export interface GikComponentRuntimeProviderProps {
   effectHandlers?: EffectHandlerMap;
   contexts?: BundleContextBindings;
   resolveProvider?: ProviderResolver;
+  resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined;
 }
 
 interface GikComponentRuntimeValue {
@@ -45,6 +47,7 @@ interface GikComponentRuntimeValue {
   effectHandlers: EffectHandlerMap;
   contexts: BundleContextBindings;
   resolveProvider?: ProviderResolver;
+  resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined;
 }
 
 const GikComponentRuntimeContext = React.createContext<GikComponentRuntimeValue>({
@@ -59,10 +62,11 @@ export function GikComponentRuntimeProvider({
   effectHandlers = {},
   contexts = {},
   resolveProvider,
+  resolveCapabilityDescriptors,
 }: GikComponentRuntimeProviderProps): React.ReactElement {
   const value = React.useMemo(
-    () => ({ state, effectHandlers, contexts, resolveProvider }),
-    [state, effectHandlers, contexts, resolveProvider],
+    () => ({ state, effectHandlers, contexts, resolveProvider, resolveCapabilityDescriptors }),
+    [state, effectHandlers, contexts, resolveProvider, resolveCapabilityDescriptors],
   );
   return <GikComponentRuntimeContext.Provider value={value}>{children}</GikComponentRuntimeContext.Provider>;
 }
@@ -94,7 +98,10 @@ function actionsIn(node: DocNode): Action[] {
   return Object.values(node.edges?.on ?? {}).flat();
 }
 
-function componentContract(capability: string) {
+function componentContract(
+  capability: string,
+  resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined,
+) {
   const separator = capability.indexOf(":");
   const layer = capability.slice(0, separator);
   const name = capability.slice(separator + 1);
@@ -118,12 +125,14 @@ function componentContract(capability: string) {
     const descriptor = softwareComponentCapabilities[name];
     if (descriptor) return { layer, name, descriptor };
   }
+  const descriptor = resolveCapabilityDescriptors?.(layer)?.[name];
+  if (descriptor) return { layer, name, descriptor };
   throw new Error(`GikComponentDeclarative does not recognize capability: ${capability}`);
 }
 
 export function createGikComponentDeclarativeBundle(
   nodeJson: Json,
-  runtime: Pick<GikComponentRuntimeValue, "state" | "effectHandlers" | "contexts"> = {
+  runtime: Pick<GikComponentRuntimeValue, "state" | "effectHandlers" | "contexts" | "resolveCapabilityDescriptors"> = {
     state: {},
     effectHandlers: {},
     contexts: {},
@@ -136,7 +145,7 @@ export function createGikComponentDeclarativeBundle(
   const requiredEffects = new Set<string>();
 
   visitNodes(root, (node) => {
-    const { layer, name, descriptor } = componentContract(node.capability);
+    const { layer, name, descriptor } = componentContract(node.capability, runtime.resolveCapabilityDescriptors);
     capabilities[node.capability] = descriptor;
     const names = imports.get(layer) ?? new Set<string>();
     names.add(name);

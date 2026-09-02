@@ -7,7 +7,13 @@ import { gzipSync } from "node:zlib";
 
 const packages = [
   "agent-lifecycle-exp",
+  "blueprint",
   "blueprint-agent-host",
+  "controlface",
+  "durable-runtime",
+  "evaluators",
+  "kernel",
+  "react",
 ];
 
 const repositoryRoot = resolve(import.meta.dirname, "..");

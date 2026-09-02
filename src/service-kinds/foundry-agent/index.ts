@@ -1,23 +1,116 @@
-import type { Json, NativeServiceDeclaration } from "@gik-ai/kernel";
+import type { Json, NativeServiceDeclaration } from "gik-kernel";
 import {
 	serviceConfig,
 	UnsatisfiedServiceDependencyError,
 	type ServiceAdapter,
 	type ServiceAdapterContext,
+	type ServiceAgentTool,
+	type ServiceAgentToolExecutionContext,
 	type ServiceRequest,
 	type ServiceKindFactory,
 	type ServiceKindManifest,
-} from "@gik-ai/controlface/services";
-import { executeAgentFunctionCall } from "@gik-ai/agent-lifecycle-exp";
+} from "gik-controlface/services";
+import { executeAgentFunctionCall, type AgentTool } from "gik-agent-lifecycle-exp";
 import { createFoundryProxy, FoundryProxyError, type FoundryChatResponseSchema } from "./foundry-proxy";
 import manifestJson from "./manifest.json";
 import { parseAgentJsonReply } from "../agent-json-response";
+import {
+	closeAgentResponseWorkspace,
+	openAgentResponseWorkspace,
+	parseAgentResponseWorkspaceSpec,
+	readAgentResponseProposal,
+} from "../agent-response-workspace";
 
 const manifest = manifestJson as ServiceKindManifest;
 
 function record(value: Json | undefined): Record<string, Json> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 	return value as Record<string, Json>;
+}
+
+function acceptedCapabilityIds(input: Record<string, Json>): string[] | undefined {
+	if (!Object.prototype.hasOwnProperty.call(input, "acceptedCapabilities")) return undefined;
+	if (!Array.isArray(input.acceptedCapabilities)) return [];
+	return [...new Set(input.acceptedCapabilities.filter(
+		(value): value is string => typeof value === "string" && value.length > 0,
+	))];
+}
+
+export function scopeDescribeArgs(args: unknown, acceptedCapabilities: readonly string[] | undefined): unknown {
+	if (acceptedCapabilities === undefined || !args || typeof args !== "object" || Array.isArray(args)) return args;
+	const input = args as Record<string, unknown>;
+	if (input.kind !== "catalog-capabilities" && input.kind !== "multiple-capabilities") return args;
+	if (input.capabilities !== undefined && !Array.isArray(input.capabilities)) return args;
+	const accepted = new Set(acceptedCapabilities);
+	const requested = Array.isArray(input.capabilities)
+		? input.capabilities.filter((value): value is string => typeof value === "string")
+		: [];
+	const scoped = requested.filter((capability) => accepted.has(capability));
+	return {
+		...input,
+		capabilities: requested.length > 0 ? [...new Set(scoped)] : [...acceptedCapabilities],
+	};
+}
+
+function emptyDescribeSelection(args: unknown): boolean {
+	if (!args || typeof args !== "object" || Array.isArray(args)) return false;
+	const input = args as Record<string, unknown>;
+	return (input.kind === "catalog-capabilities" || input.kind === "multiple-capabilities")
+		&& Array.isArray(input.capabilities)
+		&& input.capabilities.length === 0;
+}
+
+export function filterDescribeResult(
+	value: unknown,
+	acceptedCapabilities: readonly string[] | undefined,
+): unknown {
+	if (acceptedCapabilities === undefined || !value || typeof value !== "object" || Array.isArray(value)) return value;
+	const result = value as Record<string, unknown>;
+	if (!result.capabilities || typeof result.capabilities !== "object" || Array.isArray(result.capabilities)) return value;
+	const accepted = new Set(acceptedCapabilities);
+	return {
+		...result,
+		capabilities: Object.fromEntries(
+			Object.entries(result.capabilities).filter(([id]) => accepted.has(id)),
+		),
+	};
+}
+
+export function selectAgentTools(
+	tools: readonly ServiceAgentTool[],
+	allowedTools: readonly string[] | undefined,
+): readonly ServiceAgentTool[] {
+	if (allowedTools === undefined) return tools;
+	const allowed = new Set(allowedTools);
+	return tools.filter(({ name }) => allowed.has(name));
+}
+
+export function createRequestAgentTools(
+	tools: readonly ServiceAgentTool[],
+	input: Record<string, Json>,
+	context: ServiceAgentToolExecutionContext,
+): readonly AgentTool[] {
+	const acceptedCapabilities = acceptedCapabilityIds(input);
+	return tools.map((tool) => ({
+		...tool,
+		handler: async (args: unknown) => {
+			if (tool.name !== "describe") return tool.handler(args, context);
+			const scopedArgs = scopeDescribeArgs(args, acceptedCapabilities);
+			if (acceptedCapabilities !== undefined && emptyDescribeSelection(scopedArgs)) {
+				return { capabilities: {} };
+			}
+			return filterDescribeResult(
+				await tool.handler(scopedArgs, context),
+				acceptedCapabilities,
+			);
+		},
+	}));
+}
+
+function requestedMaxOutputTokens(input: Record<string, Json>, configuredCap: number | undefined): number | undefined {
+	const requested = typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined;
+	if (configuredCap === undefined) return requested;
+	return requested === undefined ? configuredCap : Math.min(requested, configuredCap);
 }
 
 /** Accepts an explicit responseSchema passed by the caller through `request.input`. Useful when
@@ -49,6 +142,24 @@ function declaredResponseSchema(
 		.replace(/[^a-zA-Z0-9_-]/g, "_")
 		.slice(0, 64);
 	return { name, schema: schema as Record<string, unknown>, strict: true };
+}
+
+export function instructionsWithGuardrailCorrection(
+	instructions: string | undefined,
+	eventPayload: Record<string, Json> | undefined,
+): string | undefined {
+	const correction = record(eventPayload?.guardrailCorrection);
+	const issues = Array.isArray(correction.issues)
+		? correction.issues
+			.map((issue) => record(issue).detail)
+			.filter((detail): detail is string => typeof detail === "string" && detail.length > 0)
+		: [];
+	if (issues.length === 0) return instructions;
+	const correctionPrompt = [
+		"The previous response failed validation. Return a corrected response that satisfies every requirement:",
+		...issues.map((issue) => `- ${issue}`),
+	].join("\n");
+	return instructions ? `${instructions}\n\n${correctionPrompt}` : correctionPrompt;
 }
 
 export function parseFoundryJsonReply(reply: string): Json {
@@ -90,6 +201,12 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 		const endpoint = String(config.endpoint);
 		const credentialRef = String(config.credentialRef);
 		const configuredAgent = typeof config.agent === "string" ? config.agent : "";
+		const configuredMaxOutputTokens = typeof config.maxOutputTokens === "number"
+			? config.maxOutputTokens
+			: undefined;
+		const configuredAgentTools = Array.isArray(config.agentTools)
+			? config.agentTools.filter((value): value is string => typeof value === "string")
+			: undefined;
 		const responseMode = config.responseMode === "json" ? "json" : "text";
 		const operations = [...new Set(Object.values(declaration.operations).map(({ operation }) => operation))];
 		const resolveAccessKey = async () => {
@@ -135,6 +252,8 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 			},
 			execute: async (request, adapterContext) => {
 				const input = record(request.input);
+				const responseWorkspace = parseAgentResponseWorkspaceSpec(input.authoringWorkspace);
+				if (responseWorkspace) openAgentResponseWorkspace(request.id, responseWorkspace);
 				try {
 					if (request.operation === "check-access") {
 						await (await client()).checkAccess();
@@ -148,41 +267,92 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 					if (!agentName) throw new Error("foundry-agent requires config.agent or input.agentName");
 					const responseSchema = inputResponseSchema(input)
 						?? (responseMode === "json" ? undefined : declaredResponseSchema(request, adapterContext));
+					const availableTools = selectAgentTools(adapterContext.agentTools ?? [], configuredAgentTools);
+					if (configuredAgentTools !== undefined) {
+						const availableNames = new Set(availableTools.map(({ name }) => name));
+						const unavailable = configuredAgentTools.filter((name) => !availableNames.has(name));
+						if (unavailable.length > 0) {
+							throw new Error(`foundry-agent config.agentTools contains unavailable tool(s): ${unavailable.join(", ")}`);
+						}
+					}
+					const tools = createRequestAgentTools(availableTools, input, {
+						requestId: request.id,
+						service: request.service,
+						operation: request.operation,
+						providerId: request.providerId,
+						capabilityId: request.capabilityId,
+						actorId: request.actorId,
+						correlationId: request.correlationId,
+						idempotencyKey: request.idempotencyKey,
+						deadline: request.deadline,
+						target: request.target,
+						blueprintId: request.blueprintId,
+						blueprintRevision: request.blueprintRevision,
+						serviceRef: request.serviceRef,
+						signal: adapterContext.signal,
+					});
+					const instructions = instructionsWithGuardrailCorrection(
+						typeof input.instructions === "string" ? input.instructions : undefined,
+						request.eventPayload,
+					);
+					const maxOutputTokens = requestedMaxOutputTokens(input, configuredMaxOutputTokens);
+					const allowedTools = tools.map(({ name }) => name);
 					const foundry = await client();
 					let response = await foundry.chat({
 							message: String(input.message ?? ""),
 							agentName,
 							conversationId: typeof input.conversationId === "string" ? input.conversationId : undefined,
-							instructions: typeof input.instructions === "string" ? input.instructions : undefined,
-							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
+							instructions,
+							maxOutputTokens,
 							responseSchema,
+							allowedTools,
 						});
-					const tools = adapterContext.agentTools ?? [];
-						let inProgressProposal = false;
+					let inProgressProposal = false;
 					for (let turn = 0; response.toolCalls.length > 0; turn += 1) {
 						if (turn >= 8) throw new Error("Foundry agent exceeded the lifecycle tool turn limit");
 						if (tools.length === 0) throw new Error("Foundry agent requested lifecycle tools that this host did not provide");
 						const outputs = await Promise.all(response.toolCalls.map(async (call) => {
-							const output = await executeAgentFunctionCall(tools, call, { requestId: request.id });
-							if (call.name.endsWith("_set_in_progress_proposal")) inProgressProposal = true;
-							return { callId: output.call_id, output: output.output };
+							try {
+								const output = await executeAgentFunctionCall(tools, call, { requestId: request.id });
+								if (!responseWorkspace && call.name.endsWith("_set_in_progress_proposal")) {
+									inProgressProposal = true;
+								}
+								return { callId: output.call_id, output: output.output };
+							} catch (error) {
+								return {
+									callId: call.callId,
+									output: JSON.stringify({
+										ok: false,
+										error: error instanceof Error ? error.message : String(error),
+									}),
+								};
+							}
 						}));
+						if (responseWorkspace && readAgentResponseProposal(request.id)) {
+							break;
+						}
 						response = await foundry.chat({
 							agentName,
 							conversationId: response.conversationId,
-							maxOutputTokens: typeof input.maxOutputTokens === "number" ? input.maxOutputTokens : undefined,
+							maxOutputTokens,
 							responseSchema,
+							allowedTools,
 							toolOutputs: outputs,
 						});
 					}
-					let structuredOutput: Json | undefined;
-					if (responseSchema) {
+					let structuredOutput: Json | undefined = responseWorkspace
+						? readAgentResponseProposal(request.id) as unknown as Json | undefined
+						: undefined;
+					if (responseWorkspace && !structuredOutput) {
+						throw new Error("Foundry agent completed without setting a validated response proposal");
+					}
+					if (!responseWorkspace && responseSchema) {
 						try {
 							structuredOutput = JSON.parse(response.reply) as Json;
 						} catch {
 							throw new Error("Foundry agent returned invalid structured JSON");
 						}
-					} else if (responseMode === "json") {
+					} else if (!responseWorkspace && responseMode === "json") {
 						structuredOutput = parseFoundryJsonReply(response.reply);
 					}
 					return {
@@ -205,6 +375,8 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 						);
 					}
 					throw error;
+				} finally {
+					if (responseWorkspace) closeAgentResponseWorkspace(request.id);
 				}
 			},
 		};

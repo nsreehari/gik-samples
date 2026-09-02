@@ -1,0 +1,55 @@
+{
+  "format": "finbook-vendored-gik-packages/1",
+  "sourceCommit": "e50bc621bc96f9fb08e8e0a639e6fa8e90ad8bfc",
+  "packages": [
+    {
+      "name": "gik-kernel",
+      "version": "0.2.0",
+      "file": "gik-kernel-0.2.0.tgz",
+      "bytes": 484928,
+      "sha256": "304058c7a38b2eb5f145a5b4e31be1ae27bf8e2652dd8f880a365509cbd7cf39"
+    },
+    {
+      "name": "gik-evaluators",
+      "version": "0.1.3",
+      "file": "gik-evaluators-0.1.3.tgz",
+      "bytes": 296400,
+      "sha256": "5bad17835eb1bd5d11b5dc4f89ae2f4758c1bcc21d4da8f46fbabd8319d1713d"
+    },
+    {
+      "name": "gik-durable-runtime",
+      "version": "0.8.1",
+      "file": "gik-durable-runtime-0.8.1.tgz",
+      "bytes": 116638,
+      "sha256": "81bec3181ea17be48003dc9aa34e13918a068b38f3126773e9e59ffb72997922"
+    },
+    {
+      "name": "gik-blueprint",
+      "version": "0.2.2",
+      "file": "gik-blueprint-0.2.2.tgz",
+      "bytes": 104274,
+      "sha256": "a576b438e7fbc166fa40a8e273820713c80e13df7844391dc90ab22bd560ecf8"
+    },
+    {
+      "name": "gik-controlface",
+      "version": "0.2.0",
+      "file": "gik-controlface-0.2.0.tgz",
+      "bytes": 1350394,
+      "sha256": "c37c79f67454b8d9d7a2dcf8cd1863a63db4ce568269f7297eb870b1e38e9a38"
+    },
+    {
+      "name": "gik-react",
+      "version": "0.3.2",
+      "file": "gik-react-0.3.2.tgz",
+      "bytes": 68159,
+      "sha256": "3636d79d1b3e6167123e6277f178a53fed8a8b667ac4733e0dfa82250d688451"
+    },
+    {
+      "name": "gik-components",
+      "version": "0.2.1",
+      "file": "gik-components-0.2.1.tgz",
+      "bytes": 385664,
+      "sha256": "cb847a18c4aa50d6b722d0c13fbee96d45db3174a6cd53e06164905634fe9c23"
+    }
+  ]
+}

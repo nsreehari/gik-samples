@@ -20,6 +20,8 @@ export default defineConfig({
     include: [
       "packages/components/test/**/*.test.ts",
       "packages/components/test/**/*.test.tsx",
+      "apps/finbook/test/**/*.test.ts",
+      "apps/finbook/test/**/*.test.tsx",
       "src/browser-host/**/*.test.ts",
       "src/browser-host/**/*.test.tsx",
       "src/headless/**/*.test.ts",

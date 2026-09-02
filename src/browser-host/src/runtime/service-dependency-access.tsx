@@ -1,10 +1,10 @@
 import React from "react";
-import { AccessGate } from "@gik-ai/components/primitives";
+import { AccessGate } from "gik-components/primitives";
 import {
   UnsatisfiedServiceDependencyError,
   type ServiceDependency,
-} from "@gik-ai/controlface/services";
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
+} from "gik-controlface/services";
+import type { Json, ResolvedNode } from "gik-kernel";
 
 import { writeBrowserCredential } from "./browser-credentials";
 

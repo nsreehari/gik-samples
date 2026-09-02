@@ -1,11 +1,11 @@
-import type { MaterializedBlueprint } from "@gik-ai/blueprint";
+import type { MaterializedBlueprint } from "gik-blueprint";
 import {
   projectCellRunState,
   type BlueprintRunState,
   type CellRunState,
   type Json,
   type ProjectedSourceRunState,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 
 export interface ScenarioDataFlowNode {
   [key: string]: unknown;
@@ -84,7 +84,7 @@ function sourceStatus(source: ProjectedSourceRunState | undefined): ScenarioData
   if (source.lastRequestFailed) return "failed";
   if (source.status === "running") return "running";
   if (source.hasPendingRequest) return "queued";
-  if (source.lastCompletionStatus === "success") return "completed";
+  if (source.lastCompletionStatus?.status === "success") return "completed";
   return "idle";
 }
 

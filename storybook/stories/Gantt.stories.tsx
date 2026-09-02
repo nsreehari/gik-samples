@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ganttDefinition } from "@gik-ai/components/primitives";
+import { ganttDefinition } from "gik-components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = {

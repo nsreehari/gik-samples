@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { graphDiagramDefinition } from "@gik-ai/components/primitives";
+import { graphDiagramDefinition } from "gik-components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Primitive Components/Graph Diagram", component: ComponentStory, tags: ["autodocs"], args: { definition: graphDiagramDefinition, variant: "diagram" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import type { NativeServiceDeclaration } from "@gik-ai/kernel";
+import type { NativeServiceDeclaration } from "gik-kernel";
 import { getSampleBlueprintCatalog } from "../bootstrap/catalog/blueprint-catalog";
 import {
   authorizeTrustedServiceEndpoint,
@@ -134,7 +134,7 @@ test("all repository Blueprint services satisfy their registered kind contracts"
     "blueprint-studio": 0,
     "blueprint-studio-crud": 1,
     "incident-analysis-assets": 1,
-    "incident-analysis-new-shell": 2,
+    "incident-analysis-new-shell": 3,
     "portfolio-intelligence-assets": 1,
     "portfolio-tracker-mock": 0,
     "portfolio-tracker-new": 6,

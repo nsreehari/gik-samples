@@ -37,16 +37,15 @@ import {
   PaneWithTriggerBody,
   PaneWithTriggerFooter,
   PaneWithTriggerHeader,
-} from "@gik-ai/components";
+} from "gik-components";
 import {
   materializeBlueprint,
   parseBlueprintReference,
-  runMaterializedTransition,
   type ExternalContext,
   type MaterializedBlueprint,
-} from "@gik-ai/blueprint";
-import type { GIKEvent, Json, Orchestrator, StateModel } from "@gik-ai/kernel";
-import { buildCapabilityCatalogFromExternals, type BundleNative } from "@gik-ai/react";
+} from "gik-blueprint";
+import type { GIKEvent, Json } from "gik-kernel";
+import { buildCapabilityCatalogFromExternals, type BundleNative } from "gik-react";
 
 import {
   getSampleBlueprintCatalog,
@@ -61,6 +60,7 @@ import {
   type ScenarioDefinition,
   type ScenarioDocument,
 } from "../../scenarios/scenario-document";
+import { runScenarioTransition } from "../../scenarios/scenario-runner";
 import { jsonValuesEqual } from "../../shared/json-path";
 import { useBlueprintHostSetup } from "./blueprint-host-setup";
 import {
@@ -354,14 +354,6 @@ function ActDetailPopover({
   );
 }
 
-function transitionOrchestrator(
-  native: BundleNative,
-): ((state: StateModel) => Orchestrator) | undefined {
-  return native.wrapOrchestrator
-    ? (state) => native.wrapOrchestrator!({}, state)
-    : undefined;
-}
-
 export function ScenarioExplorerPage(): React.ReactElement {
   const styles = useStyles();
   const catalog = React.useMemo(() => getSampleBlueprintCatalog(), []);
@@ -413,11 +405,17 @@ export function ScenarioExplorerPage(): React.ReactElement {
   );
   const requestedSelection = entries.findIndex(({ document }) =>
     document.blueprint === initialBlueprintId);
+  const defaultBlueprintSelection = entries.findIndex(({ document }) =>
+    document.blueprint === catalog.defaultBlueprint);
   const authoredScenarioSelection = entries.findIndex(({ document }) =>
     Boolean(catalog.scenarios[document.blueprint]?.scenarios.length));
   const initialSelection = Math.max(
     0,
-    requestedSelection >= 0 ? requestedSelection : authoredScenarioSelection,
+    requestedSelection >= 0
+      ? requestedSelection
+      : defaultBlueprintSelection >= 0
+        ? defaultBlueprintSelection
+        : authoredScenarioSelection,
   );
   const [selection, setSelection] = React.useState(initialSelection);
   const entry = entries[selection] ?? entries[0];
@@ -536,14 +534,12 @@ function ScenarioWorkspace({
   const currentAct = acts[cursor];
 
   const runTransition = React.useCallback(async (event: GIKEvent): Promise<Record<string, Json>> => {
-    const currentMaterialization = materializedRef.current;
-    const result = await runMaterializedTransition({
+    return runScenarioTransition({
       state: stateRef.current,
-      materializedBlueprint: currentMaterialization,
-      events: [event],
-      createOrchestrator: transitionOrchestrator(nativeRef.current),
+      materializedBlueprint: materializedRef.current,
+      native: nativeRef.current,
+      event,
     });
-    return result.state;
   }, []);
 
   const transition = React.useCallback(async (event: GIKEvent): Promise<void> => {
@@ -559,7 +555,12 @@ function ScenarioWorkspace({
     setRunning(true);
     setExecutionStatus("running");
     if (!startedRef.current && entry.scenario.resetAtStart) {
-      commitState(structuredClone(materializedBlueprint.payload.initialState));
+      const initialState = structuredClone(materializedBlueprint.payload.initialState);
+      commitState(await runScenarioTransition({
+        state: initialState,
+        materializedBlueprint: materializedRef.current,
+        native: nativeRef.current,
+      }));
     }
     startedRef.current = true;
     setError(undefined);
