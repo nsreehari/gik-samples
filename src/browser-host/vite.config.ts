@@ -32,7 +32,7 @@ function hostedAssets(): Plugin {
         sirv(bootstrapDirectory, { dev: true, etag: true }),
       );
     },
-    closeBundle() {
+    writeBundle() {
       if (!existsSync(storybookDirectory)) {
         throw new Error("Storybook output is missing. Run npm run build:storybook first.");
       }

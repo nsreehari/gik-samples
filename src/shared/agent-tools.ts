@@ -5,6 +5,7 @@ import {
   type AgentToolExecutionContext,
 } from "@gik-ai/agent-lifecycle-exp";
 import type { AgentFacingCapabilityCatalog } from "@gik-ai/components/agent-facing";
+import { createAgentResponseTools } from "../service-kinds/agent-response-workspace";
 
 export function createSampleAgentTools(
   extensions: readonly AgentFacingCapabilityCatalog[] = [],
@@ -33,5 +34,6 @@ export function createSampleAgentTools(
       handler: async (args: unknown, context?: AgentToolExecutionContext) =>
         (await resolveDescribeTool()).handler(args, context),
     },
+    ...createAgentResponseTools(),
   ];
 }
