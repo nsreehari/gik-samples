@@ -4,132 +4,223 @@
   "contextPresets": {
     "fixed-presentation": {
       "label": "Fixed presentation",
-      "context": {
-        "model": "fixed-presentation"
-      }
+      "context": { "model": "fixed-presentation" }
     },
     "agent-generated-presentation": {
       "label": "Agent-generated presentation",
-      "context": {
-        "model": "agent-generated-presentation"
-      }
+      "context": { "model": "agent-generated-presentation" }
     }
   },
   "scenarios": [
     {
-      "id": "scenario-1",
-      "title": "Analyze the first incident with fixed presentation",
-      "description": "Selects the first source report, requests fixed-presentation analysis, and waits for the nested report Blueprint.",
+      "id": "scenario-1a",
+      "title": "Password spray with fixed presentation",
+      "description": "Analyzes the password-spray and mailbox-compromise incident using fixed presentation.",
       "contextPreset": "fixed-presentation",
-      "applicableContexts": [
-        "fixed-presentation"
-      ],
+      "applicableContexts": ["fixed-presentation"],
       "resetAtStart": true,
-      "steps": [
-        {
-          "id": "request-analysis",
-          "title": "Request fixed-presentation analysis",
-          "acts": [
-            {
-              "id": "select-source-and-model",
-              "title": "Select the first source and fixed-presentation model",
-              "event": {
-                "node": "analysis-params--primary--in-params-form",
-                "name": "save",
-                "payload": {
-                  "values": {
-                    "source": "password-spray-mailbox",
-                    "model": "fixed-presentation"
-                  }
-                }
-              }
-            },
-            {
-              "id": "refresh-analysis",
-              "title": "Analyze the selected incident",
-              "event": {
-                "node": "incident-analysis--request--in-analysis-report",
-                "name": "press",
-                "payload": {}
-              }
-            },
-            {
-              "id": "wait-for-source-response",
-              "title": "Wait for the fixed-presentation source response",
-              "wait": {
-                "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)"
-              }
-            },
-            {
-              "id": "observe-incident-id",
-              "title": "Verify the report contains the incident ID",
-              "observe": {
-                "select": {
-                  "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')"
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with fixed presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select password spray and fixed presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "password-spray-mailbox", "model": "fixed-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the fixed-presentation response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
     },
     {
-      "id": "scenario-2",
-      "title": "Analyze the first incident with agent-generated presentation",
-      "description": "Selects the first source report, asks the agent to design the presentation, and waits for the generated report Blueprint.",
-      "contextPreset": "agent-generated-presentation",
-      "applicableContexts": [
-        "agent-generated-presentation"
-      ],
+      "id": "scenario-1b",
+      "title": "Blob storage exfiltration with fixed presentation",
+      "description": "Analyzes the blob-storage exfiltration incident using fixed presentation.",
+      "contextPreset": "fixed-presentation",
+      "applicableContexts": ["fixed-presentation"],
       "resetAtStart": true,
-      "steps": [
-        {
-          "id": "request-analysis",
-          "title": "Request agent-generated-presentation analysis",
-          "acts": [
-            {
-              "id": "select-source-and-model",
-              "title": "Select the first source and agent-generated-presentation model",
-              "event": {
-                "node": "analysis-params--primary--in-params-form",
-                "name": "save",
-                "payload": {
-                  "values": {
-                    "source": "password-spray-mailbox",
-                    "model": "agent-generated-presentation"
-                  }
-                }
-              }
-            },
-            {
-              "id": "refresh-analysis",
-              "title": "Analyze the selected incident",
-              "event": {
-                "node": "incident-analysis--request--in-analysis-report",
-                "name": "press",
-                "payload": {}
-              }
-            },
-            {
-              "id": "wait-for-source-response",
-              "title": "Wait for the agent-generated-presentation source response",
-              "wait": {
-                "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)"
-              }
-            },
-            {
-              "id": "observe-generated-report",
-              "title": "Verify the generated report contains the incident ID and presentation",
-              "observe": {
-                "select": {
-                  "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')",
-                  "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with fixed presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select blob storage exfiltration and fixed presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "blob-storage-exfiltration", "model": "fixed-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the fixed-presentation response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '747607f8-7174-5d3c-8e47-43aeafa09448')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-1c",
+      "title": "Identity compromise with fixed presentation",
+      "description": "Analyzes the identity and cloud-resource compromise incident using fixed presentation.",
+      "contextPreset": "fixed-presentation",
+      "applicableContexts": ["fixed-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with fixed presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select identity compromise and fixed presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "identity-compromise", "model": "fixed-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the fixed-presentation response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '4dd35869-7f13-5cb0-8ca7-efe3d3a9e628')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-1d",
+      "title": "Device-code phishing with fixed presentation",
+      "description": "Analyzes the device-code phishing and BEC incident using fixed presentation.",
+      "contextPreset": "fixed-presentation",
+      "applicableContexts": ["fixed-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with fixed presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select device-code phishing and fixed presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "device-code-bec", "model": "fixed-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the fixed-presentation response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '5b170d32-9ca0-51f3-a6c5-6c05d0df696d')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-1e",
+      "title": "Supply-chain BEC with fixed presentation",
+      "description": "Analyzes the supply-chain SAP and procurement BEC incident using fixed presentation.",
+      "contextPreset": "fixed-presentation",
+      "applicableContexts": ["fixed-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with fixed presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select supply-chain BEC and fixed presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "supply-chain-sap-bec", "model": "fixed-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the fixed-presentation response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '09b5aea8-62a0-550f-ab8d-ee2797cea1df')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-2a",
+      "title": "Password spray with agent-generated presentation",
+      "description": "Analyzes the password-spray and mailbox-compromise incident using agent-generated presentation.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": ["agent-generated-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with agent-generated presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select password spray and agent-generated presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "password-spray-mailbox", "model": "agent-generated-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the agent-generated response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-2b",
+      "title": "Blob storage exfiltration with agent-generated presentation",
+      "description": "Analyzes the blob-storage exfiltration incident using agent-generated presentation.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": ["agent-generated-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with agent-generated presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select blob storage exfiltration and agent-generated presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "blob-storage-exfiltration", "model": "agent-generated-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the agent-generated response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '747607f8-7174-5d3c-8e47-43aeafa09448')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-2c",
+      "title": "Identity compromise with agent-generated presentation",
+      "description": "Analyzes the identity and cloud-resource compromise incident using agent-generated presentation.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": ["agent-generated-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with agent-generated presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select identity compromise and agent-generated presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "identity-compromise", "model": "agent-generated-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the agent-generated response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '4dd35869-7f13-5cb0-8ca7-efe3d3a9e628')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-2d",
+      "title": "Device-code phishing with agent-generated presentation",
+      "description": "Analyzes the device-code phishing and BEC incident using agent-generated presentation.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": ["agent-generated-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with agent-generated presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select device-code phishing and agent-generated presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "device-code-bec", "model": "agent-generated-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the agent-generated response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '5b170d32-9ca0-51f3-a6c5-6c05d0df696d')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
+    },
+    {
+      "id": "scenario-2e",
+      "title": "Supply-chain BEC with agent-generated presentation",
+      "description": "Analyzes the supply-chain SAP and procurement BEC incident using agent-generated presentation.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": ["agent-generated-presentation"],
+      "resetAtStart": true,
+      "steps": [{
+        "id": "request-analysis",
+        "title": "Analyze with agent-generated presentation",
+        "acts": [
+          { "id": "select-source-and-model", "title": "Select supply-chain BEC and agent-generated presentation", "event": { "node": "analysis-params--primary--in-params-form", "name": "save", "payload": { "values": { "source": "supply-chain-sap-bec", "model": "agent-generated-presentation" } } } },
+          { "id": "refresh-analysis", "title": "Analyze the selected incident", "event": { "node": "incident-analysis--request--in-analysis-report", "name": "press", "payload": {} } },
+          { "id": "wait-for-source-response", "title": "Wait for the agent-generated response", "wait": { "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)" } },
+          { "id": "observe-generated-report", "title": "Verify the report identifier and presentation", "observe": { "select": {
+            "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '09b5aea8-62a0-550f-ab8d-ee2797cea1df')",
+            "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
+          } } }
+        ]
+      }]
     }
   ]
 }
