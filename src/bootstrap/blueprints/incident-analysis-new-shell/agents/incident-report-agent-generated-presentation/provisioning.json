@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "provider": "foundry",
+  "agentId": "Incident-Report-Agent-Generated-Presentation-Agent",
+  "description": "Designs source-grounded incident-report presentation structures and content within a governed Blueprint scaffold.",
+  "model": "gpt-5.4",
+  "projectEndpoint": "https://sz-foundry-westus.services.ai.azure.com/api/projects/sz-project",
+  "blueprintFile": "../../blueprint.json",
+  "instructionsFile": "instructions.md",
+  "tools": [
+    "compose_response_set_in_progress_proposal"
+  ]
+}

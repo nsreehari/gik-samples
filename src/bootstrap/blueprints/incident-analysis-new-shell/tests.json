@@ -3,8 +3,8 @@
   "blueprint": "incident-analysis-new-shell",
   "cases": [
     {
-      "id": "opens-with-semantic-model",
-      "context": { "model": "semantic" },
+      "id": "opens-with-agent-generated-presentation-model",
+      "context": { "model": "agent-generated-presentation" },
       "assertions": [
         { "path": "runtime.blueprintId", "equals": "incident-analysis-new-shell" },
         { "path": "state.incident", "exists": true }
@@ -12,7 +12,7 @@
     },
     {
       "id": "renders-saved-report-envelope",
-      "context": { "model": "semantic" },
+      "context": { "model": "agent-generated-presentation" },
       "evaluation": {
         "cell": "report-viewer",
         "state": {

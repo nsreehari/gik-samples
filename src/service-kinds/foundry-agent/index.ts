@@ -328,6 +328,9 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 								};
 							}
 						}));
+						if (responseWorkspace && readAgentResponseProposal(request.id)) {
+							break;
+						}
 						response = await foundry.chat({
 							agentName,
 							conversationId: response.conversationId,

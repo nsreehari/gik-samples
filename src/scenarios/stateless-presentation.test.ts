@@ -43,7 +43,7 @@ test("resolves a materialized Blueprint Presentation from an explicit state snap
 test("incident analysis hides report decorations until a report is available", async () => {
   const materialized = materializeBlueprint({
     blueprint: resolveSampleBlueprintSource("incident-analysis-new-shell"),
-    externalContext: { model: "semantic" },
+    externalContext: { model: "agent-generated-presentation" },
     resolveBlueprint(reference) {
       return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
     },
@@ -81,7 +81,8 @@ test("incident analysis presents terminal source failures and restores the retry
       }>;
     }>;
   };
-  const source = runState.cells["incident-analysis"].sources.find(({ id }) => id === "incident-analysis.source");
+  const source = runState.cells["incident-analysis"].sources.find(({ id }) =>
+    id === "incident-analysis.agent-generated-presentation-source");
   assert.ok(source);
   source.lastCompletionStatus = {
     status: "failure",

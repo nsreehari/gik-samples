@@ -5,7 +5,13 @@
     "fixed-presentation": {
       "label": "Fixed presentation",
       "context": {
-        "model": "semantic"
+        "model": "fixed-presentation"
+      }
+    },
+    "agent-generated-presentation": {
+      "label": "Agent-generated presentation",
+      "context": {
+        "model": "agent-generated-presentation"
       }
     }
   },
@@ -60,6 +66,64 @@
               "observe": {
                 "select": {
                   "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.fixed-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenario-2",
+      "title": "Analyze the first incident with agent-generated presentation",
+      "description": "Selects the first source report, asks the agent to design the presentation, and waits for the generated report Blueprint.",
+      "contextPreset": "agent-generated-presentation",
+      "applicableContexts": [
+        "agent-generated-presentation"
+      ],
+      "resetAtStart": true,
+      "steps": [
+        {
+          "id": "request-analysis",
+          "title": "Request agent-generated-presentation analysis",
+          "acts": [
+            {
+              "id": "select-source-and-model",
+              "title": "Select the first source and agent-generated-presentation model",
+              "event": {
+                "node": "analysis-params--primary--in-params-form",
+                "name": "save",
+                "payload": {
+                  "values": {
+                    "source": "password-spray-mailbox",
+                    "model": "agent-generated-presentation"
+                  }
+                }
+              }
+            },
+            {
+              "id": "refresh-analysis",
+              "title": "Analyze the selected incident",
+              "event": {
+                "node": "incident-analysis--request--in-analysis-report",
+                "name": "press",
+                "payload": {}
+              }
+            },
+            {
+              "id": "wait-for-source-response",
+              "title": "Wait for the agent-generated-presentation source response",
+              "wait": {
+                "when": "$exists($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse)"
+              }
+            },
+            {
+              "id": "observe-generated-report",
+              "title": "Verify the generated report contains the incident ID and presentation",
+              "observe": {
+                "select": {
+                  "containsIncidentId": "$contains($string($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse), '68b54272-f60b-53fa-b3d4-2494c7bd598d')",
+                  "hasPresentation": "$count($state.blueprintRunState.cells.`incident-analysis`.sourceValues.`incident-analysis.agent-generated-presentation-source`.analysisResponse.payload.presentation.slots) > 0"
                 }
               }
             }

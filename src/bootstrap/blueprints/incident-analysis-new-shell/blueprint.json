@@ -77,7 +77,7 @@
                   ],
                   "bindings": {
                     "fields": {
-                      "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'semantic','label':'Semantic'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
+                      "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
                     },
                     "value": {
                       "from": "incident.selection"
@@ -124,10 +124,10 @@
                   },
                   "bindings": {
                     "value": {
-                      "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
+                      "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source').error"
                     }
                   },
-                  "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
+                  "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source') != null"
                 }
               },
               "report-viewer": {
@@ -250,6 +250,42 @@
         },
         "scope": "per-blueprint"
       },
+      "incident-report-agent-generated-presentation": {
+        "kind": "foundry-agent",
+        "version": "1",
+        "operations": {
+          "authorReportBlueprint": {
+            "operation": "chat",
+            "contract": "incident-report-blueprint/v1",
+            "request": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "($accepted := ['semantic:decision','semantic:narrative','security:attack-path','semantic:event-series','semantic:entity-set','semantic:evidence-case']; $templates := {'semantic:decision':{'useFor':'One source-supported decision or determination and its justification.','view':{'capability':'semantic:decision','props':{'variant':'summary','spec':{'eyebrow':'Decision','density':'comfortable','fields':{'title':'title','summary':'summary','outcome':'verdict.outcome','confidence':'verdict.confidence','rationale':'verdict.rationale','impact':'impact'}}},'bindings':{'decision':{'from':'<state-path>'}}}},'semantic:narrative':{'useFor':'Explanatory content organized into stable sections.','view':{'capability':'semantic:narrative','props':{'variant':'article','spec':{'title':'Incident narrative','density':'comfortable','fields':{'id':'id','heading':'heading','body':'body','parent':'parentId','order':'order','role':'role','tone':'tone'}}},'bindings':{'sections':{'from':'<state-path>'}}}},'security:attack-path':{'useFor':'Directed adversarial activity connecting security entities.','view':{'capability':'security:attack-path','props':{'variant':'canvas','stateKey':'incident-attack-path','spec':{'title':'Attack path','density':'comfortable','entityFields':{'id':'id','label':'label','detail':'detail','type':'type','tone':'status'},'relationshipFields':{'id':'id','source':'sourceId','target':'targetId','label':'label','start':'start','end':'end'}}},'bindings':{'graph':{'from':'<state-path>'}}}},'semantic:event-series':{'useFor':'Timestamped events forming the primary relationship.','view':{'capability':'semantic:event-series','props':{'variant':'chronology','spec':{'title':'Investigation timeline','density':'comfortable','fields':{'id':'eventKey','title':'title','timestamp':'at','detail':'detail','status':'state'},'scale':{'kind':'datetime'},'sort':{'direction':'ascending'}}},'bindings':{'items':{'from':'<state-path>'}}}},'semantic:entity-set':{'useFor':'A population of incident entities.','view':{'capability':'semantic:entity-set','props':{'variant':'clusters','spec':{'title':'Entities','density':'comfortable','fields':{'id':'key','label':'name','type':'kind','status':'condition','group':'group','description':'detail'}}},'bindings':{'items':{'from':'<state-path>'}}}},'semantic:evidence-case':{'useFor':'Evidence collectively supporting or challenging a case.','view':{'capability':'semantic:evidence-case','props':{'variant':'case','spec':{'title':'Evidence case','density':'comfortable','fields':{'id':'id','title':'title','source':'source','timestamp':'at','excerpt':'excerpt','tone':'role'}}},'bindings':{'evidence':{'from':'<state-path>'}}}}}; $scaffold := {'gik':'0.1','type':'blueprint','payload':{'id':'generated-incident-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[],'cells':{'report':{'id':'report','potentialViews':{}}},'runtime':{'externals':{'projectionViews':{}},'state':{'report':{}}},'presentation':{'slots':['report'],'root':'report','allowedCapabilities':$accepted}}}; $brief := {'objective':'Design a source-grounded incident report presentation whose structure follows the supplied incident rather than a predefined section template.','viewTemplates':$templates,'toolPlan':['Choose only from the supplied viewTemplates.','Call compose_response_set_in_progress_proposal once with the complete fragment. The host ends the lifecycle on success.'],'responseFragment':{'presentationSlots':'<complete presentation slot hierarchy>','presentationRoot':'<root slot id>','potentialViews':'<named views attached to generated slots>','reportState':'<static source-grounded report state>'},'constraints':['author exactly presentationSlots, presentationRoot, potentialViews, and reportState','copy selected template capability, props, and binding-property shape; replace state path and add region','create a connected presentation hierarchy derived from the source','attach an appropriate view to every declared content slot; the root may be a container','use only accepted capabilities','exactly one inert report Cell','no services or executable data flow','no primitive:markdown']}; {'message':'Author the agent-generated incident report presentation for this assignment: ' & $string($brief) & ' Source report: ' & input.incident_report,'instructions':'Use the supplied assignment, view templates, and source report as the complete authoritative requirements. Submit one complete final proposal; no discovery step is needed.','agentName':'Incident-Report-Agent-Generated-Presentation-Agent','maxOutputTokens':8000,'presentationMode':'agent-generated-presentation','acceptedCapabilities':$accepted,'authoringBrief':$brief,'authoringWorkspace':{'scaffold':$scaffold,'slots':[{'field':'presentationSlots','pointer':'/payload/presentation/slots'},{'field':'presentationRoot','pointer':'/payload/presentation/root'},{'field':'potentialViews','pointer':'/payload/cells/report/potentialViews'},{'field':'reportState','pointer':'/payload/runtime/state/report'}],'capabilityDerivation':{'viewsField':'potentialViews','acceptedCapabilities':$accepted,'tierPointer':'/payload/projectionTiers/0/capabilities','importsPointer':'/payload/runtime/externals/projectionViews'}}})"
+              }
+            },
+            "settlement": {
+              "transform": {
+                "kind": "jsonata",
+                "expr": "{'ops':[]}"
+              }
+            },
+            "onViolation": {
+              "action": "correction-prompt",
+              "maxAttempts": 2
+            }
+          }
+        },
+        "config": {
+          "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
+          "credentialRef": "foundry-agent/access-key",
+          "maxOutputTokens": 5000,
+          "agentTools": [
+            "compose_response_set_in_progress_proposal"
+          ],
+          "responseMode": "json"
+        },
+        "scope": "per-blueprint"
+      },
       "incident-report-analysis": {
         "kind": "foundry-agent",
         "version": "1",
@@ -260,7 +296,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "($mode := input.model; $guidance := $mode = 'refinement' ? 'Preserve every source section, fact, identifier, value, relationship, order, and uncertainty while improving report organization and clarity.' : 'Normalize the supplied incident facts, relationships, evidence, uncertainty, impacts, and actions without inventing content.'; {'message':'Write the incident analysis report from this source report:\\n\\n' & input.incident_report,'instructions':$guidance & ' Return only one JSON object containing the complete report Markdown in the markdown property. Do not construct a Blueprint, service, projection, Cell, or presentation.','agentName':$mode = 'refinement' ? 'Incident-Report-Refinement-Agent' : 'Incident-Report-Semantic-Agent','maxOutputTokens':8000})"
+                "expr": "{'message':'Refine this incident analysis report while preserving every source section, fact, identifier, value, relationship, order, and uncertainty:\\n\\n' & input.incident_report,'instructions':'Return only one JSON object containing the complete refined report Markdown in the markdown property. Do not construct a Blueprint, service, projection, Cell, or presentation.','agentName':'Incident-Report-Refinement-Agent','maxOutputTokens':8000}"
               }
             },
             "response": {
@@ -352,7 +388,7 @@
         "incident": {
           "selection": {
             "source": "",
-            "model": "semantic"
+            "model": "agent-generated-presentation"
           },
           "sourceOptions": [],
           "refresherStamp": 0,
@@ -439,7 +475,7 @@
             ],
             "bindings": {
               "fields": {
-                "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'semantic','label':'Semantic'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
+                "expression": "{'properties':{'source':{'title':'Source report','type':'string','options':incident.sourceOptions,'placeholder':'Choose a source report','span':12},'model':{'title':'Analysis model','type':'string','options':[{'value':'agent-generated-presentation','label':'Agent-generated presentation'},{'value':'fixed-presentation','label':'Fixed presentation'},{'value':'refinement','label':'Refinement'}],'span':12}},'required':['source','model']}"
               },
               "value": {
                 "from": "incident.selection"
@@ -600,13 +636,13 @@
         ],
         "sources": [
           {
-            "id": "incident-analysis.source",
-            "service": "incident-report-analysis",
-            "operation": "analyzeReportBlueprint",
-            "when": "inputs.savedRefresherStamp != 0 and inputs.selectedModel = 'semantic'",
+            "id": "incident-analysis.agent-generated-presentation-source",
+            "service": "incident-report-agent-generated-presentation",
+            "operation": "authorReportBlueprint",
+            "when": "inputs.savedRefresherStamp != 0 and inputs.selectedModel = 'agent-generated-presentation'",
             "input": {
               "kind": "jsonata",
-              "expr": "{'incident_report':inputs.selectedSourceContent,'model':inputs.selectedModel}"
+              "expr": "{'incident_report':inputs.selectedSourceContent}"
             },
             "output": {
               "kind": "jsonata",
@@ -616,13 +652,24 @@
               {
                 "kind": "blueprint",
                 "code": "incident-report-blueprint",
-                "message": "Incident analysis source did not produce a valid Blueprint"
+                "message": "Agent-generated presentation did not produce a valid Blueprint"
+              },
+              {
+                "kind": "blueprint-capability-acceptance",
+                "code": "incident-report-capability-acceptance",
+                "message": "Agent-generated presentation uses a capability outside its accepted set"
               },
               {
                 "kind": "jsonata",
-                "expr": "$type(data.payload.runtime.state.report.markdown) = 'string' and $length(data.payload.runtime.state.report.markdown) > 0",
-                "code": "incident-report-markdown",
-                "message": "Incident analysis source produced an empty report"
+                "expr": "$count(data.payload.serviceTiers) = 1 and data.payload.serviceTiers[0].id = 'runtime-document' and $count(data.payload.projectionTiers) = 1 and data.payload.projectionTiers[0].id = 'runtime-document' and $count(data.payload.serviceRecipes) = 0 and $count(data.payload.projectionRecipes) = 0",
+                "code": "incident-report-projection-capability-ownership",
+                "message": "Agent-generated report must be terminal with one runtime-document tier per axis and no lowering recipes"
+              },
+              {
+                "kind": "jsonata",
+                "expr": "($cells := data.payload.cells; $cell := $cells.report; $views := $cell.potentialViews; $slots := data.payload.presentation.slots; $slotIds := $slots.($exists(id) ? id : $); $root := data.payload.presentation.root; $contentSlots := $slotIds[$ != $root]; $regions := $views.*.region; $count($keys($cells)) = 1 and $cell.id = 'report' and $not($exists($cell.sources)) and $not($exists($cell.inputs)) and $not($exists($cell.outputs)) and $not($exists($cell.compute)) and $not($exists($cell.behavior)) and $not($exists($cell.events)) and ($not($exists(data.payload.services)) or $count($keys(data.payload.services)) = 0) and $count($slotIds) > 1 and $root in $slotIds and $count($views) > 0 and $count($contentSlots[$not($ in $regions)]) = 0 and $count($regions[$not($ in $slotIds)]) = 0)",
+                "code": "incident-report-agent-generated-presentation-shape",
+                "message": "Agent-generated report must be one inert report Cell with a connected presentation and a view in every slot"
               }
             ]
           },
@@ -695,10 +742,10 @@
         "compute": [
           {
             "id": "analysis-result",
-            "expression": "$exists(sources.`incident-analysis.refinement-source`) ? sources.`incident-analysis.refinement-source` : ($exists(sources.`incident-analysis.fixed-presentation-source`) ? sources.`incident-analysis.fixed-presentation-source` : sources.`incident-analysis.source`)",
+            "expression": "$exists(sources.`incident-analysis.refinement-source`) ? sources.`incident-analysis.refinement-source` : ($exists(sources.`incident-analysis.fixed-presentation-source`) ? sources.`incident-analysis.fixed-presentation-source` : sources.`incident-analysis.agent-generated-presentation-source`)",
             "assign": "analysisResult",
             "dependencies": [
-              "sources.incident-analysis.source",
+              "sources.incident-analysis.agent-generated-presentation-source",
               "sources.incident-analysis.fixed-presentation-source",
               "sources.incident-analysis.refinement-source"
             ]
@@ -762,10 +809,10 @@
             },
             "bindings": {
               "value": {
-                "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source').error"
+                "expression": "$lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source').error"
               }
             },
-            "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.source') != null"
+            "visibility": "systemInputs.numSourcesRunning = 0 and $lookup(systemInputs.sourceErrors, incident.selection.model = 'fixed-presentation' ? 'incident-analysis.fixed-presentation-source' : incident.selection.model = 'refinement' ? 'incident-analysis.refinement-source' : 'incident-analysis.agent-generated-presentation-source') != null"
           }
         },
         "events": {

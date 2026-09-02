@@ -92,7 +92,7 @@ test("headless harness opens every catalog Blueprint with authored defaults", ()
   }
 });
 
-test("headless harness selects the Incident Analysis semantic model by default", () => {
+test("headless harness selects the Incident Analysis agent-generated presentation model by default", () => {
   const session = openHeadlessBlueprint("incident-analysis-new-shell");
   assert.equal(session.runtime.definition.payload.kind, "incident-analysis-shell");
   assert.ok("incident" in session.snapshot());

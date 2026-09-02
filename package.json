@@ -14,6 +14,7 @@
     "scenario:run": "node scripts/run-scenario.mjs",
     "agent:plan": "tsx scripts/generate-foundry-provisioning-plan.ts",
     "agent:plan:incident-analysis": "npm run agent:plan -- --manifest src/bootstrap/blueprints/incident-analysis-new-shell/agents/incident-report-fixed-presentation/provisioning.json --out .tmp/incident-report-fixed-presentation.foundry-plan.json",
+    "agent:plan:incident-analysis-generated": "npm run agent:plan -- --manifest src/bootstrap/blueprints/incident-analysis-new-shell/agents/incident-report-agent-generated-presentation/provisioning.json --out .tmp/incident-report-agent-generated-presentation.foundry-plan.json",
     "test:pages": "node scripts/smoke-pages.mjs",
     "mcp:start": "node packages/mcp-server/src/index.js --transport streamable-http",
     "mcp:start:stdio": "node packages/mcp-server/src/index.js --transport stdio",
