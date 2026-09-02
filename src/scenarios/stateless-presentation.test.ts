@@ -4,8 +4,8 @@ import {
   materializeBlueprint,
   parseBlueprintReference,
   runMaterializedTransition,
-} from "@gik-ai/blueprint";
-import type { ResolvedNode } from "@gik-ai/kernel";
+} from "gik-blueprint";
+import type { ResolvedNode } from "gik-kernel";
 
 import {
   getSampleBlueprintCatalog,

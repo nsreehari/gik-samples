@@ -4,9 +4,9 @@ import {
   materializeBlueprint,
   parseBlueprintReference,
   type ExternalContext,
-} from "@gik-ai/blueprint";
-import { createInMemoryBlueprintProposalStore } from "@gik-ai/blueprint-agent-host";
-import type { Json } from "@gik-ai/kernel";
+} from "gik-blueprint";
+import { createInMemoryBlueprintProposalStore } from "gik-blueprint-agent-host";
+import type { Json } from "gik-kernel";
 
 import {
   getSampleBlueprintCatalog,

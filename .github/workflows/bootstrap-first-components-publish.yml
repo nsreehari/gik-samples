@@ -4,7 +4,7 @@ name: Bootstrap first Components publish (token)
 # name "gik-components" (the @gik-ai scope is blocked by the corporate npm proxy).
 #
 # This workflow renames the package to gik-components ONLY inside the runner, right
-# before publishing. The repository itself keeps the package named @gik-ai/components,
+# before publishing. The repository itself keeps the package named gik-components,
 # so nothing in the repo (consumers, build, CI) changes and the full consumer migration
 # stays deferred. npm trusted publishing (OIDC) cannot create a brand-new package name,
 # so this first publish is token-authenticated.
@@ -76,7 +76,7 @@ jobs:
         run: npm run validate:vendor
 
       - name: Build gik components package
-        run: npm run build --workspace @gik-ai/components
+        run: npm run build --workspace gik-components
 
       - name: Rename package to gik-components for publishing
         run: |
@@ -110,7 +110,7 @@ jobs:
             echo "## Bootstrap first Components publish"
             echo
             echo "- Mode: \`$MODE\`"
-            echo "- Published name: \`gik-components\` (renamed in-runner from \`@gik-ai/components\`)"
+            echo "- Published name: \`gik-components\` (renamed in-runner from \`gik-components\`)"
             echo "- Authentication: token (\`NPM_TOKEN\` secret)"
             echo "- Next: configure trusted publishing for gik-components on npmjs.com, then revoke \`NPM_TOKEN\`."
           } >> "$GITHUB_STEP_SUMMARY"

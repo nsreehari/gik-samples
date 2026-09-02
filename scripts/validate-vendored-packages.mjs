@@ -46,7 +46,7 @@ for (const artifact of manifest.packages) {
 }
 
 const localGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name, value]) => name.startsWith("@gik-ai/") && String(value).startsWith("file:"));
+  .filter(([name, value]) => name.startsWith("gik-") && String(value).startsWith("file:"));
 for (const [name] of localGikDependencies) {
   if (!manifestNames.has(name)) throw new Error(`Local GIK dependency '${name}' is missing from the manifest.`);
 }
@@ -58,7 +58,7 @@ const componentsJson = JSON.parse(
   await readFile(join(repositoryRoot, "packages", "components", "package.json"), "utf8"),
 );
 const rootGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name]) => name.startsWith("@gik-ai/"));
+  .filter(([name]) => name.startsWith("gik-"));
 for (const [name, version] of rootGikDependencies) {
   const componentsVersion = componentsJson.dependencies?.[name];
   const expectedVersion = String(version).startsWith("file:")
@@ -69,7 +69,7 @@ for (const [name, version] of rootGikDependencies) {
   }
 }
 const registryGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name, value]) => name.startsWith("@gik-ai/") && !String(value).startsWith("file:"));
+  .filter(([name, value]) => name.startsWith("gik-") && !String(value).startsWith("file:"));
 for (const [name] of registryGikDependencies) {
   if (manifestNames.has(name)) {
     throw new Error(`Vendored package '${name}' must not also resolve from the registry.`);
@@ -79,7 +79,7 @@ for (const [name] of registryGikDependencies) {
 const registryGikVersions = new Map(registryGikDependencies);
 const localGikVersions = new Map(localGikDependencies);
 for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
-  if (!name.startsWith("@gik-ai/")) continue;
+  if (!name.startsWith("gik-")) continue;
   const expectedOverride = localGikVersions.has(name) ? `$${name}` : registryGikVersions.get(name);
   if (expectedOverride !== override) {
     throw new Error(`Override for '${name}' must match the declared dependency version.`);

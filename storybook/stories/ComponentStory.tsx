@@ -15,8 +15,8 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { CheckmarkRegular, CopyRegular } from "@fluentui/react-icons";
-import type { DeclarativeComponentDefinition } from "@gik-ai/components";
-import type { ResolvedNode } from "@gik-ai/kernel";
+import type { DeclarativeComponentDefinition } from "gik-components";
+import type { ResolvedNode } from "gik-kernel";
 
 const useStyles = makeStyles({
   page: {

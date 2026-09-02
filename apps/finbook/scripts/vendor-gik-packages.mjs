@@ -35,7 +35,7 @@ function run(command, args, cwd, capture = false) {
 function localizeGikDependencies(packageJson) {
   for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
     for (const name of Object.keys(packageJson[field] ?? {})) {
-      if (name.startsWith("@gik-ai/")) packageJson[field][name] = "*";
+      if (name.startsWith("gik-")) packageJson[field][name] = "*";
     }
   }
 }

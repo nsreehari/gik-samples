@@ -2,8 +2,8 @@
 
 These package archives temporarily decouple `gik-samples` from a sibling GIK
 checkout for the GIK packages that are not published to the public registry.
-Every published `@gik-ai/*` dependency now resolves from npm; only
-`@gik-ai/agent-lifecycle-exp` and `@gik-ai/blueprint-agent-host` remain
+Every published `gik-*` dependency now resolves from npm; only
+`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` remain
 vendored here.
 
 Run `npm run vendor:gik` with a clean `../gik-fresh` checkout, or set

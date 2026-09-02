@@ -4,7 +4,7 @@ import {
   materializeBlueprint,
   validateBlueprintArtifact,
   type BlueprintArtifact,
-} from "@gik-ai/blueprint";
+} from "gik-blueprint";
 
 const blueprintPath = fileURLToPath(new URL("../blueprints/finbook/blueprint.json", import.meta.url));
 const blueprint = JSON.parse(await readFile(blueprintPath, "utf8"));

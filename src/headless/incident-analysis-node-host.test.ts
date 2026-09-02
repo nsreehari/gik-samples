@@ -4,11 +4,11 @@ import { test } from "vitest";
 import {
   materializeBlueprint,
   parseBlueprintReference,
-} from "@gik-ai/blueprint";
-import { executeQueuedCellSourceEffect } from "@gik-ai/blueprint/worker";
-import { evalAsyncJsonata, runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { Json, OrchestratorResult, ResolvedNode } from "@gik-ai/kernel";
-import { BlueprintController } from "@gik-ai/react";
+} from "gik-blueprint";
+import { executeQueuedCellSourceEffect } from "gik-blueprint/worker";
+import { evalAsyncJsonata, runDeclarativeValidators } from "gik-evaluators";
+import type { Json, OrchestratorResult, ResolvedNode } from "gik-kernel";
+import { BlueprintController } from "gik-react";
 
 import { resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
 import {

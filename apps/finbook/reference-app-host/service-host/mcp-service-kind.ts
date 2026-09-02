@@ -1,10 +1,10 @@
-import type { NativeServiceDeclaration } from "@gik-ai/kernel";
+import type { NativeServiceDeclaration } from "gik-kernel";
 import {
   serviceConfig,
   type ServiceAdapter,
   type ServiceKindFactory,
   type ServiceKindManifest,
-} from "@gik-ai/controlface/services";
+} from "gik-controlface/services";
 
 import { createMcpHttpClient } from "./mcp-client";
 

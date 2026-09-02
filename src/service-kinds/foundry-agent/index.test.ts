@@ -3,7 +3,7 @@ import { test } from "vitest";
 import type {
 	ServiceAgentTool,
 	ServiceAgentToolExecutionContext,
-} from "@gik-ai/controlface/services";
+} from "gik-controlface/services";
 
 import {
 	createRequestAgentTools,

@@ -1,9 +1,9 @@
-import type { ProjectionView } from "@gik-ai/react";
-import { fluentComponentViews } from "@gik-ai/components/fluent";
-import { primitiveComponentViews } from "@gik-ai/components/primitives";
-import { semanticComponentViews } from "@gik-ai/components/semantic";
-import { securityComponentViews } from "@gik-ai/components/security";
-import { softwareComponentViews } from "@gik-ai/components/software";
+import type { ProjectionView } from "gik-react";
+import { fluentComponentViews } from "gik-components/fluent";
+import { primitiveComponentViews } from "gik-components/primitives";
+import { semanticComponentViews } from "gik-components/semantic";
+import { securityComponentViews } from "gik-components/security";
+import { softwareComponentViews } from "gik-components/software";
 import { resolveSampleCapabilityDescriptors } from "../../../shared/capability-descriptors";
 import { credentialAccessViews } from "./credential-access";
 

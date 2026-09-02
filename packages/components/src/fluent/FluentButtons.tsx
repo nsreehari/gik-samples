@@ -5,7 +5,7 @@ import {
   FullScreenMaximizeRegular,
   FullScreenMinimizeRegular,
 } from "@fluentui/react-icons";
-import { readProps, type ProjectionView } from "@gik-ai/react";
+import { readProps, type ProjectionView } from "gik-react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

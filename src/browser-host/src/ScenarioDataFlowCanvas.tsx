@@ -15,7 +15,7 @@ import {
   InfiniteCanvas,
   type InfiniteCanvasNodeDescriptor,
   type InfiniteCanvasPort,
-} from "@gik-ai/components/primitives";
+} from "gik-components/primitives";
 import { Handle } from "@xyflow/react";
 
 import type {

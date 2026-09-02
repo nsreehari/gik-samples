@@ -11,14 +11,14 @@ import {
   parseBlueprintReference,
   type ExternalContext,
   type MaterializedBlueprint,
-} from "@gik-ai/blueprint";
+} from "gik-blueprint";
 import {
   BlueprintHost as InMemoryBlueprintHost,
   buildCapabilityCatalogFromExternals,
   type BlueprintHostProps,
   type BundleNative,
   type OrganismBridge,
-} from "@gik-ai/react";
+} from "gik-react";
 import { resolveCapabilityDescriptors, resolveProjectionViews } from "./runtime/provider-registry";
 import {
   canonicalizeHostUrl,

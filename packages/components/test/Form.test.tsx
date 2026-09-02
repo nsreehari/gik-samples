@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import TestRenderer, { act } from "react-test-renderer";
 import { test } from "vitest";
 
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import type { Json, ResolvedNode } from "gik-kernel";
 
 import { Form, formDefinition } from "../src/primitives/form";
 

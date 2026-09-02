@@ -9,7 +9,7 @@ import {
   TagGroup,
   Textarea,
 } from "@fluentui/react-components";
-import { readProps, type ProjectionView } from "@gik-ai/react";
+import { readProps, type ProjectionView } from "gik-react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

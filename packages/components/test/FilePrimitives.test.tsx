@@ -3,7 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import type { Json, ResolvedNode } from "gik-kernel";
 
 import { FileDownload, fileDownloadDefinition } from "../src/primitives/file-download";
 import { FileInput, fileInputDefinition } from "../src/primitives/file-input";

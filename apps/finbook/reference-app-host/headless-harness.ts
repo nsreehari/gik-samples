@@ -1,12 +1,12 @@
-import { openBlueprint } from "@gik-ai/controlface/blueprint";
+import { openBlueprint } from "gik-controlface/blueprint";
 import {
   InMemoryStateModel,
   type Json,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 import {
   validateBlueprintArtifact,
   type BlueprintArtifact,
-} from "@gik-ai/react";
+} from "gik-react";
 
 export function openReferenceAppHeadless(blueprint: BlueprintArtifact) {
   validateBlueprintArtifact(blueprint);

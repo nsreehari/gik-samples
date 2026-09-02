@@ -6,9 +6,9 @@ import {
   tokens,
   type ButtonProps,
 } from "@fluentui/react-components";
-import type { Json } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import { readProps, useCountdownTimer, type ProjectionView } from "@gik-ai/react";
+import type { Json } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import { readProps, useCountdownTimer, type ProjectionView } from "gik-react";
 
 import {
   defineComponent,

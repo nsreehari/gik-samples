@@ -6,18 +6,18 @@
 // Blueprint -- so neither route can drift into its own divergent wiring.
 
 import React from "react";
-import type { BlueprintArtifact, ExternalContext, MaterializedBlueprint } from "@gik-ai/blueprint";
-import type { Json } from "@gik-ai/kernel";
-import type { BundleNative, ReactBlueprintHostRegistry } from "@gik-ai/react";
-import { createIndexedDbProvider } from "@gik-ai/durable-runtime/storage/indexed-db";
-import { createIndexedDbStorageRef } from "@gik-ai/durable-runtime/storage/indexed-db/api";
-import { createDurableRuntime } from "@gik-ai/durable-runtime";
+import type { BlueprintArtifact, ExternalContext, MaterializedBlueprint } from "gik-blueprint";
+import type { Json } from "gik-kernel";
+import type { BundleNative, ReactBlueprintHostRegistry } from "gik-react";
+import { createIndexedDbProvider } from "gik-durable-runtime/storage/indexed-db";
+import { createIndexedDbStorageRef } from "gik-durable-runtime/storage/indexed-db/api";
+import { createDurableRuntime } from "gik-durable-runtime";
 import {
   createBlueprintProposalDurableTransitionAdapter,
   createDurableBlueprintProposalStore,
   createInMemoryBlueprintProposalStore,
   type BlueprintProposalStore,
-} from "@gik-ai/blueprint-agent-host";
+} from "gik-blueprint-agent-host";
 import type { UseProposal } from "./runtime/blueprint-agent-lifecycle";
 import { resolveSampleBlueprintSource } from "../../bootstrap/catalog/blueprint-catalog";
 import {

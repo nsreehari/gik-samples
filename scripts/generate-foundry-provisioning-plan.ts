@@ -5,8 +5,8 @@ import {
   toFoundryPromptDefinition,
   type AgentFunctionToolDefinition,
   type AgentProvisioningTemplate,
-} from "@gik-ai/agent-lifecycle-exp";
-import type { BlueprintArtifact } from "@gik-ai/blueprint";
+} from "gik-agent-lifecycle-exp";
+import type { BlueprintArtifact } from "gik-blueprint";
 
 import { sampleAgentToolContracts } from "../src/shared/agent-tool-contracts";
 

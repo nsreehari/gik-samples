@@ -2,12 +2,12 @@ import {
   materializeBlueprint,
   validateBlueprintForAuthoring,
   type BlueprintArtifact,
-} from "@gik-ai/blueprint";
+} from "gik-blueprint";
 import type {
   AgentTool,
   AgentToolExecutionContext,
-} from "@gik-ai/agent-lifecycle-exp";
-import type { CapabilityDescriptor, Json } from "@gik-ai/kernel";
+} from "gik-agent-lifecycle-exp";
+import type { CapabilityDescriptor, Json } from "gik-kernel";
 import { resolveSampleCapabilityDescriptors } from "../shared/capability-descriptors";
 import { agentResponseToolContracts } from "./agent-response-tool-contracts";
 

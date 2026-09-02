@@ -10,6 +10,7 @@ const packages = [
   "blueprint",
   "blueprint-agent-host",
   "controlface",
+  "durable-runtime",
   "evaluators",
   "kernel",
   "react",

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { createBlueprintDurableBootstrapEvent } from "@gik-ai/blueprint";
-import { SyncJsonataExpressionProvider, type Json } from "@gik-ai/kernel";
+import { createBlueprintDurableBootstrapEvent } from "gik-blueprint";
+import { SyncJsonataExpressionProvider, type Json } from "gik-kernel";
 
 import { getSampleBlueprintCatalog } from "../bootstrap/catalog/blueprint-catalog";
 import {

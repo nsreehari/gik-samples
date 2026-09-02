@@ -7,12 +7,12 @@ import {
   type OrchestratorEffect,
   type OrchestratorResult,
   type StateModel,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 import {
   runMaterializedTransition,
   type MaterializedBlueprint,
-} from "@gik-ai/blueprint";
-import type { BundleNative } from "@gik-ai/react";
+} from "gik-blueprint";
+import type { BundleNative } from "gik-react";
 
 export function scenarioTransitionOrchestrator(
   native: BundleNative,

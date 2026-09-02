@@ -1,8 +1,8 @@
 import React from "react";
 import { makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
-import type { Json } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { ProjectionView } from "@gik-ai/react";
+import type { Json } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { ProjectionView } from "gik-react";
 
 import {
   defineComponent,

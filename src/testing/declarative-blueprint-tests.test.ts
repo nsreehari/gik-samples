@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { parseBlueprintReference } from "@gik-ai/blueprint";
+import { parseBlueprintReference } from "gik-blueprint";
 import { test } from "vitest";
 
 import { getSampleBlueprintCatalog } from "../bootstrap/catalog/blueprint-catalog";

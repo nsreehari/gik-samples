@@ -7,7 +7,7 @@ import {
   DialogTitle,
   type DialogProps,
 } from "@fluentui/react-components";
-import { readProps, type ProjectionViewProps } from "@gik-ai/react";
+import { readProps, type ProjectionViewProps } from "gik-react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

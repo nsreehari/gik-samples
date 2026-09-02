@@ -1,4 +1,4 @@
-import { capabilityDescribeInputSchema } from "@gik-ai/agent-lifecycle-exp";
+import { capabilityDescribeInputSchema } from "gik-agent-lifecycle-exp";
 
 import { agentResponseToolContracts } from "../service-kinds/agent-response-tool-contracts";
 

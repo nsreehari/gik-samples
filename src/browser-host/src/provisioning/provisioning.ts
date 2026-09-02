@@ -2,8 +2,8 @@ import {
   toCopilotAgentMarkdown,
   toFoundryPromptDefinition,
   type AgentProvisioningTemplate,
-} from "@gik-ai/agent-lifecycle-exp";
-import type { BlueprintArtifact } from "@gik-ai/blueprint";
+} from "gik-agent-lifecycle-exp";
+import type { BlueprintArtifact } from "gik-blueprint";
 
 export type ProvisioningProvider = "copilot" | "foundry";
 

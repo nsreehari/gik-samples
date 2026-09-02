@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import type { NativeServiceDeclaration } from "@gik-ai/kernel";
+import type { NativeServiceDeclaration } from "gik-kernel";
 import { getSampleBlueprintCatalog } from "../bootstrap/catalog/blueprint-catalog";
 import {
   authorizeTrustedServiceEndpoint,
