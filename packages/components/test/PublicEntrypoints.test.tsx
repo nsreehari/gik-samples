@@ -20,6 +20,9 @@ test("semantic and primitive entry points expose distinct component layers", () 
   assert.ok("collection-board" in primitiveComponentDefinitions);
   assert.ok("graph-diagram" in primitiveComponentDefinitions);
   assert.ok("source-viewer" in primitiveComponentDefinitions);
+  assert.ok("content" in primitiveComponentDefinitions);
+  assert.ok("list" in primitiveComponentDefinitions);
+  assert.ok("table" in primitiveComponentDefinitions);
   assert.ok("access-gate" in primitiveComponentDefinitions);
   assert.ok(!("event-series" in primitiveComponentDefinitions));
   assert.ok("timer-button" in primitiveComponentDefinitions);

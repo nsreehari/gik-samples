@@ -242,7 +242,7 @@ test("public registries separate component layers and expose an aggregate", () =
   const semantic = ["argument", "assessment", "change-proposal", "consistency-case", "decision", "entity-set", "event-series", "evidence-case", "finding-set", "measure-set", "milestones", "narrative", "process", "relationship-set", "work-set"];
   const security = ["attack-path"];
   const software = ["source-comparison", "source-findings"];
-  const primitives = ["access-gate", "alert", "chart", "collection-board", "container", "datetime", "editable-table", "file-download", "file-input", "file-list", "form", "gantt", "graph-diagram", "growing-container", "infinite-canvas", "markdown", "math-challenge", "metric", "note", "pane-with-trigger", "property", "source-viewer", "timer-button", "todo-list"];
+  const primitives = ["access-gate", "alert", "chart", "collection-board", "container", "content", "datetime", "editable-table", "file-download", "file-input", "file-list", "form", "gantt", "graph-diagram", "growing-container", "infinite-canvas", "list", "markdown", "math-challenge", "metric", "note", "pane-with-trigger", "property", "source-viewer", "table", "timer-button", "todo-list"];
   const fluent = ["badge", "button", "chips", "data-grid", "dialog", "dropdown", "list", "panel", "persona", "row", "searchbox", "spinner", "switch", "tab-bar", "table", "text", "text-field", "textarea", "toggle", "toolbar"];
   assert.deepEqual(Object.keys(semanticComponentViews).sort(), semantic);
   assert.deepEqual(Object.keys(semanticComponentDefinitions).sort(), semantic);

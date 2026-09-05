@@ -7,6 +7,7 @@ export * from "./FluentDialog";
 export * from "./FluentDisplayControls";
 export * from "./FluentInputs";
 export * from "./FluentLayoutControls";
+export * from "./FluentStack";
 export * from "./FluentText";
 export * from "./FluentToolbar";
 export * from "./registry";
