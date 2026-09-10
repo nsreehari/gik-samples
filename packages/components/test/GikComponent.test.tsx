@@ -213,6 +213,17 @@ test("GikComponentDeclarative accepts an opt-in domain capability catalog", () =
   });
 });
 
+test("GikComponentDeclarative rejects an unknown capability", () => {
+  assert.throws(
+    () => createGikComponentDeclarativeBundle({
+      id: "unknown-component",
+      capability: "unknown:component",
+      props: {},
+    }),
+    /does not recognize capability: unknown:component/,
+  );
+});
+
 test("GikComponentDeclarative routes canonical edges.on invoke actions to runtime handlers", async () => {
   let receivedPayload: Record<string, Json> | undefined;
   const props = materializeWorkSetTrial().props;

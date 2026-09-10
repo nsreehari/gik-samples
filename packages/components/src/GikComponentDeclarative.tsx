@@ -13,6 +13,7 @@ import {
   type Bundle,
   type BundleContextBindings,
   type EffectHandlerMap,
+  type ProjectionView,
   type ProviderResolver,
 } from "gik-react";
 
@@ -32,6 +33,30 @@ import { securityComponentCapabilities, securityComponentViews } from "./securit
 import { softwareComponentCapabilities, softwareComponentViews } from "./software/registry";
 
 const DECLARATIVE_ACTIONS = ["assign", "assignFrom", "derive", "invoke", "route", "confirm", "emit"];
+
+interface ProjectionProvider {
+  views: Record<string, ProjectionView>;
+  capabilities: Record<string, CapabilityDescriptor>;
+}
+
+const builtInProjectionProviders: Readonly<Record<string, ProjectionProvider>> = {
+  fluent: { views: fluentComponentViews, capabilities: fluentComponentCapabilities },
+  primitive: { views: primitiveComponentViews, capabilities: primitiveComponentCapabilities },
+  semantic: { views: semanticComponentViews, capabilities: semanticComponentCapabilities },
+  security: { views: securityComponentViews, capabilities: securityComponentCapabilities },
+  software: { views: softwareComponentViews, capabilities: softwareComponentCapabilities },
+};
+
+function resolveProjectionViews(from: string, resolveProvider?: ProviderResolver): Record<string, ProjectionView> | undefined {
+  return builtInProjectionProviders[from]?.views ?? resolveProvider?.(from);
+}
+
+function resolveProjectionCapabilities(
+  from: string,
+  resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined,
+): Record<string, CapabilityDescriptor> | undefined {
+  return builtInProjectionProviders[from]?.capabilities ?? resolveCapabilityDescriptors?.(from);
+}
 
 export interface GikComponentRuntimeProviderProps {
   children: React.ReactNode;
@@ -105,27 +130,7 @@ function componentContract(
   const separator = capability.indexOf(":");
   const layer = capability.slice(0, separator);
   const name = capability.slice(separator + 1);
-  if (layer === "fluent") {
-    const descriptor = fluentComponentCapabilities[name];
-    if (descriptor) return { layer, name, descriptor };
-  }
-  if (layer === "primitive") {
-    const descriptor = primitiveComponentCapabilities[name];
-    if (descriptor) return { layer, name, descriptor };
-  }
-  if (layer === "semantic") {
-    const descriptor = semanticComponentCapabilities[name];
-    if (descriptor) return { layer, name, descriptor };
-  }
-  if (layer === "security") {
-    const descriptor = securityComponentCapabilities[name];
-    if (descriptor) return { layer, name, descriptor };
-  }
-  if (layer === "software") {
-    const descriptor = softwareComponentCapabilities[name];
-    if (descriptor) return { layer, name, descriptor };
-  }
-  const descriptor = resolveCapabilityDescriptors?.(layer)?.[name];
+  const descriptor = resolveProjectionCapabilities(layer, resolveCapabilityDescriptors)?.[name];
   if (descriptor) return { layer, name, descriptor };
   throw new Error(`GikComponentDeclarative does not recognize capability: ${capability}`);
 }
@@ -184,14 +189,10 @@ export function GikComponentDeclarative({ nodeJson }: GikComponentDeclarativePro
     () => createGikComponentDeclarativeBundle(nodeJson, runtime),
     [nodeJson, runtime],
   );
-  const resolveProvider = React.useCallback<ProviderResolver>((from) => {
-    if (from === "fluent") return fluentComponentViews;
-    if (from === "primitive") return primitiveComponentViews;
-    if (from === "semantic") return semanticComponentViews;
-    if (from === "security") return securityComponentViews;
-    if (from === "software") return softwareComponentViews;
-    return runtime.resolveProvider?.(from);
-  }, [runtime.resolveProvider]);
+  const resolveProvider = React.useCallback<ProviderResolver>(
+    (from) => resolveProjectionViews(from, runtime.resolveProvider),
+    [runtime.resolveProvider],
+  );
   const signature = JSON.stringify([nodeJson, runtime.state]);
 
   return (
