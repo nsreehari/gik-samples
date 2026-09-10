@@ -1,16 +1,9 @@
-import type { CapabilityDescriptor } from "gik-kernel";
-import type { ProjectionView } from "gik-react";
-
-export interface ProjectionProvider {
-  id: string;
-  views: Record<string, ProjectionView>;
-  capabilities: Record<string, CapabilityDescriptor>;
-}
+import { createProjectionProviderSet, type ProjectionProvider } from "gik-components";
 
 export function createProjectionProviderRegistry(providers: readonly ProjectionProvider[]) {
-  const byId = new Map(providers.map((provider) => [provider.id, provider]));
+  const providerSet = createProjectionProviderSet(providers);
   return {
-    resolveViews: (id: string) => byId.get(id)?.views,
-    resolveCapabilities: (id: string) => byId.get(id)?.capabilities,
+    resolveViews: providerSet.resolveViews,
+    resolveCapabilities: providerSet.resolveCapabilities,
   };
 }

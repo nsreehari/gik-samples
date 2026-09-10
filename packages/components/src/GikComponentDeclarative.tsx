@@ -17,45 +17,58 @@ import {
   type ProviderResolver,
 } from "gik-react";
 
+import { fluentComponentDefinitions } from "./fluent/registry";
+import { primitiveComponentDefinitions } from "./primitives/registry";
+import { semanticComponentDefinitions } from "./semantic/registry";
+import { securityComponentDefinitions } from "./security/registry";
+import { softwareComponentDefinitions } from "./software/registry";
 import {
-  fluentComponentCapabilities,
-  fluentComponentViews,
-} from "./fluent/registry";
-import {
-  primitiveComponentCapabilities,
-  primitiveComponentViews,
-} from "./primitives/registry";
-import {
-  semanticComponentCapabilities,
-  semanticComponentViews,
-} from "./semantic/registry";
-import { securityComponentCapabilities, securityComponentViews } from "./security/registry";
-import { softwareComponentCapabilities, softwareComponentViews } from "./software/registry";
+  createProjectionProviderSet,
+  defineProjectionProvider,
+  type ProjectionProvider,
+} from "./shared/provider-set";
 
 const DECLARATIVE_ACTIONS = ["assign", "assignFrom", "derive", "invoke", "route", "confirm", "emit"];
 
-interface ProjectionProvider {
-  views: Record<string, ProjectionView>;
-  capabilities: Record<string, CapabilityDescriptor>;
-}
+export const fluentProjectionProvider: ProjectionProvider = defineProjectionProvider({
+  id: "fluent",
+  definitions: fluentComponentDefinitions,
+});
 
-const builtInProjectionProviders: Readonly<Record<string, ProjectionProvider>> = {
-  fluent: { views: fluentComponentViews, capabilities: fluentComponentCapabilities },
-  primitive: { views: primitiveComponentViews, capabilities: primitiveComponentCapabilities },
-  semantic: { views: semanticComponentViews, capabilities: semanticComponentCapabilities },
-  security: { views: securityComponentViews, capabilities: securityComponentCapabilities },
-  software: { views: softwareComponentViews, capabilities: softwareComponentCapabilities },
-};
+export const primitiveProjectionProvider: ProjectionProvider = defineProjectionProvider({
+  id: "primitive",
+  definitions: primitiveComponentDefinitions,
+});
 
-function resolveProjectionViews(from: string, resolveProvider?: ProviderResolver): Record<string, ProjectionView> | undefined {
-  return builtInProjectionProviders[from]?.views ?? resolveProvider?.(from);
+export const semanticProjectionProvider: ProjectionProvider = defineProjectionProvider({
+  id: "semantic",
+  definitions: semanticComponentDefinitions,
+});
+
+export const securityProjectionProvider: ProjectionProvider = defineProjectionProvider({
+  id: "security",
+  definitions: securityComponentDefinitions,
+});
+
+export const softwareProjectionProvider: ProjectionProvider = defineProjectionProvider({
+  id: "software",
+  definitions: softwareComponentDefinitions,
+});
+
+function resolveProjectionViews(
+  from: string,
+  providerSet: ReturnType<typeof createProjectionProviderSet>,
+  resolveProvider?: ProviderResolver,
+): Record<string, ProjectionView> | undefined {
+  return providerSet.resolveViews(from) ?? resolveProvider?.(from);
 }
 
 function resolveProjectionCapabilities(
   from: string,
+  providerSet: ReturnType<typeof createProjectionProviderSet>,
   resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined,
 ): Record<string, CapabilityDescriptor> | undefined {
-  return builtInProjectionProviders[from]?.capabilities ?? resolveCapabilityDescriptors?.(from);
+  return providerSet.resolveCapabilities(from) ?? resolveCapabilityDescriptors?.(from);
 }
 
 export interface GikComponentRuntimeProviderProps {
@@ -63,6 +76,7 @@ export interface GikComponentRuntimeProviderProps {
   state?: Record<string, Json>;
   effectHandlers?: EffectHandlerMap;
   contexts?: BundleContextBindings;
+  providers?: readonly ProjectionProvider[];
   resolveProvider?: ProviderResolver;
   resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined;
 }
@@ -71,6 +85,7 @@ interface GikComponentRuntimeValue {
   state: Record<string, Json>;
   effectHandlers: EffectHandlerMap;
   contexts: BundleContextBindings;
+  providers: readonly ProjectionProvider[];
   resolveProvider?: ProviderResolver;
   resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined;
 }
@@ -79,6 +94,7 @@ const GikComponentRuntimeContext = React.createContext<GikComponentRuntimeValue>
   state: {},
   effectHandlers: {},
   contexts: {},
+  providers: [],
 });
 
 export function GikComponentRuntimeProvider({
@@ -86,18 +102,20 @@ export function GikComponentRuntimeProvider({
   state = {},
   effectHandlers = {},
   contexts = {},
+  providers = [],
   resolveProvider,
   resolveCapabilityDescriptors,
 }: GikComponentRuntimeProviderProps): React.ReactElement {
   const value = React.useMemo(
-    () => ({ state, effectHandlers, contexts, resolveProvider, resolveCapabilityDescriptors }),
-    [state, effectHandlers, contexts, resolveProvider, resolveCapabilityDescriptors],
+    () => ({ state, effectHandlers, contexts, providers, resolveProvider, resolveCapabilityDescriptors }),
+    [state, effectHandlers, contexts, providers, resolveProvider, resolveCapabilityDescriptors],
   );
   return <GikComponentRuntimeContext.Provider value={value}>{children}</GikComponentRuntimeContext.Provider>;
 }
 
 export interface GikComponentDeclarativeProps {
   nodeJson: Json;
+  providers?: readonly ProjectionProvider[];
 }
 
 function assertDocNode(value: Json): asserts value is Json & DocNode {
@@ -125,32 +143,35 @@ function actionsIn(node: DocNode): Action[] {
 
 function componentContract(
   capability: string,
+  providerSet: ReturnType<typeof createProjectionProviderSet>,
   resolveCapabilityDescriptors?: (from: string) => Record<string, CapabilityDescriptor> | undefined,
 ) {
   const separator = capability.indexOf(":");
   const layer = capability.slice(0, separator);
   const name = capability.slice(separator + 1);
-  const descriptor = resolveProjectionCapabilities(layer, resolveCapabilityDescriptors)?.[name];
+  const descriptor = resolveProjectionCapabilities(layer, providerSet, resolveCapabilityDescriptors)?.[name];
   if (descriptor) return { layer, name, descriptor };
   throw new Error(`GikComponentDeclarative does not recognize capability: ${capability}`);
 }
 
 export function createGikComponentDeclarativeBundle(
   nodeJson: Json,
-  runtime: Pick<GikComponentRuntimeValue, "state" | "effectHandlers" | "contexts" | "resolveCapabilityDescriptors"> = {
+  runtime: Pick<GikComponentRuntimeValue, "state" | "effectHandlers" | "contexts" | "providers" | "resolveCapabilityDescriptors"> = {
     state: {},
     effectHandlers: {},
     contexts: {},
+    providers: [],
   },
 ): Bundle {
   assertDocNode(nodeJson);
   const root = nodeJson as unknown as DocNode;
+  const providerSet = createProjectionProviderSet(runtime.providers);
   const capabilities: ProjectedVocabularyManifest["capabilities"] = {};
   const imports = new Map<string, Set<string>>();
   const requiredEffects = new Set<string>();
 
   visitNodes(root, (node) => {
-    const { layer, name, descriptor } = componentContract(node.capability, runtime.resolveCapabilityDescriptors);
+    const { layer, name, descriptor } = componentContract(node.capability, providerSet, runtime.resolveCapabilityDescriptors);
     capabilities[node.capability] = descriptor;
     const names = imports.get(layer) ?? new Set<string>();
     names.add(name);
@@ -183,15 +204,23 @@ export function createGikComponentDeclarativeBundle(
   }, { effectHandlers: runtime.effectHandlers });
 }
 
-export function GikComponentDeclarative({ nodeJson }: GikComponentDeclarativeProps): React.ReactElement {
+export function GikComponentDeclarative({ nodeJson, providers: localProviders = [] }: GikComponentDeclarativeProps): React.ReactElement {
   const runtime = React.useContext(GikComponentRuntimeContext);
+  const mergedProviders = React.useMemo(
+    () => [...runtime.providers, ...localProviders],
+    [localProviders, runtime.providers],
+  );
+  const providerSet = React.useMemo(
+    () => createProjectionProviderSet(mergedProviders),
+    [mergedProviders],
+  );
   const bundle = React.useMemo(
-    () => createGikComponentDeclarativeBundle(nodeJson, runtime),
-    [nodeJson, runtime],
+    () => createGikComponentDeclarativeBundle(nodeJson, { ...runtime, providers: mergedProviders }),
+    [mergedProviders, nodeJson, runtime],
   );
   const resolveProvider = React.useCallback<ProviderResolver>(
-    (from) => resolveProjectionViews(from, runtime.resolveProvider),
-    [runtime.resolveProvider],
+    (from) => resolveProjectionViews(from, providerSet, runtime.resolveProvider),
+    [providerSet, runtime.resolveProvider],
   );
   const signature = JSON.stringify([nodeJson, runtime.state]);
 

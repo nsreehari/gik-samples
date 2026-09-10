@@ -1,4 +1,5 @@
 export * from "../shared/definition";
+export { fluentProjectionProvider } from "../GikComponentDeclarative";
 export * from "./authoring";
 export * from "./FluentButtons";
 export * from "./FluentBasicControls";

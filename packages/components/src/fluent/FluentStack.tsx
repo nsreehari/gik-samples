@@ -24,8 +24,8 @@ function cssGrowth(value: unknown): React.CSSProperties["flexGrow"] {
 
 export const FluentStack: ProjectionView = ({ node, children }) => {
   const props = readProps(node);
-  const horizontal = props.bool("horizontal", false);
-  const reversed = props.bool("reversed", false);
+  const horizontal = props.bool("horizontal");
+  const reversed = props.bool("reversed");
   const horizontalAlign = cssAlignment(props.str("horizontalAlign"));
   const verticalAlign = cssAlignment(props.str("verticalAlign"));
   const tokenProps = node.props.tokens && typeof node.props.tokens === "object" && !Array.isArray(node.props.tokens)
@@ -39,10 +39,10 @@ export const FluentStack: ProjectionView = ({ node, children }) => {
       : reversed ? "column-reverse" : "column",
     justifyContent: horizontal ? horizontalAlign : verticalAlign,
     alignItems: horizontal ? verticalAlign : horizontalAlign,
-    flexWrap: props.bool("wrap", false) ? "wrap" : undefined,
+    flexWrap: props.bool("wrap") ? "wrap" : undefined,
     flexGrow: cssGrowth(node.props.grow),
-    height: props.bool("verticalFill", false) ? "100%" : undefined,
-    flexShrink: props.bool("disableShrink", false) ? 0 : undefined,
+    height: props.bool("verticalFill") ? "100%" : undefined,
+    flexShrink: props.bool("disableShrink") ? 0 : undefined,
     gap: tokenProps.childrenGap as React.CSSProperties["gap"],
     maxHeight: tokenProps.maxHeight as React.CSSProperties["maxHeight"],
     maxWidth: tokenProps.maxWidth as React.CSSProperties["maxWidth"],
@@ -62,9 +62,9 @@ export const FluentStackItem: ProjectionView = ({ node, children }) => {
   const rootProps = componentRootProps(node);
   const layoutStyle: React.CSSProperties = {
     flexGrow: cssGrowth(node.props.grow),
-    flexShrink: props.bool("disableShrink", false) ? 0 : cssGrowth(node.props.shrink),
+    flexShrink: props.bool("disableShrink") ? 0 : cssGrowth(node.props.shrink),
     alignSelf: cssAlignment(props.str("align")) as React.CSSProperties["alignSelf"],
-    height: props.bool("verticalFill", false) ? "100%" : undefined,
+    height: props.bool("verticalFill") ? "100%" : undefined,
     flexBasis: node.props.basis as React.CSSProperties["flexBasis"],
     order: node.props.order as React.CSSProperties["order"],
     margin: tokenProps.margin as React.CSSProperties["margin"],

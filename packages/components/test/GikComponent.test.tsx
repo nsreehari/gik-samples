@@ -9,17 +9,33 @@ import {
   GikComponent,
   componentDefinitions,
   createGikComponentDeclarativeBundle,
+  fluentProjectionProvider,
   materializeWorkSetTrial,
+  primitiveProjectionProvider,
+  securityProjectionProvider,
+  semanticProjectionProvider,
+  softwareProjectionProvider,
 } from "../src/shared";
+
+const builtInProviders = [
+  fluentProjectionProvider,
+  primitiveProjectionProvider,
+  securityProjectionProvider,
+  semanticProjectionProvider,
+  softwareProjectionProvider,
+];
 
 test("every canonical component renders through GikComponent", () => {
   for (const definition of Object.values(componentDefinitions)) {
     const trial = definition.materializeTrial();
+    const children = definition.capability === "fluent:stack-item" ? "Child" : undefined;
     const markup = renderToStaticMarkup(
       <GikComponent
         kind={definition.capability as React.ComponentProps<typeof GikComponent>["kind"]}
         componentProps={trial.props}
-      />,
+      >
+        {children}
+      </GikComponent>,
     );
 
     assert.ok(markup.length > 0, definition.capability);
@@ -33,7 +49,7 @@ test("every canonical component is addressable through GikComponentDeclarative",
       id: trial.id,
       capability: definition.capability,
       props: trial.props,
-    });
+    }, { state: {}, effectHandlers: {}, contexts: {}, providers: builtInProviders });
     const vocabulary = unwrap(bundle.vocabulary);
     const [layer, name] = definition.capability.split(":");
 
@@ -150,6 +166,7 @@ test("GikComponentDeclarative wraps one canonical nodeJson with package vocabula
     state: { report: { points: [{ name: "API", count: 7 }] } },
     effectHandlers: {},
     contexts: {},
+    providers: [primitiveProjectionProvider],
   });
 
   const vocabulary = unwrap(bundle.vocabulary);
@@ -175,7 +192,7 @@ test("GikComponentDeclarative exposes Fluent components through the fluent provi
     id: "analyze-report",
     capability: "fluent:button",
     props: { label: "Analyze report", variant: "primary" },
-  });
+  }, { state: {}, effectHandlers: {}, contexts: {}, providers: [fluentProjectionProvider] });
 
   const vocabulary = unwrap(bundle.vocabulary);
   assert.deepEqual(vocabulary.externals?.projectionViews, {
@@ -203,6 +220,7 @@ test("GikComponentDeclarative accepts an opt-in domain capability catalog", () =
     state: {},
     contexts: {},
     effectHandlers: {},
+    providers: [],
     resolveCapabilityDescriptors: (from) => from === "finance" ? { "finbook-explorer": descriptor } : undefined,
   });
   const vocabulary = unwrap(bundle.vocabulary);
@@ -219,7 +237,7 @@ test("GikComponentDeclarative rejects an unknown capability", () => {
       id: "unknown-component",
       capability: "unknown:component",
       props: {},
-    }),
+    }, { state: {}, effectHandlers: {}, contexts: {}, providers: [] }),
     /does not recognize capability: unknown:component/,
   );
 });
@@ -242,6 +260,7 @@ test("GikComponentDeclarative routes canonical edges.on invoke actions to runtim
     effectHandlers: {
       captureAction: ({ data }) => { receivedPayload = data; },
     },
+    providers: [semanticProjectionProvider],
   });
 
   assert.deepEqual(unwrap(bundle.vocabulary).externals?.effectHandlers, ["captureAction"]);
@@ -255,7 +274,10 @@ test("GikComponentDeclarative resolves datetime, Gantt, infinite canvas, and att
   for (const capability of ["primitive:datetime", "primitive:gantt", "primitive:infinite-canvas", "security:attack-path"] as const) {
     const definition = componentDefinitions[capability.split(":")[1] as keyof typeof componentDefinitions];
     const trial = definition.materializeTrial();
-    const bundle = createGikComponentDeclarativeBundle({ id: trial.id, capability, props: trial.props });
+    const bundle = createGikComponentDeclarativeBundle(
+      { id: trial.id, capability, props: trial.props },
+      { state: {}, effectHandlers: {}, contexts: {}, providers: builtInProviders },
+    );
     const [layer, name] = capability.split(":");
     assert.deepEqual(unwrap(bundle.vocabulary).externals?.projectionViews, {
       [layer]: { from: layer, use: [name] },

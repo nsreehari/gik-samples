@@ -214,49 +214,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Source code must be preserved verbatim; use primitive:source-viewer"
       ]
     },
-    "primitive:content": {
-      "dataProps": {
-        "value": {
-          "type": "string"
-        }
-      },
-      "variants": {
-        "plain-text": {
-          "summary": "Escaped text without Markdown interpretation.",
-          "useWhen": [
-            "Titles, labels, statuses, and identifiers"
-          ],
-          "default": true
-        },
-        "restricted-markdown-inline": {
-          "summary": "Inline emphasis, code, and safe links.",
-          "useWhen": [
-            "List items and table cells need light emphasis"
-          ]
-        },
-        "restricted-markdown-prose": {
-          "summary": "Paragraphs and simple lists with restricted inline formatting.",
-          "useWhen": [
-            "Summaries, card bodies, and evidence need readable prose"
-          ]
-        }
-      },
-      "constraints": [
-        "Use plain-text for labels and identifiers",
-        "Restricted variants do not support HTML, images, headings, tables, code fences, or diagrams"
-      ],
-      "example": {
-        "capability": "primitive:content",
-        "props": {
-          "variant": "restricted-markdown-inline"
-        },
-        "bindings": {
-          "value": {
-            "from": "<state-path>"
-          }
-        }
-      }
-    },
     "primitive:container": {
       "for": [
         "Child views need declarative spatial composition",
@@ -394,36 +351,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "The source must be shown verbatim; use primitive:source-viewer"
       ]
     },
-    "primitive:list": {
-      "dataProps": {
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "props": {
-        "ordered": {
-          "type": "boolean"
-        }
-      },
-      "constraints": [
-        "Supply strings through items",
-        "Items allow emphasis, inline code, and safe links but not block Markdown"
-      ],
-      "example": {
-        "capability": "primitive:list",
-        "props": {
-          "ordered": true
-        },
-        "bindings": {
-          "items": {
-            "from": "<state-path>"
-          }
-        }
-      }
-    },
     "primitive:metric": {
       "for": [
         "One scalar deserves compact visual prominence"
@@ -467,50 +394,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Rows require editing; use primitive:editable-table",
         "Content is better expressed as prose or a list"
       ]
-    },
-    "primitive:table": {
-      "dataProps": {
-        "rows": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "props": {
-        "headers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ariaLabel": {
-          "type": "string"
-        }
-      },
-      "constraints": [
-        "Headers are plain text",
-        "Cells allow emphasis, inline code, and safe links",
-        "Keep every row aligned with the header order"
-      ],
-      "example": {
-        "capability": "primitive:table",
-        "props": {
-          "headers": [
-            "Finding",
-            "Result"
-          ],
-          "ariaLabel": "Validation results"
-        },
-        "bindings": {
-          "rows": {
-            "from": "<state-path>"
-          }
-        }
-      }
     },
     "primitive:timer-button": {
       "for": [
