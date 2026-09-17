@@ -1,12 +1,39 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { gunzipSync } from "node:zlib";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const vendorRoot = join(repositoryRoot, "vendor", "gik-packages");
 const packageJson = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
 const manifest = JSON.parse(await readFile(join(vendorRoot, "manifest.json"), "utf8"));
+
+function isVendoredGikDependency(value) {
+  return typeof value === "string" && value.startsWith("file:vendor/gik-packages/");
+}
+
+function listTarEntriesFromTgz(content) {
+  const tarBuffer = gunzipSync(content);
+  const entries = [];
+
+  for (let offset = 0; offset + 512 <= tarBuffer.length;) {
+    const header = tarBuffer.subarray(offset, offset + 512);
+    if (header.every((value) => value === 0)) break;
+
+    const name = header.subarray(0, 100).toString("utf8").replace(/\0.*$/, "");
+    const prefix = header.subarray(345, 500).toString("utf8").replace(/\0.*$/, "");
+    const sizeText = header.subarray(124, 136).toString("utf8").replace(/\0.*$/, "").trim();
+    const size = sizeText ? Number.parseInt(sizeText, 8) : 0;
+    if (!Number.isFinite(size)) {
+      throw new Error("Vendored package archive contains an invalid tar entry size.");
+    }
+
+    entries.push(prefix ? `${prefix}/${name}` : name);
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+
+  return entries;
+}
 
 if (manifest.format !== "gik-vendored-packages/1") {
   throw new Error(`Unsupported vendored package manifest '${manifest.format}'.`);
@@ -36,21 +63,18 @@ for (const artifact of manifest.packages) {
     throw new Error(`Vendored package '${artifact.name}' does not match its manifest.`);
   }
 
-  const listing = spawnSync("tar", ["-tzf", archive], { encoding: "utf8" });
-  if (listing.status !== 0) {
-    throw new Error(`Unable to inspect vendored package '${artifact.name}'.`);
-  }
-  if (listing.stdout.split(/\r?\n/).some((path) => path.endsWith(".map"))) {
+  const entries = listTarEntriesFromTgz(content);
+  if (entries.some((path) => path.endsWith(".map"))) {
     throw new Error(`Vendored package '${artifact.name}' contains source maps.`);
   }
 }
 
-const localGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name, value]) => name.startsWith("gik-") && String(value).startsWith("file:"));
-for (const [name] of localGikDependencies) {
+const vendoredGikDependencies = Object.entries(packageJson.dependencies)
+  .filter(([name, value]) => name.startsWith("gik-") && isVendoredGikDependency(value));
+for (const [name] of vendoredGikDependencies) {
   if (!manifestNames.has(name)) throw new Error(`Local GIK dependency '${name}' is missing from the manifest.`);
 }
-if (localGikDependencies.length !== manifest.packages.length) {
+if (vendoredGikDependencies.length !== manifest.packages.length) {
   throw new Error("Vendored package manifest and root dependencies are inconsistent.");
 }
 
@@ -76,11 +100,21 @@ for (const [name] of registryGikDependencies) {
   }
 }
 
+const workspaceGikDependencies = Object.entries(packageJson.dependencies)
+  .filter(([name, value]) => name.startsWith("gik-") && String(value).startsWith("file:") && !isVendoredGikDependency(value));
+for (const [name] of workspaceGikDependencies) {
+  if (manifestNames.has(name)) {
+    throw new Error(`Workspace package '${name}' must not also resolve from vendored archives.`);
+  }
+}
+
 const registryGikVersions = new Map(registryGikDependencies);
-const localGikVersions = new Map(localGikDependencies);
+const vendoredGikVersions = new Map(vendoredGikDependencies);
 for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
   if (!name.startsWith("gik-")) continue;
-  const expectedOverride = localGikVersions.has(name) ? `$${name}` : registryGikVersions.get(name);
+  const expectedOverride = vendoredGikVersions.has(name)
+    ? `$${name}`
+    : registryGikVersions.get(name);
   if (expectedOverride !== override) {
     throw new Error(`Override for '${name}' must match the declared dependency version.`);
   }
