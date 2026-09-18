@@ -4,8 +4,9 @@
 
 ### Patch Changes
 
-- Allow `GikComponentRuntimeProvider` to register capability descriptors for opt-in
-  application-owned component layers alongside their projection-view providers.
+- Make `GikComponentDeclarative` consume explicit projection providers so hosts
+  supply built-in and application-owned namespaces through the same provider
+  array contract.
 
 ## 0.2.1
 

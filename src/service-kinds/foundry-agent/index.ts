@@ -21,6 +21,10 @@ import {
 	readAgentResponseProposal,
 } from "../agent-response-workspace";
 
+interface ScopedDescribeTool extends ServiceAgentTool {
+	scopeToCapabilities?: (acceptedCapabilities: readonly string[] | undefined) => Promise<AgentTool>;
+}
+
 const manifest = manifestJson as ServiceKindManifest;
 
 function record(value: Json | undefined): Record<string, Json> {
@@ -99,8 +103,11 @@ export function createRequestAgentTools(
 			if (acceptedCapabilities !== undefined && emptyDescribeSelection(scopedArgs)) {
 				return { capabilities: {} };
 			}
+			const scopedTool = typeof (tool as ScopedDescribeTool).scopeToCapabilities === "function"
+				? await (tool as ScopedDescribeTool).scopeToCapabilities!(acceptedCapabilities)
+				: tool;
 			return filterDescribeResult(
-				await tool.handler(scopedArgs, context),
+				await scopedTool.handler(scopedArgs, context),
 				acceptedCapabilities,
 			);
 		},

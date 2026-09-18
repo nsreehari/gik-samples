@@ -20,6 +20,9 @@ test("semantic and primitive entry points expose distinct component layers", () 
   assert.ok("collection-board" in primitiveComponentDefinitions);
   assert.ok("graph-diagram" in primitiveComponentDefinitions);
   assert.ok("source-viewer" in primitiveComponentDefinitions);
+  assert.ok("content" in primitiveComponentDefinitions);
+  assert.ok("list" in primitiveComponentDefinitions);
+  assert.ok("table" in primitiveComponentDefinitions);
   assert.ok("access-gate" in primitiveComponentDefinitions);
   assert.ok(!("event-series" in primitiveComponentDefinitions));
   assert.ok("timer-button" in primitiveComponentDefinitions);
@@ -83,12 +86,33 @@ test("primitive entry point exports the complete primitive authoring API only", 
   ]);
   assert.equal(typeof primitiveEntryPoint.createPrimitiveComponentAuthoringTools, "function");
   assert.equal(typeof primitiveEntryPoint.getPrimitiveComponentAgentInstructions, "function");
+  assert.equal(rootEntryPoint.primitiveProjectionProvider, primitiveEntryPoint.primitiveProjectionProvider);
   assert.equal(rootEntryPoint.listPrimitiveComponents, primitiveEntryPoint.listPrimitiveComponents);
   assert.equal(rootEntryPoint.getPrimitiveComponentAgentKit, primitiveEntryPoint.getPrimitiveComponentAgentKit);
   assert.equal("listPrimitiveComponents" in semanticEntryPoint, false);
   assert.deepEqual(securityEntryPoint.listSecurityComponents().map((entry) => entry.capability), ["security:attack-path"]);
   assert.deepEqual(softwareEntryPoint.listSoftwareComponents().map((entry) => entry.capability), ["software:source-findings", "software:source-comparison"]);
+  assert.equal(rootEntryPoint.semanticProjectionProvider, semanticEntryPoint.semanticProjectionProvider);
+  assert.equal(rootEntryPoint.securityProjectionProvider, securityEntryPoint.securityProjectionProvider);
+  assert.equal(rootEntryPoint.softwareProjectionProvider, softwareEntryPoint.softwareProjectionProvider);
   assert.equal(rootEntryPoint.getSecurityComponentAgentKit, securityEntryPoint.getSecurityComponentAgentKit);
   assert.equal(rootEntryPoint.getSoftwareComponentAgentKit, softwareEntryPoint.getSoftwareComponentAgentKit);
   assert.throws(() => primitiveEntryPoint.describePrimitiveComponent("semantic:event-series"), /Unknown primitive component/);
+});
+
+test("root provider-set API supports empty scoped kits and mixed-provider resolution", () => {
+  const providerSet = rootEntryPoint.createProjectionProviderSet([
+    rootEntryPoint.primitiveProjectionProvider,
+    rootEntryPoint.semanticProjectionProvider,
+  ]);
+
+  assert.equal(typeof providerSet.resolveViews("primitive")?.form, "function");
+  assert.equal(providerSet.resolveCapabilities("semantic")?.["event-series"]?.dataProp, "items");
+
+  const emptyKit = providerSet.getKit([]);
+  assert.deepEqual(emptyKit.capabilities, []);
+  assert.match(emptyKit.instructions, /^# GIK Projection Component Authoring/);
+
+  const scopedKit = providerSet.getKit(["primitive:form", "semantic:event-series"]);
+  assert.deepEqual(scopedKit.capabilities, ["primitive:form", "semantic:event-series"]);
 });

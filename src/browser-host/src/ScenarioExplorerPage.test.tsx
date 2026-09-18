@@ -34,26 +34,30 @@ vi.mock("@fluentui/react-components", async () => {
   };
 });
 
-vi.mock("gik-components", () => ({
-  PaneWithTriggerBody: ({ children }: React.PropsWithChildren) => <main data-pane-section="body">{children}</main>,
-  PaneWithTriggerFooter: ({ children }: React.PropsWithChildren) => <footer data-pane-section="footer">{children}</footer>,
-  PaneWithTriggerHeader: ({ children }: React.PropsWithChildren) => <header data-pane-section="header">{children}</header>,
-  GikComponent: (props: React.PropsWithChildren<{
-    kind: string;
-    componentProps?: unknown;
-    data?: unknown;
-    onEvent?: (event: { name: string; payload: Record<string, unknown> }) => void;
-  }>) => (
-    <div
-      data-gik-kind={props.kind}
-      data-component-props={JSON.stringify(props.componentProps)}
-      data-component-data={JSON.stringify(props.data)}
-      onClick={() => props.onEvent?.({ name: "toggle", payload: { value: "acts" } })}
-    >
-      {props.children}
-    </div>
-  ),
-}));
+vi.mock("gik-components", async () => {
+  const actual = await vi.importActual<typeof import("gik-components")>("gik-components");
+  return {
+    ...actual,
+    PaneWithTriggerBody: ({ children }: React.PropsWithChildren) => <main data-pane-section="body">{children}</main>,
+    PaneWithTriggerFooter: ({ children }: React.PropsWithChildren) => <footer data-pane-section="footer">{children}</footer>,
+    PaneWithTriggerHeader: ({ children }: React.PropsWithChildren) => <header data-pane-section="header">{children}</header>,
+    GikComponent: (props: React.PropsWithChildren<{
+      kind: string;
+      componentProps?: unknown;
+      data?: unknown;
+      onEvent?: (event: { name: string; payload: Record<string, unknown> }) => void;
+    }>) => (
+      <div
+        data-gik-kind={props.kind}
+        data-component-props={JSON.stringify(props.componentProps)}
+        data-component-data={JSON.stringify(props.data)}
+        onClick={() => props.onEvent?.({ name: "toggle", payload: { value: "acts" } })}
+      >
+        {props.children}
+      </div>
+    ),
+  };
+});
 
 import { ScenarioExplorerPage } from "./ScenarioExplorerPage";
 

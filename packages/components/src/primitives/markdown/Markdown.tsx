@@ -6,6 +6,7 @@ import { readProps, type ProjectionView } from "gik-react";
 
 import { componentRootProps, componentStylePropsSchema } from "../../shared/component";
 import { defineComponent, trialNode, type ComponentDescription, type ComponentValidationReport } from "../../shared/definition";
+import { renderRestrictedMarkdownInline, safeContentHref } from "../content";
 
 const useStyles = makeStyles({
   root: {
@@ -42,32 +43,7 @@ const useStyles = makeStyles({
   },
 });
 
-export function safeMarkdownHref(url: string): string | null {
-  const trimmed = url.trim();
-  return /^(https?:|mailto:|\/|#|\.)/i.test(trimmed) ? trimmed : null;
-}
-
-function renderInline(text: string): React.ReactNode {
-  const pattern = /(`[^`]+`)|(\[[^\]]+\]\([^)\s]+\))|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(_[^_]+_)/g;
-  const nodes: React.ReactNode[] = [];
-  let last = 0;
-  let key = 0;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > last) nodes.push(text.slice(last, match.index));
-    const token = match[0];
-    if (token.startsWith("`")) nodes.push(<code key={key++}>{token.slice(1, -1)}</code>);
-    else if (token.startsWith("[")) {
-      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token);
-      const href = link ? safeMarkdownHref(link[2]) : null;
-      nodes.push(link && href ? <a key={key++} href={href} target="_blank" rel="noreferrer noopener">{link[1]}</a> : token);
-    } else if (token.startsWith("**")) nodes.push(<strong key={key++}>{token.slice(2, -2)}</strong>);
-    else nodes.push(<em key={key++}>{token.slice(1, -1)}</em>);
-    last = match.index + token.length;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
-  return nodes.length === 0 ? text : nodes.length === 1 ? nodes[0] : nodes;
-}
+export const safeMarkdownHref = safeContentHref;
 
 let mermaidInitialized = false;
 
@@ -115,10 +91,10 @@ function renderBlocks(value: string, styles: ReturnType<typeof useStyles>): Reac
   let ordered = false;
   let fence: string | null = null;
   let fenceLines: string[] = [];
-  const flushParagraph = () => { if (paragraph.length) { nodes.push(<p key={`p-${nodes.length}`}>{renderInline(paragraph.join(" "))}</p>); paragraph = []; } };
+  const flushParagraph = () => { if (paragraph.length) { nodes.push(<p key={`p-${nodes.length}`}>{renderRestrictedMarkdownInline(paragraph.join(" "))}</p>); paragraph = []; } };
   const flushList = () => {
     if (!items.length) return;
-    const children = items.map((item, index) => <li key={index}>{renderInline(item)}</li>);
+    const children = items.map((item, index) => <li key={index}>{renderRestrictedMarkdownInline(item)}</li>);
     nodes.push(ordered ? <ol key={`ol-${nodes.length}`}>{children}</ol> : <ul key={`ul-${nodes.length}`}>{children}</ul>);
     items = [];
   };
@@ -150,11 +126,11 @@ function renderBlocks(value: string, styles: ReturnType<typeof useStyles>): Reac
         rows.push(row); index += 1;
       }
       index -= 1;
-      nodes.push(<div key={`t-${nodes.length}`} className={styles.tableWrap}><table className={styles.table}><thead><tr>{headers.map((header, cell) => <th key={cell}>{renderInline(header)}</th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, cell) => <td key={cell}>{renderInline(value)}</td>)}</tr>)}</tbody></table></div>);
+      nodes.push(<div key={`t-${nodes.length}`} className={styles.tableWrap}><table className={styles.table}><thead><tr>{headers.map((header, cell) => <th key={cell}>{renderRestrictedMarkdownInline(header)}</th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, cell) => <td key={cell}>{renderRestrictedMarkdownInline(value)}</td>)}</tr>)}</tbody></table></div>);
       continue;
     }
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
-    if (heading) { flushParagraph(); flushList(); const Tag = `h${heading[1].length}` as "h1" | "h2" | "h3" | "h4"; nodes.push(<Tag key={`h-${nodes.length}`}>{renderInline(heading[2])}</Tag>); continue; }
+    if (heading) { flushParagraph(); flushList(); const Tag = `h${heading[1].length}` as "h1" | "h2" | "h3" | "h4"; nodes.push(<Tag key={`h-${nodes.length}`}>{renderRestrictedMarkdownInline(heading[2])}</Tag>); continue; }
     const numbered = /^\d+\.\s+(.*)$/.exec(line);
     if (numbered) { flushParagraph(); if (!ordered) flushList(); ordered = true; items.push(numbered[1]); continue; }
     const bullet = /^[-*]\s+(.*)$/.exec(line);

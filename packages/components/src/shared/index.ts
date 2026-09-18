@@ -1,5 +1,6 @@
 export * from "./definition";
 export * from "./agent-facing";
+export * from "./provider-set";
 export {
   createAgentFacingCapabilityCatalog,
 } from "./component-authoring-internal";
