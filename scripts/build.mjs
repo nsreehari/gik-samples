@@ -16,8 +16,9 @@ function run(command, args) {
   });
 }
 
+await run(process.execPath, [npmCli, "run", "build", "--workspace", "gik-components"]);
+
 await Promise.all([
-  run(process.execPath, [npmCli, "run", "build", "--workspace", "gik-components"]),
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
   run(process.execPath, ["scripts/validate-vendored-packages.mjs"]),
   run(process.execPath, [npmCli, "run", "finbook:build"]),

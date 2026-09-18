@@ -7,6 +7,15 @@ const repositoryRoot = resolve(import.meta.dirname, "..");
 const vendorRoot = join(repositoryRoot, "vendor", "gik-packages");
 const packageJson = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
 const manifest = JSON.parse(await readFile(join(vendorRoot, "manifest.json"), "utf8"));
+const expectedVendoredPackages = new Set([
+  "gik-agent-lifecycle-exp",
+  "gik-blueprint-agent-host",
+]);
+const allowedWorkspaceGikDependencies = new Set(["gik-components"]);
+
+function isVendoredRootDependency(value) {
+  return typeof value === "string" && value.startsWith("file:vendor/gik-packages/");
+}
 
 if (manifest.format !== "gik-vendored-packages/1") {
   throw new Error(`Unsupported vendored package manifest '${manifest.format}'.`);
@@ -18,6 +27,9 @@ if (!/^[0-9a-f]{40}$/.test(manifest.sourceCommit)) {
 const manifestNames = new Set();
 const manifestVersions = new Map();
 for (const artifact of manifest.packages) {
+  if (!expectedVendoredPackages.has(artifact.name)) {
+    throw new Error(`Unexpected vendored package '${artifact.name}'.`);
+  }
   if (manifestNames.has(artifact.name)) {
     throw new Error(`Duplicate vendored package '${artifact.name}'.`);
   }
@@ -36,7 +48,7 @@ for (const artifact of manifest.packages) {
     throw new Error(`Vendored package '${artifact.name}' does not match its manifest.`);
   }
 
-  const listing = spawnSync("tar", ["-tzf", archive], { encoding: "utf8" });
+  const listing = spawnSync("tar", ["-tzf", artifact.file], { cwd: vendorRoot, encoding: "utf8" });
   if (listing.status !== 0) {
     throw new Error(`Unable to inspect vendored package '${artifact.name}'.`);
   }
@@ -45,8 +57,14 @@ for (const artifact of manifest.packages) {
   }
 }
 
+for (const packageName of expectedVendoredPackages) {
+  if (!manifestNames.has(packageName)) {
+    throw new Error(`Expected vendored package '${packageName}' is missing from the manifest.`);
+  }
+}
+
 const localGikDependencies = Object.entries(packageJson.dependencies)
-  .filter(([name, value]) => name.startsWith("gik-") && String(value).startsWith("file:"));
+  .filter(([name, value]) => name.startsWith("gik-") && isVendoredRootDependency(value));
 for (const [name] of localGikDependencies) {
   if (!manifestNames.has(name)) throw new Error(`Local GIK dependency '${name}' is missing from the manifest.`);
 }
@@ -57,6 +75,17 @@ if (localGikDependencies.length !== manifest.packages.length) {
 const componentsJson = JSON.parse(
   await readFile(join(repositoryRoot, "packages", "components", "package.json"), "utf8"),
 );
+const mcpJson = JSON.parse(
+  await readFile(join(repositoryRoot, "packages", "mcp-server", "package.json"), "utf8"),
+);
+
+if (mcpJson.dependencies?.["gik-agent-lifecycle-exp"] !== "file:../../vendor/gik-packages/gik-agent-lifecycle-exp-0.1.1.tgz") {
+  throw new Error("packages/mcp-server must consume the vendored gik-agent-lifecycle-exp archive.");
+}
+if (String(mcpJson.dependencies?.["gik-durable-runtime"]) !== ">=0.9.0") {
+  throw new Error("packages/mcp-server must consume the published gik-durable-runtime package.");
+}
+
 const rootGikDependencies = Object.entries(packageJson.dependencies)
   .filter(([name]) => name.startsWith("gik-"));
 for (const [name, version] of rootGikDependencies) {
@@ -68,6 +97,7 @@ for (const [name, version] of rootGikDependencies) {
     throw new Error(`'${name}' must use one version across the workspace.`);
   }
 }
+
 const registryGikDependencies = Object.entries(packageJson.dependencies)
   .filter(([name, value]) => name.startsWith("gik-") && !String(value).startsWith("file:"));
 for (const [name] of registryGikDependencies) {
@@ -83,6 +113,15 @@ for (const [name, override] of Object.entries(packageJson.overrides ?? {})) {
   const expectedOverride = localGikVersions.has(name) ? `$${name}` : registryGikVersions.get(name);
   if (expectedOverride !== override) {
     throw new Error(`Override for '${name}' must match the declared dependency version.`);
+  }
+}
+
+for (const [name, value] of Object.entries(packageJson.dependencies)) {
+  if (!name.startsWith("gik-")) continue;
+  if (allowedWorkspaceGikDependencies.has(name)) continue;
+  if (!String(value).startsWith("file:")) continue;
+  if (!manifestNames.has(name)) {
+    throw new Error(`Only explicitly vendored GIK packages may use file dependencies. '${name}' is not allowed.`);
   }
 }
 

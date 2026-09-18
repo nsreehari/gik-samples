@@ -29,8 +29,7 @@ jobs:
         run: npm install --global npm@11.19.0
 
       - name: Install dependencies
-        # npm install (not npm ci) tolerates transitive optional-dependency
-        # lockfile drift (e.g. platform-specific wasm bindings), matching ci.yml.
+        # Use npm install because the repo does not commit package-lock files.
         run: npm install --no-audit --no-fund
 
       - name: Validate vendored packages

@@ -38,5 +38,5 @@ When the task is clear:
 
 Never merge the pull request, push to `main`, expose secrets, publish packages,
 create releases, or work on more than one issue in a session. Workflow,
-dependency, vendored-package, security, release, and agent-policy changes always
-require maintainer review.
+dependency, package-distribution, security, release, and agent-policy changes
+always require maintainer review.

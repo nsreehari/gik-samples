@@ -7,13 +7,7 @@ import { gzipSync } from "node:zlib";
 
 const packages = [
   "agent-lifecycle-exp",
-  "blueprint",
   "blueprint-agent-host",
-  "controlface",
-  "durable-runtime",
-  "evaluators",
-  "kernel",
-  "react",
 ];
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
@@ -106,11 +100,7 @@ try {
 
     const finalArchive = join(outputRoot, packed.filename);
     const tarArchive = join(workDirectory, "package.tar");
-    run(
-      "tar",
-      ["--mtime", "@0", "-cf", tarArchive, "package"],
-      { cwd: workDirectory },
-    );
+    run("tar", ["--mtime", "@0", "-cf", tarArchive, "package"], { cwd: workDirectory });
     await writeFile(finalArchive, gzipSync(await readFile(tarArchive), { level: 9, mtime: 0 }));
     artifacts.push({
       name: packed.name,
@@ -128,10 +118,7 @@ try {
     excluded: ["source map files", "sourceMappingURL comments"],
     packages: artifacts,
   };
-  await writeFile(
-    join(outputRoot, "manifest.json"),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
+  await writeFile(join(outputRoot, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }
