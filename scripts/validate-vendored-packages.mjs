@@ -82,7 +82,7 @@ const mcpJson = JSON.parse(
 if (mcpJson.dependencies?.["gik-agent-lifecycle-exp"] !== "file:../../vendor/gik-packages/gik-agent-lifecycle-exp-0.1.1.tgz") {
   throw new Error("packages/mcp-server must consume the vendored gik-agent-lifecycle-exp archive.");
 }
-if (String(mcpJson.dependencies?.["gik-durable-runtime"]) !== "0.8.1") {
+if (String(mcpJson.dependencies?.["gik-durable-runtime"]) !== ">=0.9.0") {
   throw new Error("packages/mcp-server must consume the published gik-durable-runtime package.");
 }
 
