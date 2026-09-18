@@ -197,11 +197,10 @@ product endpoint is configured by default.
 ## Validate
 
 ```sh
-node scripts/vendor-gik-durable-runtime.mjs --verify
 node scripts/smoke-registered-services.js
 node --test test/*.test.js
 ```
 
-The package vendors the same `gik-durable-runtime` version used by GIK
-Samples. The verify command checks its SHA-256 without invoking a package
-manager.
+This package consumes the published `gik-durable-runtime` package, but still
+uses the repo-level vendored `gik-agent-lifecycle-exp` archive until that GIK
+package enters the public release set.

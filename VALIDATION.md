@@ -14,16 +14,16 @@ npm ci --no-audit --no-fund
 `npm ci` installs exactly the versions recorded in `package-lock.json`, so the
 same commit always produces the same dependency tree.
 
-## 2. Validate the vendored packages
+## 2. Validate vendored and published GIK package resolution
 
 ```sh
 npm run validate:vendor
 ```
 
-This verifies the provenance, checksums, and contents of the committed archives
-under `vendor/gik-packages`. Vendored package integrity is also checked during
-the production build, so this step is a fast standalone check that fails early
-before the longer build.
+This verifies that only the still-unpublished `gik-agent-lifecycle-exp` and
+`gik-blueprint-agent-host` packages resolve from vendored tarballs, that those
+archives match the committed manifest, and that the rest of the `gik-*`
+workspace stays on published package versions.
 
 ## 3. Build
 
@@ -31,8 +31,8 @@ before the longer build.
 npm run build
 ```
 
-The build compiles `gik-components`, validates the bootstrap catalog and the
-vendored packages, and produces the browser app and Storybook output.
+The build compiles `gik-components`, validates the bootstrap catalog and GIK
+package resolution, and produces the browser app and Storybook output.
 
 ## 4. Typecheck
 

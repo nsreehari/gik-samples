@@ -18,9 +18,10 @@ the copied scripts, or reviewed and applied through the loopback companion.
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
 Storybook is published at `/storybook/`. The repository consumers resolve
-`gik-components` from the local workspace source package, and only the
-unpublished `gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` packages
-still resolve from integrity-checked archives under `vendor/gik-packages`.
+`gik-components` from the local workspace source package. The still-unpublished
+`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` packages resolve from
+integrity-checked archives under `vendor/gik-packages`, while the remaining
+`gik-*` dependencies resolve from published npm packages.
 
 Blueprint service declarations own their concrete non-secret configuration,
 including service endpoints and logical `credentialRef` values. The browser
@@ -74,9 +75,10 @@ server-reviewed plans; Azure tokens never reach the browser. See
 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
 HTTP bearer, and download-fallback details.
 
-The committed vendored packages are validated during every production build. Run
-`npm run validate:vendor` directly to verify their provenance, checksums, and
-contents without building the application.
+The `npm run validate:vendor` check is still part of the build flow. It verifies
+that only the still-unpublished GIK packages remain vendored, that their
+archives match the committed manifest, and that the published GIK package
+versions stay consistent across the workspace.
 
 ## Validation
 

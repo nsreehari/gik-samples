@@ -44,7 +44,9 @@
     "react-dom": "^18.3.1"
   },
   "overrides": {
+    "gik-agent-lifecycle-exp": "$gik-agent-lifecycle-exp",
     "gik-blueprint": "0.2.2",
+    "gik-blueprint-agent-host": "$gik-blueprint-agent-host",
     "gik-controlface": "0.2.0",
     "gik-durable-runtime": "0.8.1",
     "gik-evaluators": "0.1.3",
