@@ -47,17 +47,17 @@ and components consume through well-defined props and events.
 ## Development
 
 ```sh
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
 npm run dev
 ```
 
-The MCP server is a standalone package with its own lockfile. In another
-terminal, install that package, copy `.env.template` to `.env`, configure
+The MCP server is a standalone package. In another terminal, install that
+package, copy `.env.template` to `.env`, configure
 `GIK_WORKSPACE_ROOTS` and `GIK_ALLOWED_ORIGINS`, then start it:
 
 ```sh
 cd packages/mcp-server
-npm ci
+npm install
 node src/index.js --transport streamable-http
 ```
 

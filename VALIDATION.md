@@ -5,14 +5,14 @@ the order below; each step assumes the previous one succeeded.
 
 Use Node.js 22 or later.
 
-## 1. Install locked dependencies
+## 1. Install dependencies
 
 ```sh
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
 ```
 
-`npm ci` installs exactly the versions recorded in `package-lock.json`, so the
-same commit always produces the same dependency tree.
+This repository resolves dependencies from the current published packages and
+vendored exceptions instead of committed npm lockfiles.
 
 ## 2. Validate vendored and published GIK package resolution
 
@@ -51,7 +51,7 @@ npm test
 
 Runs the Vitest suite configured in `vitest.config.ts`.
 
-The MCP server in `packages/mcp-server` has its own lockfile and test command;
+The MCP server in `packages/mcp-server` has its own install and test command;
 see [`packages/mcp-server/README.md`](packages/mcp-server/README.md).
 
 Do not weaken, skip, or make failing validation non-blocking. Report every

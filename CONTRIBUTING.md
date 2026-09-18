@@ -17,7 +17,7 @@ experiences.
 Use Node.js 22 or later:
 
 ```sh
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
 npm run dev
 ```
 

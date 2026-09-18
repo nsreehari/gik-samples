@@ -54,8 +54,7 @@ The required GIK packages resolve from normal dependencies, with
 `gik-components` linked from the local repository source package. The
 compatible XYFlow pair remains vendored under `vendor/npm-packages` because
 the proxy currently serves an incompatible React/System package combination.
-Other dependencies remain normal npm ranges, and `npm install` generates the
-application lockfile.
+Other dependencies remain normal npm ranges.
 
 Start the SQLite-backed MCP server and browser host together:
 

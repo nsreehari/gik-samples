@@ -6,7 +6,7 @@ These instructions apply to every coding agent working in this repository.
 
 - This is the public samples and Components repository for GIK.
 - Use Node.js 22 or later.
-- Install locked dependencies with `npm ci --no-audit --no-fund`.
+- Install dependencies with `npm install --no-audit --no-fund`.
 - Do not resolve GIK packages from sibling checkouts.
 - Keep `gik-components` on the local workspace package.
 - Only `gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` should remain

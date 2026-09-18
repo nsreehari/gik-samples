@@ -19,12 +19,12 @@ No credential is accepted from or returned to the browser.
 
 ## Install
 
-The directory is a standalone package with its own lockfile, so it can be
-copied independently from the rest of this repository.
+The directory is a standalone package, so it can be copied independently from
+the rest of this repository.
 
 ```sh
 cd packages/mcp-server
-npm ci
+npm install
 ```
 
 Foundry is optional. Install its SDK peers only when it is needed:
