@@ -1,19 +1,9 @@
-# Vendored GIK packages
+This directory contains the minimal vendored GIK packages that are still not in
+the public GIK npm release set.
 
-These package archives temporarily decouple `gik-samples` from a sibling GIK
-checkout for the GIK packages that are not published to the public registry.
-Every published `gik-*` dependency now resolves from npm; only
-`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` remain
-vendored here.
+Current exceptions:
+- `gik-agent-lifecycle-exp`
+- `gik-blueprint-agent-host`
 
-Run `npm run vendor:gik` with a clean `../gik-fresh` checkout, or set
-`GIK_SOURCE_DIR` to another GIK checkout. The generated manifest records the
-source commit and SHA-256 checksum of every archive.
-
-Source maps are excluded to keep the committed binary payload small. Runtime
-JavaScript, declarations, schemas, package metadata, documentation, licenses,
-and third-party notices remain in their package archives.
-
-This is a rollout bridge, not the long-term distribution model. Replace each
-remaining archive with a published package version once that package is
-released publicly.
+All other `gik-*` packages used by this repository must resolve from the
+published npm packages.
