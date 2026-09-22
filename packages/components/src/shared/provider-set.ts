@@ -92,8 +92,8 @@ function mergeDefinitions(providers: readonly ProjectionProvider[]): Record<stri
   for (const provider of providers) {
     const definitions = provider.definitions;
     if (!definitions) continue;
-    for (const [name, definition] of Object.entries(definitions)) {
-      merged[name] = definition;
+    for (const definition of Object.values(definitions)) {
+      merged[definition.capability] = definition;
     }
   }
   return merged;

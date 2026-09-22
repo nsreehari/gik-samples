@@ -102,6 +102,7 @@ test("primitive entry point exports the complete primitive authoring API only", 
 
 test("root provider-set API supports empty scoped kits and mixed-provider resolution", () => {
   const providerSet = rootEntryPoint.createProjectionProviderSet([
+    rootEntryPoint.fluentProjectionProvider,
     rootEntryPoint.primitiveProjectionProvider,
     rootEntryPoint.semanticProjectionProvider,
   ]);
@@ -115,4 +116,34 @@ test("root provider-set API supports empty scoped kits and mixed-provider resolu
 
   const scopedKit = providerSet.getKit(["primitive:form", "semantic:event-series"]);
   assert.deepEqual(scopedKit.capabilities, ["primitive:form", "semantic:event-series"]);
+
+  const collidingNames = providerSet.getKit([
+    "fluent:list",
+    "primitive:list",
+    "fluent:table",
+    "primitive:table",
+  ]);
+  assert.deepEqual(collidingNames.capabilities, [
+    "fluent:list",
+    "primitive:list",
+    "fluent:table",
+    "primitive:table",
+  ]);
+});
+
+test("provider sets use the last definition for a duplicate qualified capability", () => {
+  const replacement = {
+    ...rootEntryPoint.primitiveComponentDefinitions.list,
+    summary: "Replacement primitive list",
+  };
+  const providerSet = rootEntryPoint.createProjectionProviderSet([
+    rootEntryPoint.primitiveProjectionProvider,
+    rootEntryPoint.defineProjectionProvider({
+      id: "primitive",
+      definitions: { list: replacement },
+    }),
+  ]);
+
+  assert.equal(providerSet.definitions()["primitive:list"], replacement);
+  assert.equal(providerSet.describe("primitive:list").summary, "Replacement primitive list");
 });
