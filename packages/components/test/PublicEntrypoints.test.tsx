@@ -145,5 +145,8 @@ test("provider sets use the last definition for a duplicate qualified capability
   ]);
 
   assert.equal(providerSet.definitions()["primitive:list"], replacement);
-  assert.equal(providerSet.describe("primitive:list").summary, "Replacement primitive list");
+  assert.equal(
+    providerSet.list().find(({ capability }) => capability === "primitive:list")?.summary,
+    "Replacement primitive list",
+  );
 });
