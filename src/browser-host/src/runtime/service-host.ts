@@ -28,6 +28,7 @@ import type { BlueprintProposalStore } from "gik-blueprint-agent-host";
 import { createBlueprintServiceResolver } from "../../../shared/blueprint-service-resolver";
 import { createSampleCatalogBlueprintRegistry } from "../../../bootstrap/catalog/blueprint-catalog";
 import { runWithBrowserServiceDependencies } from "./service-dependency-access";
+import { browserProjectionProviders } from "./provider-registry";
 import {
   bindBlueprintStorage,
   type BlueprintStorageConnectionFactory,
@@ -129,7 +130,7 @@ function createBlueprintServiceHost(
     }),
     state,
     expression: new JsonataExpressionProvider({ safe: true }),
-    agentTools: [...createSampleAgentTools(), ...agentLifecycle.tools],
+    agentTools: [...createSampleAgentTools(browserProjectionProviders), ...agentLifecycle.tools],
     inProgressProposalSettlement: agentLifecycle.settle,
     ...hostPolicy,
   });

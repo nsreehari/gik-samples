@@ -4,6 +4,7 @@ import type {
 	ServiceAgentTool,
 	ServiceAgentToolExecutionContext,
 } from "gik-controlface/services";
+import type { AgentTool } from "gik-agent-lifecycle-exp";
 
 import {
 	createRequestAgentTools,
@@ -163,4 +164,57 @@ test("Foundry describe preserves the full catalog only when acceptedCapabilities
 		kind: "catalog-capabilities",
 		capabilities: [],
 	}), { capabilities: {} });
+});
+
+test("Foundry request tools prefer a scoped describe tool when the host provides one", async () => {
+	let scopedTo: readonly string[] | undefined;
+	let receivedArgs: unknown;
+	const describe: ServiceAgentTool & {
+		scopeToCapabilities?: (acceptedCapabilities: readonly string[] | undefined) => Promise<AgentTool>;
+	} = {
+		name: "describe",
+		description: "Describe capabilities.",
+		inputSchema: {},
+		lifecycle: "agent",
+		handler: () => ({ capabilities: { "primitive:markdown": {} } }),
+		scopeToCapabilities: async (acceptedCapabilities) => {
+			scopedTo = acceptedCapabilities;
+			return {
+				name: "describe",
+				description: "Describe capabilities.",
+				inputSchema: {},
+				lifecycle: "agent",
+				handler: async (args) => {
+					receivedArgs = args;
+					return { capabilities: { "semantic:narrative": {} } };
+				},
+			};
+		},
+	};
+	const context: ServiceAgentToolExecutionContext = {
+		requestId: "request-1",
+		service: "service",
+		operation: "chat",
+		providerId: "provider",
+		capabilityId: "capability",
+	};
+	const [tool] = createRequestAgentTools([describe], {
+		acceptedCapabilities: ["semantic:narrative"],
+	}, context);
+
+	const result = await tool.handler({
+		kind: "catalog-capabilities",
+		capabilities: [],
+	});
+
+	assert.deepEqual(scopedTo, ["semantic:narrative"]);
+	assert.deepEqual(receivedArgs, {
+		kind: "catalog-capabilities",
+		capabilities: ["semantic:narrative"],
+	});
+	assert.deepEqual(result, {
+		capabilities: {
+			"semantic:narrative": {},
+		},
+	});
 });

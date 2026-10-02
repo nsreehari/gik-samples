@@ -205,6 +205,15 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Workflow transition rules must be inferred by the component"
       ]
     },
+    "primitive:content": {
+      "for": [
+        "Text needs an explicit, governed formatting policy"
+      ],
+      "notFor": [
+        "Full document Markdown is required; use primitive:markdown",
+        "Source code must be preserved verbatim; use primitive:source-viewer"
+      ]
+    },
     "primitive:container": {
       "for": [
         "Child views need declarative spatial composition",
@@ -314,6 +323,15 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "The data has no stable node identities"
       ]
     },
+    "primitive:list": {
+      "for": [
+        "Peer items or ordered steps should be scanned as a list"
+      ],
+      "notFor": [
+        "Items need independent actions or workflow state",
+        "Content is tabular"
+      ]
+    },
     "primitive:math-challenge": {
       "for": [
         "A destructive action requires deliberate confirmation"
@@ -366,6 +384,15 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       "notFor": [
         "Users must edit source content",
         "The component would need to calculate or interpret changes"
+      ]
+    },
+    "primitive:table": {
+      "for": [
+        "Values need comparison across stable columns"
+      ],
+      "notFor": [
+        "Rows require editing; use primitive:editable-table",
+        "Content is better expressed as prose or a list"
       ]
     },
     "primitive:timer-button": {

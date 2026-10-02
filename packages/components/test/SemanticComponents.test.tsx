@@ -242,8 +242,9 @@ test("public registries separate component layers and expose an aggregate", () =
   const semantic = ["argument", "assessment", "change-proposal", "consistency-case", "decision", "entity-set", "event-series", "evidence-case", "finding-set", "measure-set", "milestones", "narrative", "process", "relationship-set", "work-set"];
   const security = ["attack-path"];
   const software = ["source-comparison", "source-findings"];
-  const primitives = ["access-gate", "alert", "chart", "collection-board", "container", "datetime", "editable-table", "file-download", "file-input", "file-list", "form", "gantt", "graph-diagram", "growing-container", "infinite-canvas", "markdown", "math-challenge", "metric", "note", "pane-with-trigger", "property", "source-viewer", "timer-button", "todo-list"];
-  const fluent = ["badge", "button", "chips", "data-grid", "dialog", "dropdown", "list", "panel", "persona", "row", "searchbox", "spinner", "switch", "tab-bar", "table", "text", "text-field", "textarea", "toggle", "toolbar"];
+  const primitives = ["access-gate", "alert", "chart", "collection-board", "container", "content", "datetime", "editable-table", "file-download", "file-input", "file-list", "form", "gantt", "graph-diagram", "growing-container", "infinite-canvas", "list", "markdown", "math-challenge", "metric", "note", "pane-with-trigger", "property", "source-viewer", "table", "timer-button", "todo-list"];
+  const fluent = ["badge", "button", "chips", "data-grid", "dialog", "dropdown", "list", "panel", "persona", "row", "searchbox", "spinner", "stack", "stack-item", "switch", "tab-bar", "table", "text", "text-field", "textarea", "toggle", "toolbar"];
+  const aggregate = [...new Set([...fluent, ...primitives, ...semantic, ...security, ...software])].sort();
   assert.deepEqual(Object.keys(semanticComponentViews).sort(), semantic);
   assert.deepEqual(Object.keys(semanticComponentDefinitions).sort(), semantic);
   assert.deepEqual(Object.keys(securityComponentViews).sort(), security);
@@ -252,8 +253,8 @@ test("public registries separate component layers and expose an aggregate", () =
   assert.deepEqual(Object.keys(softwareComponentDefinitions).sort(), software);
   assert.deepEqual(Object.keys(primitiveComponentViews).sort(), primitives);
   assert.deepEqual(Object.keys(primitiveComponentDefinitions).sort(), primitives);
-  assert.deepEqual(Object.keys(componentViews).sort(), [...fluent, ...primitives, ...semantic, ...security, ...software].sort());
-  assert.deepEqual(Object.keys(componentDefinitions).sort(), [...fluent, ...primitives, ...semantic, ...security, ...software].sort());
+  assert.deepEqual(Object.keys(componentViews).sort(), aggregate);
+  assert.deepEqual(Object.keys(componentDefinitions).sort(), aggregate);
   assert.equal(chartDefinition.capability, "primitive:chart");
   assert.deepEqual(growingContainerDefinition.slots, ["children"]);
   assert.deepEqual(timerButtonDefinition.events, ["press"]);
@@ -309,10 +310,11 @@ test("non-portal components forward root className and style overrides in SSR", 
     const trial = definition.materializeTrial();
     trial.props.className = "callsite-override";
     trial.props.style = { maxWidth: "40rem" };
+    const children = definition.capability === "fluent:stack-item" ? "Child" : undefined;
 
     assert.equal(definition.validate(trial.props).ok, true, definition.capability);
     const Component = definition.component;
-    const markup = renderToStaticMarkup(<Component node={trial} emit={() => {}} children={undefined} />);
+    const markup = renderToStaticMarkup(<Component node={trial} emit={() => {}} children={children} />);
     assert.match(markup, /class="[^"]*callsite-override[^"]*"/, definition.capability);
     assert.match(markup, /style="[^"]*max-width:40rem[^"]*"/, definition.capability);
   }

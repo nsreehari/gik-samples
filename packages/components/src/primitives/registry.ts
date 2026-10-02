@@ -5,6 +5,7 @@ import { AccessGate, accessGateDefinition } from "./access-gate";
 import { Alert, alertDefinition } from "./alert";
 import { Chart, chartDefinition } from "./chart";
 import { CollectionBoard, collectionBoardDefinition } from "./collection-board";
+import { Content, contentDefinition } from "./content";
 import { ContainerPrimitive, containerDefinition } from "./container";
 import { DateTime, dateTimeDefinition } from "./datetime";
 import { PaneWithTrigger, paneWithTriggerDefinition } from "./pane-with-trigger";
@@ -19,10 +20,12 @@ import { GrowingContainerPrimitive, growingContainerDefinition } from "./growing
 import { InfiniteCanvasPrimitive, infiniteCanvasDefinition } from "./infinite-canvas";
 import { MathChallenge, mathChallengeDefinition } from "./math-challenge";
 import { Markdown, markdownDefinition } from "./markdown";
+import { List, listDefinition } from "./list";
 import { Metric, metricDefinition } from "./metric";
 import { Note, noteDefinition } from "./note";
 import { Property, propertyDefinition } from "./property";
 import { SourceViewer, sourceViewerDefinition } from "./source-viewer";
+import { Table, tableDefinition } from "./table";
 import { TimerButton, timerButtonDefinition } from "./timer-button";
 import { TodoList, todoListDefinition } from "./todo-list";
 
@@ -31,6 +34,7 @@ export const primitiveComponentViews: Record<string, ProjectionView> = {
   alert: Alert,
   chart: Chart,
   "collection-board": CollectionBoard,
+  content: Content,
   container: ContainerPrimitive,
   datetime: DateTime,
   "pane-with-trigger": PaneWithTrigger,
@@ -45,10 +49,12 @@ export const primitiveComponentViews: Record<string, ProjectionView> = {
   "infinite-canvas": InfiniteCanvasPrimitive,
   "math-challenge": MathChallenge,
   markdown: Markdown,
+  list: List,
   metric: Metric,
   note: Note,
   property: Property,
   "source-viewer": SourceViewer,
+  table: Table,
   "timer-button": TimerButton,
   "todo-list": TodoList,
 };
@@ -58,6 +64,7 @@ export const primitiveComponentDefinitions = {
   alert: alertDefinition,
   chart: chartDefinition,
   "collection-board": collectionBoardDefinition,
+  content: contentDefinition,
   container: containerDefinition,
   datetime: dateTimeDefinition,
   "pane-with-trigger": paneWithTriggerDefinition,
@@ -72,10 +79,12 @@ export const primitiveComponentDefinitions = {
   "infinite-canvas": infiniteCanvasDefinition,
   "math-challenge": mathChallengeDefinition,
   markdown: markdownDefinition,
+  list: listDefinition,
   metric: metricDefinition,
   note: noteDefinition,
   property: propertyDefinition,
   "source-viewer": sourceViewerDefinition,
+  table: tableDefinition,
   "timer-button": timerButtonDefinition,
   "todo-list": todoListDefinition,
 } as const;

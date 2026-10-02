@@ -54,8 +54,9 @@ export interface ComponentAgentKit {
 
 interface ComponentAuthoringApiConfig {
   definitions: Record<string, DeclarativeComponentDefinition>;
-  kind: "semantic" | "primitive" | "fluent" | "security" | "software";
-  toolKind: "Semantic" | "Primitive" | "Fluent" | "Security" | "Software";
+  kind: string;
+  toolKind: string;
+  allowEmptySelection?: boolean;
 }
 
 const genericProps = new Set(["className", "style", "layout"]);
@@ -164,7 +165,10 @@ export function createComponentAuthoringApi(config: ComponentAuthoringApiConfig)
 
   const selectDefinitions = (components?: readonly string[]): Array<[string, DeclarativeComponentDefinition]> => {
     if (components === undefined) return definitions;
-    if (components.length === 0) throw new Error(`At least one ${config.kind} component is required`);
+    if (components.length === 0) {
+      if (config.allowEmptySelection) return [];
+      throw new Error(`At least one ${config.kind} component is required`);
+    }
 
     const selected = new Map<string, [string, DeclarativeComponentDefinition]>();
     for (const component of components) {
