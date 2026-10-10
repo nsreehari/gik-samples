@@ -7,6 +7,10 @@
 - Make `GikComponentDeclarative` consume explicit projection providers so hosts
   supply built-in and application-owned namespaces through the same provider
   array contract.
+- Merge repeated provider namespaces by capability so partial overrides retain
+  unrelated runtime views and descriptors.
+- Regenerate the published agent-facing catalog from the complete component
+  registry and verify that it stays synchronized.
 
 ## 0.2.1
 

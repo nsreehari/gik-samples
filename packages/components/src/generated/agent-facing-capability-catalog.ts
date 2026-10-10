@@ -101,6 +101,22 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "Progress is determinate or no operation is active"
       ]
     },
+    "fluent:stack": {
+      "for": [
+        "Authored children need governed horizontal or vertical flex layout"
+      ],
+      "notFor": [
+        "Content should follow ordinary document flow"
+      ]
+    },
+    "fluent:stack-item": {
+      "for": [
+        "One Stack child needs explicit growth, shrink, order, or alignment behavior"
+      ],
+      "notFor": [
+        "The child uses the parent Stack defaults"
+      ]
+    },
     "fluent:switch": {
       "for": [
         "A binary setting benefits from a track-and-thumb control"
@@ -323,15 +339,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "The data has no stable node identities"
       ]
     },
-    "primitive:list": {
-      "for": [
-        "Peer items or ordered steps should be scanned as a list"
-      ],
-      "notFor": [
-        "Items need independent actions or workflow state",
-        "Content is tabular"
-      ]
-    },
     "primitive:math-challenge": {
       "for": [
         "A destructive action requires deliberate confirmation"
@@ -349,6 +356,15 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       "notFor": [
         "The value is plain text; use fluent:text",
         "The source must be shown verbatim; use primitive:source-viewer"
+      ]
+    },
+    "primitive:list": {
+      "for": [
+        "Peer items or ordered steps should be scanned as a list"
+      ],
+      "notFor": [
+        "Items need independent actions or workflow state",
+        "Content is tabular"
       ]
     },
     "primitive:metric": {
@@ -420,6 +436,39 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       ],
       "notFor": [
         "Several positions merely differ without an authored inference structure"
+      ]
+    },
+    "semantic:assessment": {
+      "for": [
+        "Several checks or factors are combined into one overall judgment"
+      ],
+      "notFor": [
+        "Only one finding or comparison is being presented"
+      ]
+    },
+    "semantic:change-proposal": {
+      "for": [
+        "A correction is proposed for human review before a write is performed"
+      ],
+      "notFor": [
+        "The change has already been applied; use assessment or finding-set to report the result"
+      ]
+    },
+    "semantic:consistency-case": {
+      "for": [
+        "Two or more records or assertions are compared for agreement"
+      ],
+      "notFor": [
+        "A single record is being evaluated in isolation; use finding-set or assessment"
+      ]
+    },
+    "semantic:finding-set": {
+      "for": [
+        "Records are individual data-quality, reconciliation, or review findings"
+      ],
+      "notFor": [
+        "A single overall judgment is the subject; use assessment",
+        "Two records are being compared for agreement; use consistency-case"
       ]
     },
     "semantic:measure-set": {
@@ -740,9 +789,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
               "label": {
                 "type": "string"
               },
-              "description": {
-                "type": "string"
-              },
               "disabled": {
                 "type": "boolean"
               }
@@ -1027,10 +1073,7 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       },
       "slots": [
-        "trigger",
-        "header",
-        "body",
-        "footer"
+        "children"
       ],
       "emits": {
         "openChange": {
@@ -1187,6 +1230,9 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
               },
               "disabled": {
                 "type": "boolean"
+              },
+              "description": {
+                "type": "string"
               }
             }
           }
@@ -1544,6 +1590,211 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
           "label": "Loading incident data",
           "variant": "standard"
         }
+      }
+    },
+    "fluent:stack": {
+      "props": {
+        "horizontal": {
+          "type": "boolean"
+        },
+        "reversed": {
+          "type": "boolean"
+        },
+        "horizontalAlign": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "space-between",
+            "space-around",
+            "space-evenly",
+            "baseline",
+            "stretch"
+          ]
+        },
+        "verticalAlign": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "space-between",
+            "space-around",
+            "space-evenly",
+            "baseline",
+            "stretch"
+          ]
+        },
+        "verticalFill": {
+          "type": "boolean"
+        },
+        "disableShrink": {
+          "type": "boolean"
+        },
+        "grow": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "inherit",
+                "initial",
+                "unset"
+              ]
+            }
+          ]
+        },
+        "wrap": {
+          "type": "boolean"
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "childrenGap": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "maxHeight": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "maxWidth": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "padding": {
+              "type": [
+                "number",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "slots": [
+        "children"
+      ],
+      "constraints": [
+        "Use tokens for spacing and sizing",
+        "Wrap children only when overflow is expected"
+      ],
+      "example": {
+        "capability": "fluent:stack",
+        "props": {
+          "tokens": {
+            "childrenGap": 12
+          }
+        }
+      }
+    },
+    "fluent:stack-item": {
+      "props": {
+        "grow": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "inherit",
+                "initial",
+                "unset"
+              ]
+            }
+          ]
+        },
+        "shrink": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "inherit",
+                "initial",
+                "unset"
+              ]
+            }
+          ]
+        },
+        "disableShrink": {
+          "type": "boolean"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "stretch",
+            "baseline",
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "verticalFill": {
+          "type": "boolean"
+        },
+        "basis": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "order": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "margin": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "padding": {
+              "type": [
+                "number",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "slots": [
+        "children"
+      ],
+      "constraints": [
+        "Provide exactly one child",
+        "Use only as a direct child of fluent:stack"
+      ],
+      "example": {
+        "capability": "fluent:stack-item"
       }
     },
     "fluent:switch": {
@@ -2192,6 +2443,23 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "offLabel": {
           "type": "string"
         },
+        "disabled": {
+          "type": "boolean"
+        },
+        "ariaLabel": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ]
+        },
         "onIcon": {
           "type": "string",
           "enum": [
@@ -2211,23 +2479,6 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         },
         "offTitle": {
           "type": "string"
-        },
-        "disabled": {
-          "type": "boolean"
-        },
-        "ariaLabel": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "enum": [
-            "small",
-            "medium",
-            "large"
-          ]
         }
       },
       "variants": {
@@ -2974,6 +3225,49 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       }
     },
+    "primitive:content": {
+      "dataProps": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "variants": {
+        "plain-text": {
+          "summary": "Escaped text without Markdown interpretation.",
+          "useWhen": [
+            "Titles, labels, statuses, and identifiers"
+          ],
+          "default": true
+        },
+        "restricted-markdown-inline": {
+          "summary": "Inline emphasis, code, and safe links.",
+          "useWhen": [
+            "List items and table cells need light emphasis"
+          ]
+        },
+        "restricted-markdown-prose": {
+          "summary": "Paragraphs and simple lists with restricted inline formatting.",
+          "useWhen": [
+            "Summaries, card bodies, and evidence need readable prose"
+          ]
+        }
+      },
+      "constraints": [
+        "Use plain-text for labels and identifiers",
+        "Restricted variants do not support HTML, images, headings, tables, code fences, or diagrams"
+      ],
+      "example": {
+        "capability": "primitive:content",
+        "props": {
+          "variant": "restricted-markdown-inline"
+        },
+        "bindings": {
+          "value": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
     "primitive:container": {
       "props": {
         "gap": {
@@ -3091,14 +3385,14 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       },
       "props": {
+        "label": {
+          "type": "string"
+        },
         "hourFormat": {
           "enum": [
             "24",
             "12"
           ]
-        },
-        "label": {
-          "type": "string"
         },
         "showSeconds": {
           "type": "boolean"
@@ -3226,7 +3520,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       },
       "slots": [
-        "children"
+        "trigger",
+        "header",
+        "body",
+        "footer"
       ],
       "emits": {
         "openChange": {
@@ -4745,6 +5042,36 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         }
       }
     },
+    "primitive:list": {
+      "dataProps": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "props": {
+        "ordered": {
+          "type": "boolean"
+        }
+      },
+      "constraints": [
+        "Supply strings through items",
+        "Items allow emphasis, inline code, and safe links but not block Markdown"
+      ],
+      "example": {
+        "capability": "primitive:list",
+        "props": {
+          "ordered": true
+        },
+        "bindings": {
+          "items": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
     "primitive:metric": {
       "dataProps": {
         "value": {
@@ -4973,6 +5300,50 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         },
         "bindings": {
           "lines": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
+    "primitive:table": {
+      "dataProps": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "props": {
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ariaLabel": {
+          "type": "string"
+        }
+      },
+      "constraints": [
+        "Headers are plain text",
+        "Cells allow emphasis, inline code, and safe links",
+        "Keep every row aligned with the header order"
+      ],
+      "example": {
+        "capability": "primitive:table",
+        "props": {
+          "headers": [
+            "Finding",
+            "Result"
+          ],
+          "ariaLabel": "Validation results"
+        },
+        "bindings": {
+          "rows": {
             "from": "<state-path>"
           }
         }
@@ -5390,6 +5761,670 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         },
         "bindings": {
           "argument": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
+    "semantic:assessment": {
+      "dataProps": {
+        "assessment": {
+          "type": "object"
+        }
+      },
+      "props": {
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "spec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "emptyText": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "status",
+                "summary"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "confidence": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "checkFields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "outcome"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "explanation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "toneMap": {
+              "type": "object",
+              "additionalProperties": {
+                "enum": [
+                  "ready",
+                  "not-ready",
+                  "attention",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "variants": {
+        "summary": {
+          "summary": "Overall judgment plus contributing checks and their outcomes.",
+          "useWhen": [
+            "The reasoning behind the overall judgment matters"
+          ],
+          "default": true
+        },
+        "compact": {
+          "summary": "Overall judgment only.",
+          "useWhen": [
+            "The assessment appears in a scanning list"
+          ]
+        }
+      },
+      "constraints": [
+        "Map title, status, and summary fields for the overall judgment",
+        "Map contributing checks with their own outcome and explanation",
+        "Never infer overall status from checks; use the authored status"
+      ],
+      "example": {
+        "capability": "semantic:assessment",
+        "props": {
+          "variant": "summary",
+          "checks": [
+            {
+              "name": "Lot allocation reconciles",
+              "result": "failed",
+              "note": "Allocated quantity does not equal sold quantity for sale:2026-013."
+            },
+            {
+              "name": "Cost basis complete",
+              "result": "failed",
+              "note": "lot:2025-011 has no recorded cost basis."
+            },
+            {
+              "name": "Broker statement matched",
+              "result": "pending",
+              "note": "Awaiting the September broker statement."
+            }
+          ],
+          "spec": {
+            "fields": {
+              "title": "name",
+              "status": "state",
+              "summary": "overview",
+              "confidence": "certainty"
+            },
+            "checkFields": {
+              "title": "name",
+              "outcome": "result",
+              "explanation": "note"
+            },
+            "toneMap": {
+              "not-ready": "not-ready",
+              "ready": "ready",
+              "failed": "not-ready",
+              "passed": "ready",
+              "pending": "attention"
+            }
+          }
+        },
+        "bindings": {
+          "assessment": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
+    "semantic:change-proposal": {
+      "dataProps": {
+        "proposal": {
+          "type": "object"
+        }
+      },
+      "props": {
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "spec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "emptyText": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "status",
+                "rationale"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "impact": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "target": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "changeFields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "before",
+                "after"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "before": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "after": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "toneMap": {
+              "type": "object",
+              "additionalProperties": {
+                "enum": [
+                  "pending",
+                  "approved",
+                  "rejected",
+                  "changes-requested"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "variants": {
+        "review": {
+          "summary": "Full rationale, before/after changes, references, and review actions.",
+          "useWhen": [
+            "A human must review and act on the proposal"
+          ],
+          "default": true
+        },
+        "compact": {
+          "summary": "Title, target, and status only.",
+          "useWhen": [
+            "The proposal appears in a scanning list"
+          ]
+        }
+      },
+      "emits": {
+        "approve": {
+          "summary": "The user approves the proposed change.",
+          "payloadSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "reject": {
+          "summary": "The user rejects the proposed change.",
+          "payloadSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "requestChanges": {
+          "summary": "The user requests changes to the proposal before it can be approved.",
+          "payloadSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "constraints": [
+        "The Blueprint, not this component, performs the write when approve is emitted",
+        "Preserve finding and evidence references as authored data",
+        "Represent before and after values without altering them"
+      ],
+      "example": {
+        "capability": "semantic:change-proposal",
+        "props": {
+          "variant": "review",
+          "changes": [
+            {
+              "attribute": "allocatedQuantity",
+              "was": "80 shares",
+              "now": "100 shares"
+            }
+          ],
+          "references": [
+            "finding:lot-alloc-mismatch",
+            "lot:2025-004",
+            "lot:2025-011"
+          ],
+          "spec": {
+            "fields": {
+              "id": "key",
+              "title": "name",
+              "status": "state",
+              "rationale": "reason",
+              "impact": "consequence",
+              "target": "subject"
+            },
+            "changeFields": {
+              "field": "attribute",
+              "before": "was",
+              "after": "now"
+            },
+            "toneMap": {
+              "pending": "pending",
+              "approved": "approved",
+              "rejected": "rejected"
+            }
+          }
+        },
+        "bindings": {
+          "proposal": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
+    "semantic:consistency-case": {
+      "dataProps": {
+        "case": {
+          "type": "object"
+        }
+      },
+      "props": {
+        "subjects": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "spec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "emptyText": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "question",
+                "outcome",
+                "rationale"
+              ],
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "confidence": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "subjectFields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "detail": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "toneMap": {
+              "type": "object",
+              "additionalProperties": {
+                "enum": [
+                  "consistent",
+                  "contradictory",
+                  "ambiguous",
+                  "insufficient-information"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "variants": {
+        "detailed": {
+          "summary": "Question, outcome, rationale, compared subjects, and evidence.",
+          "useWhen": [
+            "Reviewers need the full comparison and its supporting detail"
+          ],
+          "default": true
+        },
+        "compact": {
+          "summary": "Question and outcome only.",
+          "useWhen": [
+            "The case appears in a scanning list"
+          ]
+        }
+      },
+      "constraints": [
+        "Represent consistent, contradictory, ambiguous, and insufficient-information outcomes",
+        "Preserve subject and evidence references as authored data",
+        "Never infer an outcome the authored data does not state"
+      ],
+      "example": {
+        "capability": "semantic:consistency-case",
+        "props": {
+          "variant": "detailed",
+          "subjects": [
+            {
+              "label": "Broker transaction",
+              "detail": "Reports 100 shares sold on 2026-08-04"
+            },
+            {
+              "label": "Recorded purchase lots",
+              "detail": "Allocate 80 shares across lot:2025-004 and lot:2025-011"
+            }
+          ],
+          "evidence": [
+            "ledger:trade-2026-013",
+            "lot:2025-004",
+            "lot:2025-011"
+          ],
+          "spec": {
+            "title": "Consistency check",
+            "fields": {
+              "question": "prompt",
+              "outcome": "verdict",
+              "rationale": "reason",
+              "confidence": "certainty"
+            },
+            "subjectFields": {
+              "label": "label",
+              "detail": "detail"
+            },
+            "toneMap": {
+              "contradictory": "contradictory",
+              "consistent": "consistent"
+            }
+          }
+        },
+        "bindings": {
+          "case": {
+            "from": "<state-path>"
+          }
+        }
+      }
+    },
+    "semantic:finding-set": {
+      "dataProps": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "props": {
+        "spec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "emptyText": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "explanation",
+                "severity",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "explanation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "severity": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "confidence": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "affects": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "toneMap": {
+              "type": "object",
+              "additionalProperties": {
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low",
+                  "informational"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "variants": {
+        "list": {
+          "summary": "Detailed findings with explanation, affected items, and evidence.",
+          "useWhen": [
+            "Findings need full supporting detail for review"
+          ],
+          "default": true
+        },
+        "compact": {
+          "summary": "Dense scanning rows of title, severity, and status.",
+          "useWhen": [
+            "Many findings must be scanned quickly"
+          ]
+        },
+        "text": {
+          "summary": "Complete linear text projection.",
+          "useWhen": [
+            "Visual layout is unavailable or inappropriate"
+          ]
+        }
+      },
+      "constraints": [
+        "Map identity, title, explanation, severity, and status fields",
+        "Preserve affected-item and evidence references as authored strings",
+        "Never infer severity or status from explanation text"
+      ],
+      "example": {
+        "capability": "semantic:finding-set",
+        "props": {
+          "variant": "list",
+          "spec": {
+            "title": "Data-quality findings",
+            "description": "Findings from the reconciliation pass",
+            "fields": {
+              "id": "key",
+              "title": "title",
+              "explanation": "detail",
+              "severity": "level",
+              "status": "state",
+              "confidence": "certainty",
+              "affects": "related",
+              "evidence": "sources"
+            },
+            "toneMap": {
+              "high": "high",
+              "medium": "medium"
+            }
+          }
+        },
+        "bindings": {
+          "findings": {
             "from": "<state-path>"
           }
         }

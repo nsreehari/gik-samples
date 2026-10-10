@@ -14,4 +14,13 @@ export { softwareComponentCapabilities, softwareComponentDefinitions, softwareCo
 export const componentViews = { ...fluentComponentViews, ...primitiveComponentViews, ...semanticComponentViews, ...securityComponentViews, ...softwareComponentViews };
 export const componentDefinitions = { ...fluentComponentDefinitions, ...primitiveComponentDefinitions, ...semanticComponentDefinitions, ...securityComponentDefinitions, ...softwareComponentDefinitions };
 export const componentCapabilities = { ...fluentComponentCapabilities, ...primitiveComponentCapabilities, ...semanticComponentCapabilities, ...securityComponentCapabilities, ...softwareComponentCapabilities };
-export const agentFacingComponentCatalog = createAgentFacingCapabilityCatalog(componentDefinitions);
+const qualifiedComponentDefinitions = Object.fromEntries(
+  [
+    fluentComponentDefinitions,
+    primitiveComponentDefinitions,
+    semanticComponentDefinitions,
+    securityComponentDefinitions,
+    softwareComponentDefinitions,
+  ].flatMap((definitions) => Object.values(definitions).map((definition) => [definition.capability, definition])),
+);
+export const agentFacingComponentCatalog = createAgentFacingCapabilityCatalog(qualifiedComponentDefinitions);
