@@ -3,16 +3,28 @@ import { test } from "vitest";
 
 import {
   agentFacingComponentCatalog,
+  createProjectionProviderSet,
+  fluentProjectionProvider,
   mergeAgentFacingCapabilityCatalogs,
+  primitiveProjectionProvider,
+  securityProjectionProvider,
+  semanticProjectionProvider,
+  softwareProjectionProvider,
 } from "../src/shared";
-import { createAgentFacingCapabilityCatalog } from "../src/shared/component-authoring-internal";
-import { componentDefinitions } from "../src/shared/registry";
+import {
+  agentFacingComponentCatalog as publishedAgentFacingComponentCatalog,
+} from "../src/agent-facing";
 
 test("committed agent-facing catalog matches component definitions", () => {
-  assert.deepEqual(
-    agentFacingComponentCatalog,
-    createAgentFacingCapabilityCatalog(componentDefinitions),
-  );
+  const providerCatalog = createProjectionProviderSet([
+    fluentProjectionProvider,
+    primitiveProjectionProvider,
+    semanticProjectionProvider,
+    securityProjectionProvider,
+    softwareProjectionProvider,
+  ]).agentFacingCatalog();
+  assert.deepEqual(agentFacingComponentCatalog, providerCatalog);
+  assert.deepEqual(publishedAgentFacingComponentCatalog, agentFacingComponentCatalog);
 });
 
 test("agent-facing catalog derives compact form authoring facts", () => {
