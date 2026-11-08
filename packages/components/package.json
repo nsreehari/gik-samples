@@ -78,6 +78,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "generate:agent-facing": "node --import tsx/esm scripts/generate-agent-facing-catalog.ts",
     "prepack": "npm run build"
   }
 }

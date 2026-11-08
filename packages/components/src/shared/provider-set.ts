@@ -46,7 +46,10 @@ function mergeRecords<T>(
   const merged = new Map<string, Readonly<Record<string, T>>>();
   for (const provider of providers) {
     const record = select(provider);
-    if (record) merged.set(provider.id, record);
+    if (record) {
+      const existing = merged.get(provider.id);
+      merged.set(provider.id, existing ? { ...existing, ...record } : record);
+    }
   }
   return merged;
 }

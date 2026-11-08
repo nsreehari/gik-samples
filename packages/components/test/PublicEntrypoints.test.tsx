@@ -149,4 +149,17 @@ test("provider sets use the last definition for a duplicate qualified capability
     providerSet.list().find(({ capability }) => capability === "primitive:list")?.summary,
     "Replacement primitive list",
   );
+  assert.equal(providerSet.resolveViews("primitive")?.list, replacement.component);
+  assert.equal(
+    providerSet.resolveCapabilities("primitive")?.list?.propsSchema,
+    replacement.getSchema(),
+  );
+  assert.equal(
+    providerSet.resolveViews("primitive")?.table,
+    rootEntryPoint.primitiveComponentDefinitions.table.component,
+  );
+  assert.equal(
+    providerSet.resolveCapabilities("primitive")?.table?.propsSchema,
+    rootEntryPoint.primitiveComponentDefinitions.table.getSchema(),
+  );
 });
