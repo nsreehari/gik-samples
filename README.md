@@ -22,6 +22,9 @@ Storybook is published at `/storybook/`. The repository consumers resolve
 `gik-agent-lifecycle-exp` and `gik-blueprint-agent-host` packages resolve from
 integrity-checked archives under `vendor/gik-packages`, while the remaining
 `gik-*` dependencies resolve from published npm packages.
+The stable dependency minimums include the verified Cell Senses release:
+Blueprint, Controlface, and Kernel 0.4.0; Evaluators 0.3.0; React 0.4.1.
+These minimums also apply to the standalone Finbook app and its browser host.
 
 Blueprint service declarations own their concrete non-secret configuration,
 including service endpoints and logical `credentialRef` values. The browser
