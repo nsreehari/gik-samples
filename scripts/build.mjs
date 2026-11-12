@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 
 const npmCli = process.env.npm_execpath;
 const dev = process.argv.includes("--dev");
+const siteOnly = process.argv.includes("--site-only");
 
 if (!npmCli) throw new Error("Run this build through npm.");
 
@@ -20,10 +21,8 @@ await run(process.execPath, [npmCli, "run", "build", "--workspace", "gik-compone
 
 await Promise.all([
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
-  run(process.execPath, [npmCli, "run", "finbook:build"]),
-]);
-if (!dev) {
-  await run(process.execPath, [
+  ...(siteOnly ? [] : [run(process.execPath, [npmCli, "run", "finbook:build"])]),
+  ...(dev ? [] : [run(process.execPath, [
     npmCli,
     "exec",
     "--",
@@ -33,8 +32,8 @@ if (!dev) {
     "storybook/.storybook",
     "-o",
     "storybook-static",
-  ]);
-}
+  ])]),
+]);
 await run(process.execPath, [
   npmCli,
   "exec",

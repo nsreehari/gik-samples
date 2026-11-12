@@ -1,6 +1,16 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "storybook/**"
+      - "packages/components/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - ".github/workflows/publish.yml"
   release:
     types:
       - published
@@ -66,6 +76,13 @@ jobs:
 
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
+
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -141,6 +158,13 @@ jobs:
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
 
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -151,8 +175,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh workflow run publish.yml --ref "$RELEASE_TAG" -f "release_ref=$RELEASE_TAG"
+        run: gh workflow run publish.yml --ref main -f release_ref=main
 
       - name: Record release summary
         if: always()
@@ -178,7 +201,7 @@ jobs:
       - name: Checkout release
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.release.tag_name || inputs.release_ref }}
+          ref: ${{ github.event_name == 'release' && 'main' || inputs.release_ref || github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -190,21 +213,25 @@ jobs:
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
 
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Install Finbook dependencies
-        run: npm install --prefix apps/finbook --no-audit --no-fund
-
       - name: Build site
-        run: npm run build
+        run: npm run build -- --site-only
         env:
           VITE_BASE: /gik-samples/
 
       - name: Collect verified published GIK archives
         run: npm run pages:collect-packages
         env:
-          PAGES_COMPONENTS_VERSION: ${{ github.event_name == 'release' && 'latest' || '' }}
+          PAGES_COMPONENTS_VERSION: ${{ (github.event_name != 'workflow_dispatch' || inputs.release_ref == 'main') && 'latest' || '' }}
 
       - name: Smoke-test release artifact
         run: npm run test:pages
