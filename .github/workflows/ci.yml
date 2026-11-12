@@ -23,7 +23,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
@@ -34,8 +35,19 @@ jobs:
       - name: Install Finbook dependencies
         run: npm install --prefix apps/finbook --no-audit --no-fund
 
+      - name: Install MCP server dependencies
+        run: npm install --prefix packages/mcp-server --no-audit --no-fund
+
+      - name: Inspect MCP dependency resolution
+        run: npm ls --prefix packages/mcp-server @modelcontextprotocol/sdk body-parser zod --all
+
       - name: Build
         run: npm run build
+
+      - name: Collect verified published GIK archives
+        run: npm run pages:collect-packages
+        env:
+          PAGES_COMPONENTS_VERSION: latest
 
       - name: Type-check
         run: npm run typecheck
@@ -43,7 +55,20 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test package distribution
+        run: npm run test:distribution
+
+      - name: Demonstrate published Sense services
+        run: node --import tsx src/headless/senses-clock-demo.ts
+
+      - name: Test standalone Finbook
+        run: npm test --prefix apps/finbook
+
+      - name: Test MCP server
+        run: npm test --prefix packages/mcp-server
+
       - name: Smoke-test built browser host
         run: npm run test:pages
         env:
           CHROME_PATH: /usr/bin/google-chrome
+          CHECK_PACKAGE_DOWNLOADS: "true"

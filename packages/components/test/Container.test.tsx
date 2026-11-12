@@ -9,6 +9,7 @@ import {
   ContainerPrimitive,
   containerDefinition,
   createGikComponentDeclarativeBundle,
+  primitiveProjectionProvider,
 } from "../src/shared";
 
 test("container variants preserve the same slotted children", () => {
@@ -39,7 +40,7 @@ test("GikComponentDeclarative composes nested container children", () => {
     edges: {
       children: [{ id: "nested", capability: "primitive:container", props: { variant: "column" } }],
     },
-  });
+  }, { state: {}, effectHandlers: {}, contexts: {}, providers: [primitiveProjectionProvider] });
   const vocabulary = unwrap(bundle.vocabulary);
   assert.deepEqual(vocabulary.externals?.projectionViews, { primitive: { from: "primitive", use: ["container"] } });
   assert.deepEqual(vocabulary.capabilities["primitive:container"].slots, ["children"]);

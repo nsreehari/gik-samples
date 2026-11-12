@@ -1,4 +1,5 @@
 export * from "../shared/definition";
+export { semanticProjectionProvider } from "../GikComponentDeclarative";
 export * from "./authoring";
 export * from "./registry";
 export * from "./argument";

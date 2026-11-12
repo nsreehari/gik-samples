@@ -8,6 +8,10 @@ import type {
   DurableStorageConnection,
   SampleServiceRegistryOptions,
 } from "../service-kinds";
+import {
+  createContextStoreExecutor,
+  type ContextStoreInvocation,
+} from "../service-kinds/context-store/runtime";
 
 export const BLUEPRINT_STATE_CONNECTION = "blueprint-state";
 
@@ -47,10 +51,17 @@ export function bindBlueprintStorage(
   factory: BlueprintStorageConnectionFactory,
   identity: BlueprintStorageIdentity,
 ): SampleServiceRegistryOptions {
+  const connection = factory(identity);
+  const executeContextStore = createContextStoreExecutor({ "portfolio-context": connection });
   return {
     ...options,
+    execute: (request) => (request as { kind?: string }).kind === "context-store"
+      ? executeContextStore(request as ContextStoreInvocation)
+      : options.execute
+        ? options.execute(request)
+        : Promise.reject(new Error("No service executor is configured")),
     durableStorageConnections: {
-      [BLUEPRINT_STATE_CONNECTION]: factory(identity),
+      [BLUEPRINT_STATE_CONNECTION]: connection,
       ...options.durableStorageConnections,
     },
   };

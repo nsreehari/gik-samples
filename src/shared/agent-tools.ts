@@ -3,36 +3,69 @@ import {
   type AgentTool,
   type AgentToolExecutionContext,
 } from "gik-agent-lifecycle-exp";
-import type { AgentFacingCapabilityCatalog } from "gik-components/agent-facing";
+import type { AgentFacingCapabilityCatalog, ProjectionProvider } from "gik-components";
 import { createAgentResponseTools } from "../service-kinds/agent-response-workspace";
 import { sampleAgentToolContracts } from "./agent-tool-contracts";
 
+interface ScopedDescribeTool extends AgentTool {
+  scopeToCapabilities?: (acceptedCapabilities: readonly string[] | undefined) => Promise<AgentTool>;
+}
+
+function selectCatalogCapabilities(
+  catalog: AgentFacingCapabilityCatalog,
+  capabilities: readonly string[],
+): AgentFacingCapabilityCatalog {
+  const selected = new Set(capabilities);
+  return {
+    catalog: Object.fromEntries(
+      Object.entries(catalog.catalog).filter(([capability]) => selected.has(capability)),
+    ),
+    details: Object.fromEntries(
+      Object.entries(catalog.details).filter(([capability]) => selected.has(capability)),
+    ),
+  };
+}
+
 export function createSampleAgentTools(
-  extensions: readonly AgentFacingCapabilityCatalog[] = [],
+  providers: readonly ProjectionProvider[] = [],
 ): readonly AgentTool[] {
-  // `gik-components/agent-facing` carries generated per-component capability metadata (~470KB) that
-  // only matters once an agent actually calls `describe`. Loading it eagerly here pulls that weight
-  // into every Blueprint's service host at render time, even for purely human-facing sessions. Defer
-  // the import (and the catalog merge/tool construction it feeds) until the tool is first invoked.
-  let describeToolPromise: Promise<AgentTool> | undefined;
-  const resolveDescribeTool = (): Promise<AgentTool> => {
-    describeToolPromise ??= import("gik-components/agent-facing").then(
-      ({ agentFacingComponentCatalog, mergeAgentFacingCapabilityCatalogs }) =>
-        createCapabilityDescribeTool(
-          mergeAgentFacingCapabilityCatalogs(agentFacingComponentCatalog, ...extensions),
-        ),
+  // The package catalog is large and only matters once an agent actually calls `describe`. Defer
+  // loading provider-set authoring metadata until the tool is first invoked.
+  let providerSetPromise: Promise<ProjectionProviderSet> | undefined;
+  const resolveProviderSet = (): Promise<ProjectionProviderSet> => {
+    providerSetPromise ??= import("gik-components").then(
+      ({ createProjectionProviderSet }) => createProjectionProviderSet(providers),
     );
-    return describeToolPromise;
+    return providerSetPromise;
+  };
+  const resolveDescribeTool = async (acceptedCapabilities?: readonly string[]): Promise<AgentTool> => {
+    const providerSet = await resolveProviderSet();
+    if (acceptedCapabilities === undefined) {
+      return createCapabilityDescribeTool(providerSet.agentFacingCatalog());
+    }
+    const knownCapabilities = new Set(
+      Object.values(providerSet.definitions()).map((definition) => definition.capability),
+    );
+    const scopedCapabilities = acceptedCapabilities.filter((capability) => knownCapabilities.has(capability));
+    const kit = providerSet.getKit(scopedCapabilities);
+    return createCapabilityDescribeTool(
+      selectCatalogCapabilities(providerSet.agentFacingCatalog(), kit.capabilities),
+    );
+  };
+
+  type ProjectionProviderSet = Awaited<ReturnType<typeof import("gik-components")["createProjectionProviderSet"]>>;
+
+  const describeTool: ScopedDescribeTool = {
+    name: "describe",
+    ...sampleAgentToolContracts.describe,
+    lifecycle: "agent",
+    handler: async (args: unknown, context?: AgentToolExecutionContext) =>
+      (await resolveDescribeTool()).handler(args, context),
+    scopeToCapabilities: (acceptedCapabilities) => resolveDescribeTool(acceptedCapabilities),
   };
 
   return [
-    {
-      name: "describe",
-      ...sampleAgentToolContracts.describe,
-      lifecycle: "agent",
-      handler: async (args: unknown, context?: AgentToolExecutionContext) =>
-        (await resolveDescribeTool()).handler(args, context),
-    },
+    describeTool,
     ...createAgentResponseTools(),
   ];
 }

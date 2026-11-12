@@ -1,0 +1,103 @@
+{
+  "gik": "0.1",
+  "type": "blueprint",
+  "payload": {
+    "id": "senses-clock",
+    "kind": "continuous-review",
+    "version": "1.0.0",
+    "structureMode": "fixed",
+    "serviceTiers": [{ "id": "native", "kind": "runtime-service" }],
+    "serviceRecipes": [],
+    "projectionTiers": [{ "id": "headless", "kind": "runtime-document", "capabilities": [] }],
+    "projectionRecipes": [],
+    "runtime": {
+      "state": {
+        "settings": { "enabled": true, "intervalMs": 100 },
+        "counter": { "value": 0 },
+        "report": {}
+      }
+    },
+    "services": {
+      "clock": {
+        "kind": "interval-timer", "version": "1", "scope": "per-blueprint",
+        "operations": {
+          "cadence": {
+            "operation": "interval", "contract": "sample-clock/v1",
+            "sense": {
+              "kind": "timer",
+              "signals": {
+                "due": {
+                  "payloadSchema": {
+                    "type": "object",
+                    "required": ["occurredAt", "occurrence"],
+                    "properties": {
+                      "occurredAt": { "type": "string" },
+                      "occurrence": { "type": "integer", "minimum": 1 }
+                    }
+                  }
+                }
+              }
+            },
+            "settlement": { "transform": { "kind": "jsonata", "expr": "{}" } }
+          }
+        }
+      },
+      "reports": {
+        "kind": "sample-review-report", "version": "1", "scope": "per-blueprint",
+        "operations": {
+          "fetch": {
+            "operation": "fetch", "contract": "sample-review-report/v1",
+            "settlement": { "transform": { "kind": "jsonata", "expr": "{}" } }
+          }
+        }
+      }
+    },
+    "cells": {
+      "review": {
+        "id": "review",
+        "inputs": [
+          { "token": "settings" },
+          { "token": "counter.value", "as": "count" }
+        ],
+        "senses": [{
+          "id": "cadence", "service": "clock", "operation": "cadence",
+          "when": "inputs.settings.enabled",
+          "input": { "kind": "jsonata", "expr": "{'intervalMs':inputs.settings.intervalMs}" },
+          "on": { "due": "review-due" }
+        }],
+        "sources": [{
+          "id": "report", "service": "reports", "operation": "fetch",
+          "when": "inputs.count > 0",
+          "input": { "kind": "jsonata", "expr": "{'tick':inputs.count}" }
+        }],
+        "compute": [{ "id": "report", "assign": "report.latest", "expression": "fetched_sources.report" }],
+        "outputs": [{ "token": "latest-report", "from": "computed.report.latest" }],
+        "events": {
+          "review-due": { "payloadSchema": { "type": "object" } },
+          "configure": {
+            "payloadSchema": {
+              "type": "object", "additionalProperties": false,
+              "required": ["enabled", "intervalMs"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "intervalMs": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+              }
+            }
+          }
+        },
+        "behavior": {
+          "on": {
+            "review-due": [{
+              "do": "assign", "target": "counter.value",
+              "args": { "from": "counter.value + 1" }
+            }],
+            "configure": [{
+              "do": "assign", "target": "settings",
+              "args": { "from": "$event" }
+            }]
+          }
+        }
+      }
+    }
+  }
+}

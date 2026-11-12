@@ -19,12 +19,12 @@ No credential is accepted from or returned to the browser.
 
 ## Install
 
-The directory is a standalone package with its own lockfile, so it can be
-copied independently from the rest of this repository.
+The directory is a standalone package, so it can be copied independently from
+the rest of this repository.
 
 ```sh
 cd packages/mcp-server
-npm ci
+npm install
 ```
 
 Foundry is optional. Install its SDK peers only when it is needed:
@@ -197,11 +197,15 @@ product endpoint is configured by default.
 ## Validate
 
 ```sh
-node scripts/vendor-gik-durable-runtime.mjs --verify
 node scripts/smoke-registered-services.js
 node --test test/*.test.js
 ```
 
-The package vendors the same `gik-durable-runtime` version used by GIK
-Samples. The verify command checks its SHA-256 without invoking a package
-manager.
+This package consumes the published `gik-durable-runtime` and
+`gik-agent-lifecycle-exp` packages from npm. It does not depend on repository
+archives or sibling GIK checkouts.
+
+Tool manifests, proxy tools, and notification tests use JSON Schema directly.
+The host validates tool inputs and structured outputs through the MCP SDK's
+AJV provider, without converting schemas to Zod. There is no direct Zod
+dependency or application import; the MCP SDK still depends on Zod internally.

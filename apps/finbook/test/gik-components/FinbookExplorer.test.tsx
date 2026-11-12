@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import React from "react";
 import { test } from "vitest";
-import { createGikComponentDeclarativeBundle, GikComponent } from "gik-components";
+import {
+  createGikComponentDeclarativeBundle,
+  GikComponent,
+  type ProjectionProvider,
+} from "gik-components";
 import { unwrap } from "gik-kernel";
 
 import {
@@ -10,6 +14,12 @@ import {
   financeComponentViews,
   finbookExplorerDefinition,
 } from "../../gik-components/FinbookExplorer";
+
+const financeProjectionProvider: ProjectionProvider = {
+  id: "finance",
+  views: financeComponentViews,
+  capabilities: financeComponentCapabilities,
+};
 
 test("Finbook explorer is a complete declarative component contract", () => {
   const trial = finbookExplorerDefinition.materializeTrial();
@@ -78,7 +88,7 @@ test("Finbook explorer is addressable through GikComponentDeclarative with its c
     state: {},
     contexts: {},
     effectHandlers: {},
-    resolveCapabilityDescriptors: (from) => from === "finance" ? financeComponentCapabilities : undefined,
+    providers: [financeProjectionProvider],
   });
   const vocabulary = unwrap(bundle.vocabulary);
 

@@ -108,11 +108,13 @@ from the JSON declaration:
 import {
   GikComponentDeclarative,
   GikComponentRuntimeProvider,
+  primitiveProjectionProvider,
 } from "gik-components";
 
 <GikComponentRuntimeProvider
   state={{ report: { points } }}
   effectHandlers={{ handleSelection }}
+  providers={[primitiveProjectionProvider]}
 >
   <GikComponentDeclarative
     nodeJson={{
@@ -139,15 +141,19 @@ provider handlers.
 Projection providers remain explicit. A host registers each layer under a provider name, and a
 bundle imports only the capabilities it uses. Nothing is ambient.
 
-Application-owned component layers must provide both their projection views and capability
-descriptors. Pass the view resolver through `resolveProvider` and the matching descriptor resolver
-through `resolveCapabilityDescriptors`:
+Hosts must supply every namespace that a declarative bundle may import. Application-owned component
+layers can be supplied directly as projection providers:
 
 ```tsx
 <GikComponentRuntimeProvider
-  resolveProvider={(from) => from === "finance" ? financeComponentViews : undefined}
-  resolveCapabilityDescriptors={(from) =>
-    from === "finance" ? financeComponentCapabilities : undefined}
+  providers={[
+    primitiveProjectionProvider,
+    {
+      id: "finance",
+      views: financeComponentViews,
+      capabilities: financeComponentCapabilities,
+    },
+  ]}
 >
   <GikComponentDeclarative
     nodeJson={{
@@ -159,10 +165,10 @@ through `resolveCapabilityDescriptors`:
 </GikComponentRuntimeProvider>
 ```
 
-The descriptor resolver is consulted only after the built-in Fluent, primitive, semantic,
-security, and software catalogs. Unknown capabilities still fail bundle construction. Supplying a
-custom view without its descriptor is intentionally insufficient because the generated vocabulary
-must contain the component's actual props, data, slot, and event contract.
+`GikComponentDeclarative` also accepts a `providers` array directly when only one subtree needs a
+specific namespace. Unknown capabilities still fail bundle construction. Supplying only a custom
+view without its descriptor remains intentionally insufficient because the generated vocabulary must
+contain the component's actual props, data, slot, and event contract.
 
 ## Agent authoring kit
 
