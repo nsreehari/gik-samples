@@ -2,9 +2,29 @@
 
 Public, self-describing declarative components for GIK React hosts.
 
-Studio uses this package through its local workspace directory. The standalone
-Finbook reference app and external consumers use the published npm package;
-they do not require a sibling Components source checkout.
+## Install and ownership
+
+External consumers install the published package and its React/Fluent peers:
+
+```sh
+npm install gik-components react react-dom @fluentui/react-components @fluentui/react-icons
+```
+
+Studio uses the local workspace directory through a `file:` dependency.
+Finbook and external consumers use the published npm package and do not require
+a sibling Components source checkout. See
+[repository validation](https://github.com/nsreehari/gik-samples/blob/main/VALIDATION.md).
+
+Components render data and emit declared intents. Blueprint Cells own
+cross-component state, purpose, source retrieval, and effect declarations;
+hosts own effect execution and authorization. A DPP manifest or Sense does not
+introduce a component type. In particular, `primitive:timer-button` is local UI
+mechanics, not a durable Sense or participant scheduler. See the
+[core DPP](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md)
+and [Sense](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/senses.md)
+contracts for those runtime responsibilities.
+
+## Catalog layers
 
 The package has five public layers:
 
@@ -213,7 +233,8 @@ schemas and handlers are restricted to the same selected capabilities. Short reg
 `event-series` and full IDs such as `semantic:event-series` are accepted and deduplicated. Omitting the list
 selects the complete registry; an explicit empty list is rejected.
 
-The renderer-free `agentFacingComponentCatalog` is designed for the common transport-free
+The renderer-free `agentFacingComponentCatalog`, available from
+`gik-components/agent-facing`, is designed for the common transport-free
 `describe` tool. Agents first use `catalog-capabilities` to shortlist, then request every selected
 contract together with `multiple-capabilities`. There is no singular detail operation; hosts should
 merge custom catalogs before constructing the tool.
@@ -254,7 +275,9 @@ These are ACX authoring tools, not live AX runtime tools. The package does not c
 The root entry point also exports `componentViews`, `componentDefinitions`, and
 `componentCapabilities` — each an aggregate merging the fluent, primitive, semantic, security, and
 software registries of the same name. Use them when a host wants one combined registry across every
-layer instead of registering each layer separately.
+layer instead of registering each layer separately. Selecting an authoring kit
+narrows its tools, not runtime execution permission. The host still admits the
+generated artifact against its presentation vocabulary and invocation policy.
 
 ## Variants
 

@@ -14,13 +14,8 @@ experiences.
 
 ## Development
 
-Use Node.js 24:
-
-```sh
-npm install --no-audit --no-fund
-npm install --prefix apps/finbook --no-audit --no-fund
-npm run dev
-```
+Follow the [root development guide](README.md#development) for starting Studio
+and the [validation guide](VALIDATION.md) for prerequisites and checks.
 
 Do not replace published `gik-*` packages with sibling checkout dependencies
 or vendored archives. Studio keeps `gik-components` on the local workspace
@@ -38,13 +33,8 @@ host instead consume the published package so extraction remains independent.
 - Complete the pull-request template and disclose anything that could not be
   validated.
 
-Before requesting review, run:
-
-```sh
-npm run build
-npm run typecheck
-npm test
-```
+Before requesting review, complete the [validation sequence](VALIDATION.md)
+appropriate to the changed packages.
 
 With explicit maintainer approval, the PR CI workflow may perform installs and
 validation instead of local execution. Report the successful workflow run;

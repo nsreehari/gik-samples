@@ -57,6 +57,10 @@ compatible XYFlow pair remains vendored under `vendor/npm-packages` because
 the proxy currently serves an incompatible React/System package combination.
 Other dependencies remain normal npm ranges.
 
+The [browser-host README](reference-app-host/browser-host/README.md) owns the
+React composition entry point; the [server README](mcp-server/README.md) owns
+the standalone server entry points and persistence boundary.
+
 Start the SQLite-backed MCP server and browser host together:
 
 ```powershell
@@ -72,20 +76,19 @@ Useful checks:
 npm run check
 ```
 
-`FINBOOK_DB_PATH`, `FINBOOK_HOST`, `FINBOOK_PORT`, and
-`FINBOOK_ALLOWED_ORIGINS` configure the local server. Runtime SQLite files are
-created from the checked-in JSON/JSONL seeds and are ignored by Git.
-
 The Blueprint owns the concrete MCP endpoint. For deployment, author a
 deployment-specific Finbook Blueprint revision containing the hosted HTTPS
 endpoint; the browser host may authorize or reject that endpoint but does not
 rewrite it from environment variables.
 
+This sample uses bounded MCP sources, not a DPP manifest or continuous Sense.
+It consumes DPP/Sense-capable packages without requiring every Cell to become
+a participant or observer.
+
 ## Extract
 
-The directory has no runtime dependency on the sample catalog, hosted
-Blueprint Studio, or another source repository. It can be split while
-preserving history:
+The app does not import the Studio or sample catalog at runtime. It can be
+split while preserving history:
 
 ```powershell
 git subtree split --prefix=apps/finbook -b finbook-main
@@ -109,6 +112,6 @@ Replace the local adapter with a managed relational implementation:
 - Cloud SQL for PostgreSQL or Firebase Data Connect on Google Cloud.
 
 Keep stable finance fields relational and retain genuinely extensible values as
-JSON/JSONB. The required persistence semantics are documented in
-`mcp-server/storage-contract.md`; hosted adapters must preserve the existing MCP
-tool names and envelopes so the Blueprint remains unchanged.
+JSON/JSONB. The required persistence semantics are documented in the
+[storage contract](mcp-server/storage-contract.md); hosted adapters must preserve
+the existing MCP tool names and envelopes so the Blueprint remains unchanged.
