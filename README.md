@@ -17,11 +17,12 @@ the copied scripts, or reviewed and applied through the loopback companion.
 
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. The repository consumers resolve
+Storybook is published at `/storybook/`. Studio resolves
 `gik-components` from the local workspace source directory using `file:`
 dependencies, never a tarball. All external `gik-*` dependencies, including
 `gik-agent-lifecycle-exp` and `gik-blueprint-agent-host`, resolve from published
-npm packages.
+npm packages. Finbook and its browser host also consume published
+`gik-components`, allowing the app directory to run independently.
 
 The portfolio intelligence Cell declares `dpp.manifest` and context query/ingest
 sources. Its host stores scoped observations in the Blueprint instance's durable
@@ -113,8 +114,8 @@ server-reviewed plans; Azure tokens never reach the browser. See
 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
 HTTP bearer, and download-fallback details.
 
-Use Node.js 24. Build `gik-components` before standalone Finbook consumers so
-the local directory dependency has its generated entry points available.
+Use Node.js 24. Studio builds its local `gik-components` workspace package.
+Standalone Finbook resolves the published package and needs no sibling build.
 
 ## Validation
 

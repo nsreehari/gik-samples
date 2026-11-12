@@ -43,15 +43,16 @@ replace the Finbook-specific Blueprint, components, and server without importing
 
 ## Run locally
 
-From the copied `apps/finbook` directory, install both workspace packages once:
+Use Node.js 24. From `apps/finbook` (or its extracted copy), install the app's
+browser/server workspaces:
 
 ```powershell
-cd apps\finbook
-npm install
+npm install --no-audit --no-fund
 ```
 
 The required GIK packages resolve from normal dependencies, with
-`gik-components` linked from the local repository source package. The
+`gik-components` fetched from npm, not linked to the samples workspace. No
+local Components build or sibling GIK checkout is required. The
 compatible XYFlow pair remains vendored under `vendor/npm-packages` because
 the proxy currently serves an incompatible React/System package combination.
 Other dependencies remain normal npm ranges.
@@ -92,6 +93,9 @@ git subtree split --prefix=apps/finbook -b finbook-main
 
 The extracted directory is already the package root. Run `npm install`, `npm run dev`, and
 `npm run check` without copying files or depending on the surrounding `gik-samples` source tree.
+Keep the checked-in XYFlow archives, which are already inside the extracted
+app directory. CI validates this by installing and checking an archive of only
+`apps/finbook` outside the repository checkout.
 
 ## Host in Azure or Firebase
 

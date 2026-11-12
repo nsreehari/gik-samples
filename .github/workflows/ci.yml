@@ -64,6 +64,15 @@ jobs:
       - name: Test standalone Finbook
         run: npm test --prefix apps/finbook
 
+      - name: Validate extracted Finbook against npm packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_dir="$(mktemp -d "${RUNNER_TEMP}/finbook-reference.XXXXXX")"
+          git archive HEAD:apps/finbook | tar -x -C "$app_dir"
+          npm install --prefix "$app_dir" --no-audit --no-fund
+          npm run check --prefix "$app_dir"
+
       - name: Test MCP server
         run: npm test --prefix packages/mcp-server
 

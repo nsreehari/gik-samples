@@ -15,7 +15,8 @@ npm install --prefix apps/finbook --no-audit --no-fund
 ```
 
 All external GIK packages resolve from published npm versions. `gik-components`
-uses the local source directory through `file:` dependencies. This repository
+uses the local source directory through `file:` dependencies for Studio;
+Finbook and its browser host use the published package. This repository
 does not commit npm lockfiles. Finbook retains its separate compatible XYFlow
 archives; there are no vendored GIK archives.
 
@@ -57,6 +58,12 @@ npm test --prefix packages/mcp-server
 ```
 
 See [`packages/mcp-server/README.md`](packages/mcp-server/README.md).
+
+CI additionally archives only `apps/finbook` into a temporary directory outside
+the checkout, installs dependencies from npm, and runs its existing `check`
+script. This verifies app typechecking, Blueprint validation, browser build,
+and domain/server tests without a local Components workspace or parent
+`node_modules`.
 
 Do not weaken, skip, or make failing validation non-blocking. Report every
 command you ran and anything that could not be run. See

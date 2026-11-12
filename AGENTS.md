@@ -8,9 +8,10 @@ These instructions apply to every coding agent working in this repository.
 - Use Node.js 24.
 - Install dependencies with `npm install --no-audit --no-fund`.
 - Do not resolve GIK packages from sibling checkouts.
-- Keep `gik-components` on the local workspace package.
+- Keep Studio's `gik-components` on the local workspace package. Finbook and
+  its browser host consume the published npm package so the app is extractable.
 - All external `gik-*` dependencies resolve from published npm packages.
-  `gik-components` uses a local directory dependency, never a tarball.
+  Studio uses a local directory dependency for `gik-components`, never a tarball.
 
 ## Before editing
 
@@ -49,7 +50,8 @@ These instructions apply to every coding agent working in this repository.
 
 ## Validation
 
-- Build `gik-components` before checking consumers when its `dist` is absent.
+- Build local `gik-components` before checking Studio when its `dist` is absent.
+  Finbook's standalone validation must not require that local build.
 - Run the smallest relevant tests while developing.
 - Before completing a code change, run:
 

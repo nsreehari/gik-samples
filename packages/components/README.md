@@ -2,6 +2,10 @@
 
 Public, self-describing declarative components for GIK React hosts.
 
+Studio uses this package through its local workspace directory. The standalone
+Finbook reference app and external consumers use the published npm package;
+they do not require a sibling Components source checkout.
+
 The package has five public layers:
 
 - `gik-components/primitives`: domain-neutral UI mechanics such as chart, collection board, form,

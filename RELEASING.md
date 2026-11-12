@@ -21,8 +21,9 @@ publication and manual workflow dispatch are not supported.
 short-lived OIDC credentials and does not use an npm token.
 
 This repository publishes only `gik-components`. External `gik-*` packages are
-consumed from npm and must never be republished from this repository. Repository
-consumers keep `gik-components` linked to its local source directory.
+consumed from npm and must never be republished from this repository.
+Studio keeps `gik-components` linked to its local source directory. Finbook and
+its browser host consume the published package, independently of local builds.
 
 ## Pages package downloads
 
