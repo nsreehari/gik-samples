@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
@@ -84,6 +85,33 @@ function dumpPage() {
 
 try {
   await waitForPreview();
+  if (process.env.CHECK_PACKAGE_DOWNLOADS === "true") {
+    const vendorUrl = new URL("vendor/", pageUrl);
+    const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
+    if (!manifestResponse.ok) throw new Error(`Package manifest returned HTTP ${manifestResponse.status}`);
+    const manifest = await manifestResponse.json();
+    if (manifest.format !== "gik-pages-packages/1" || manifest.packages?.length !== 11
+      || new Set(manifest.packages.map(({ name }) => name)).size !== 11) {
+      throw new Error("Pages must expose all eleven released GIK packages");
+    }
+    for (const entry of manifest.packages) {
+      const response = await fetch(new URL(entry.file, vendorUrl));
+      if (!response.ok) throw new Error(`Package download ${entry.file} returned HTTP ${response.status}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.length !== entry.bytes || createHash("sha256").update(bytes).digest("hex") !== entry.sha256) {
+        throw new Error(`Served package download ${entry.file} does not match the manifest`);
+      }
+    }
+    for (const file of ["index.html", "SHA256SUMS"]) {
+      const response = await fetch(new URL(file, vendorUrl));
+      if (!response.ok) throw new Error(`Package download index ${file} returned HTTP ${response.status}`);
+      const content = await response.text();
+      if (!manifest.packages.every(({ file }) => content.includes(file))) {
+        throw new Error(`Package download index ${file} is incomplete`);
+      }
+    }
+    console.log(`All 11 package downloads and checksums passed at ${vendorUrl}`);
+  }
   const html = await dumpPage();
   if (!html.includes("Generative Interaction Kernel")) {
     throw new Error(`Built Pages host did not render its application shell:\n${html.slice(0, 2000)}`);

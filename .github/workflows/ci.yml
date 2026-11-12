@@ -44,11 +44,19 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Collect verified published GIK archives
+        run: npm run pages:collect-packages
+        env:
+          PAGES_COMPONENTS_VERSION: latest
+
       - name: Type-check
         run: npm run typecheck
 
       - name: Test
         run: npm test
+
+      - name: Test package distribution
+        run: npm run test:distribution
 
       - name: Demonstrate published Sense services
         run: node --import tsx src/headless/senses-clock-demo.ts
@@ -63,3 +71,4 @@ jobs:
         run: npm run test:pages
         env:
           CHROME_PATH: /usr/bin/google-chrome
+          CHECK_PACKAGE_DOWNLOADS: "true"
