@@ -64,7 +64,6 @@ test("PR classification validates manifest-only catch-up versions in a detached 
     git("add", "packages");
     git("commit", "-m", "baseline");
     const base = git("rev-parse", "HEAD");
-    git("checkout", "--detach", base);
     for (const [version, labels, expectedError] of [
       ["0.4.0", [], null],
       ["0.2.9", [], /version must increase/],
@@ -73,6 +72,7 @@ test("PR classification validates manifest-only catch-up versions in a detached 
       ["0.4.0-next.0", [], /release:prerelease/],
       ["0.4.0-next.0", ["release:prerelease"], null],
     ]) {
+      git("checkout", "--detach", base);
       writeVersion(version);
       git("add", "packages");
       git("commit", "-m", `version ${version}`);
