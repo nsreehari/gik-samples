@@ -68,7 +68,7 @@ test("PR classification validates manifest-only catch-up versions in a detached 
     for (const [version, labels, expectedError] of [
       ["0.4.0", [], null],
       ["0.2.9", [], /version must increase/],
-      ["not-semver", [], /stable semantic versions/],
+      ["invalid", [], /stable semantic versions/],
       ["0.04.0", [], /stable semantic versions/],
       ["0.4.0-next.0", [], /release:prerelease/],
       ["0.4.0-next.0", ["release:prerelease"], null],
