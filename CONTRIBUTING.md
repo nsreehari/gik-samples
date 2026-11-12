@@ -18,8 +18,9 @@ Follow the [root development guide](README.md#development) for starting Studio
 and the [validation guide](VALIDATION.md) for prerequisites and checks.
 
 Do not replace published `gik-*` packages with sibling checkout dependencies
-or vendored archives. Keep `gik-components` on the local workspace directory
-using `file:` dependencies, not a tarball.
+or vendored archives. Studio keeps `gik-components` on the local workspace
+directory using a `file:` dependency, not a tarball. Finbook and its browser
+host instead consume the published package so extraction remains independent.
 
 ## Pull requests
 

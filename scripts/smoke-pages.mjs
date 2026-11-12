@@ -85,6 +85,15 @@ function dumpPage() {
 
 try {
   await waitForPreview();
+  const guideUrl = new URL("getting-started/", pageUrl);
+  const guideResponse = await fetch(guideUrl);
+  if (!guideResponse.ok) throw new Error(`Sample app guide returned HTTP ${guideResponse.status}`);
+  const guide = await guideResponse.text();
+  if (!guide.includes("<h1>Build a sample app</h1>")
+    || !guide.includes("https://github.com/nsreehari/gik-samples/tree/main/apps/finbook")
+    || !guide.includes("npm run check")) {
+    throw new Error("Pages sample app guide is missing its walkthrough or reference source");
+  }
   if (process.env.CHECK_PACKAGE_DOWNLOADS === "true") {
     const vendorUrl = new URL("vendor/", pageUrl);
     const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
@@ -119,6 +128,10 @@ try {
   if (html.includes("GIK Studio could not start")) {
     throw new Error(`Built Pages host rendered its startup failure shell:\n${html.slice(0, 2000)}`);
   }
+  if (!html.includes(new URL(guideUrl).pathname)) {
+    throw new Error("Built Pages host does not link to the sample app guide");
+  }
+  console.log(`Sample app guide and home navigation passed at ${guideUrl}`);
   console.log(`Pages smoke test passed at ${pageUrl}`);
 } finally {
   preview.kill();

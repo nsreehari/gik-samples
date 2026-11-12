@@ -10,9 +10,10 @@ External consumers install the published package and its React/Fluent peers:
 npm install gik-components react react-dom @fluentui/react-components @fluentui/react-icons
 ```
 
-In this repository, consumers instead use the local source directory through
-`file:` dependencies; build the workspace package before checking standalone
-consumers. See [repository validation](https://github.com/nsreehari/gik-samples/blob/main/VALIDATION.md).
+Studio uses the local workspace directory through a `file:` dependency.
+Finbook and external consumers use the published npm package and do not require
+a sibling Components source checkout. See
+[repository validation](https://github.com/nsreehari/gik-samples/blob/main/VALIDATION.md).
 
 Components render data and emit declared intents. Blueprint Cells own
 cross-component state, purpose, source retrieval, and effect declarations;

@@ -77,6 +77,14 @@ export function ApplicationSwitcher({ currentId }: { currentId?: string }): Reac
             <span className="gx-switcher-check" aria-hidden="true" />
             <span>Agent Provisioning</span>
           </button>
+          <a
+            role="menuitem"
+            className="gx-switcher-row"
+            href={`${import.meta.env.BASE_URL}getting-started/`}
+          >
+            <span className="gx-switcher-check" aria-hidden="true" />
+            <span>Build a sample app</span>
+          </a>
         </div>
       ) : (
         <button

@@ -8,7 +8,7 @@ primitive/finance component providers, and application-owned service host.
 The host authorizes the Blueprint-declared MCP endpoint; it does not rewrite
 that endpoint from deployment environment variables.
 
-For dependency installation, local component prerequisites, the browser URL,
+For published dependency installation, the browser URL,
 and starting both processes, use the [Finbook guide](../../README.md).
 From the Finbook app workspace root:
 

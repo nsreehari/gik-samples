@@ -43,18 +43,16 @@ replace the Finbook-specific Blueprint, components, and server without importing
 
 ## Run locally
 
-Use Node.js 24. From the repository root, install the app workspace and build
-the local component package before running the browser host:
+Use Node.js 24. From `apps/finbook` (or its extracted copy), install the app's
+browser/server workspaces:
 
 ```powershell
-npm install --no-audit --no-fund
-npm run build --workspace gik-components
-cd apps\finbook
 npm install --no-audit --no-fund
 ```
 
 The required GIK packages resolve from normal dependencies, with
-`gik-components` linked from the local repository source package. The
+`gik-components` fetched from npm, not linked to the samples workspace. No
+local Components build or sibling GIK checkout is required. The
 compatible XYFlow pair remains vendored under `vendor/npm-packages` because
 the proxy currently serves an incompatible React/System package combination.
 Other dependencies remain normal npm ranges.
@@ -96,14 +94,11 @@ split while preserving history:
 git subtree split --prefix=apps/finbook -b finbook-main
 ```
 
-The extracted directory is the app workspace root, but it is **not yet
-installable unchanged**: the root and browser-host manifests still point to
-the surrounding repository's `packages/components` directory. Before extracting,
-plan a separate dependency change to the published `gik-components` package or
-preserve a compatible local component directory and update both paths.
-Do not silently replace those `file:` dependencies in this repository.
-Retain the app's separate XYFlow archives. After resolving the component
-dependency, use the app's `dev` and `check` scripts.
+The extracted directory is already the package root. Run `npm install`, `npm run dev`, and
+`npm run check` without copying files or depending on the surrounding `gik-samples` source tree.
+Keep the checked-in XYFlow archives, which are already inside the extracted
+app directory. CI validates this by installing and checking an archive of only
+`apps/finbook` outside the repository checkout.
 
 ## Host in Azure or Firebase
 
