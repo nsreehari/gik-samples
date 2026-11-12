@@ -18,31 +18,17 @@ treating model output as execution authority.
 
 The existing `portfolio-intelligence` Cell declares `dpp.manifest` and
 `dpp.context.sources`; there is no separate `kind: dpp`, scheduler, or mandatory
-AI provider. The full manifest carries participant identity, durable charter,
-authority boundaries, evolving working model, and descriptive context-store
-query/ingest guidance. Expressions read it as `dpp.manifest`.
+AI provider. It adopts the released
+[core DPP contract](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md),
+including its manifest, context operations, `fetched_sources` expression root,
+and lifecycle semantics; this ADR does not redefine that contract.
 
-Context sources resolve the `context-store.query/v1` and
-`context-store.ingest/v1` contracts. They use the ordinary source
-effect/settlement path, alongside intelligence sources. Completed results share
-`fetched_sources.<id>`; the old `sources` expression namespace has no alias.
-Source configuration arrays remain named `sources`. Source and Sense IDs are
-unique across the entire Cell. Optional context Senses deliver events rather
-than fetched-source records.
-
-The sample host explicitly binds `config.storeRef: portfolio-context` to the
-Blueprint instance's durable KV connection. Records are additionally scoped by
-stable portfolio identity. Query request keys identify the valuation and refresh
-generation; intelligence waits for matching evidence. Ingest retries use stable
-record IDs and retain the first stored observation. The backend supports bounded
-kind-filtered retrieval ordered by observation time, not arbitrary queries.
-This first-write behavior is not transactional across concurrent writers.
-
-Source output transforms use immutable launch inputs for correlation. Semantic
-report envelopes retain their saved-report shape inside the internal
-`{requestKey, report}` wrapper; stale snapshots cannot publish a new saved report.
-The context store is not the execution journal, and manifest text is not an
-authorization grant or automatic timer configuration.
+The sample binds the portfolio context store to instance-owned durable storage.
+Its [portfolio cases](../../src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md#durable-purpose-and-context)
+own the detailed retrieval, immutable-launch correlation, saved-report envelope,
+retry, and withdrawal guarantees. The backend's first-write behavior is not
+transactional across concurrent writers. We select this bounded evidence model
+rather than conflating retrieved context, execution journals, and review state.
 
 ### Portfolio review state remains application-owned
 

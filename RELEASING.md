@@ -1,7 +1,8 @@
 # Releasing `gik-components`
 
 Package publication occurs only when a GitHub Release is published. Direct local
-publication and manual workflow dispatch are not supported.
+npm publication is not supported. Workflow dispatch supports Pages-only
+deployment/refresh; it never publishes an npm package.
 
 1. Change `packages/components/package.json` through a reviewed pull request.
 2. Merge only after the required `validate` check succeeds.
