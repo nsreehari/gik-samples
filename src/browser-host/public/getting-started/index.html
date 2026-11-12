@@ -5,39 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Build a GIK sample application with Blueprints, Cells, explicit component providers, and a host-owned backend. Start from the Finbook reference app.">
     <title>Build a sample app | GIK</title>
-    <style>
-      :root { color-scheme: light; font-family: "Segoe UI", system-ui, sans-serif; color: #242424; background: #fafafa; }
-      * { box-sizing: border-box; }
-      body { margin: 0; }
-      header, main, footer { max-width: 1080px; margin: auto; padding: 32px clamp(20px, 5vw, 56px); }
-      header { padding-top: 56px; padding-bottom: 16px; }
-      nav { display: flex; flex-wrap: wrap; gap: 12px 24px; }
-      h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; margin: 20px 0; }
-      h2 { font-size: 1.5rem; margin-top: 0; }
-      h3 { font-size: 1.1rem; }
-      p, li { line-height: 1.65; }
-      a { color: #0f548c; text-underline-offset: 3px; }
-      a:focus-visible { outline: 3px solid #0f6cbd; outline-offset: 4px; }
-      .eyebrow { color: #616161; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-      .intro { max-width: 72ch; font-size: 1.1rem; }
-      section { margin-bottom: 32px; }
-      .card { padding: 24px; border: 1px solid #d1d1d1; border-radius: 12px; background: #fff; }
-      .reference { border-top: 4px solid #0f6cbd; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
-      .step { border-left: 3px solid #b4d6fa; padding-left: 20px; margin-bottom: 28px; }
-      pre { padding: 20px; overflow-x: auto; border-radius: 8px; background: #f0f0f0; line-height: 1.7; }
-      code { font-family: Consolas, monospace; overflow-wrap: anywhere; }
-      pre code { overflow-wrap: normal; }
-      .note, footer { color: #525252; }
-      .skip { position: absolute; left: 20px; top: -60px; padding: 12px; background: #fff; }
-      .skip:focus { top: 12px; }
-    </style>
+    <link rel="stylesheet" href="../docs/site.css">
   </head>
   <body>
     <a class="skip" href="#walkthrough">Skip to the walkthrough</a>
     <header>
       <nav aria-label="GIK resources">
         <a href="../">GIK Studio</a>
+        <a href="../docs/">Documentation</a>
         <a href="../storybook/">Components Storybook</a>
         <a href="../vendor/">Package downloads</a>
         <a href="https://github.com/nsreehari/gik-samples">Sample source repository</a>
@@ -134,9 +109,11 @@ npm run dev</code></pre>
           </article>
           <article class="card">
             <h3>Purpose and retained evidence</h3>
-            <p>A purpose-bearing Cell declares <code>dpp.manifest</code>, context query/ingest
-              sources, and optional Senses. The portfolio sample demonstrates scoped history
-              and stale-result guards. Purpose text never grants execution permission.</p>
+            <p>First establish an enduring purpose, beneficiaries, and boundaries. Agent calls
+              or remembered conversations alone do not justify a DPP. Where it is justified,
+              <code>dpp.manifest</code> expresses the reference frame and context query/ingest
+              supports useful evidence. The portfolio sample demonstrates this; purpose text
+              never grants execution permission.</p>
             <a href="https://github.com/nsreehari/gik-samples/tree/main/src/bootstrap/blueprints/portfolio-tracker-new">Portfolio sample and behavior cases</a>
             &middot; <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md">DPP contract</a>
           </article>
@@ -147,6 +124,7 @@ npm run dev</code></pre>
       <p>This walkthrough explains composition. Package READMEs own the current APIs;
         the linked reference source owns runnable examples.</p>
       <a href="../">Return to GIK Studio</a>
+      &middot; <a href="../docs/">Documentation hub</a>
     </footer>
   </body>
 </html>

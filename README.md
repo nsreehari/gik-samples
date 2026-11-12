@@ -2,10 +2,17 @@
 
 Community-facing components, Blueprint samples, and the browser App Host for the Generative Interaction Kernel.
 
+[Explore Studio](https://nsreehari.github.io/gik-samples/) |
+[Documentation hub](https://nsreehari.github.io/gik-samples/docs/) |
+[Build a sample app](https://nsreehari.github.io/gik-samples/getting-started/) |
+[Component workbench](https://nsreehari.github.io/gik-samples/storybook/)
+
 ## Package and documentation map
 
 | Guide | Owns |
 | --- | --- |
+| [Documentation](docs/README.md) | Learning paths, documentation ownership, and navigation |
+| [Samples](docs/samples.md) | Example selection, prerequisites, host boundaries, and continuous-awareness demo |
 | [gik-components](packages/components/README.md) | Public projection catalogs, React adapters, explicit providers, and component authoring tools |
 | [MCP companion](packages/mcp-server/README.md) | Standalone local tooling, pairing, credentials, provisioning, and MCP transports |
 | [Finbook](apps/finbook/README.md) | Reference application setup, composition, and extraction constraints |
@@ -26,59 +33,10 @@ host wiring; it does not redefine those contracts.
   application with its own Blueprint, web host, MCP server, domain logic,
   SQLite persistence, seeds, and tests.
 
-The app publishes `/provisioning/` and `/in-memory/provisioning/`. These routes
-use the same repository/user Blueprint catalog as the Studio and store
-user-owned provisioning profiles in IndexedDB or memory respectively. They
-export portable `gik-project/1` plans containing the selected Blueprint and
-derived agent declarations. Plans can always be downloaded and applied with
-the copied scripts, or reviewed and applied through the loopback companion.
-
-The curated repository Blueprints remain immutable seeds. The browser
-experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. Studio resolves
-`gik-components` from the local workspace source directory using `file:`
-dependencies, never a tarball. All external `gik-*` dependencies, including
-`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host`, resolve from published
-npm packages. Finbook and its browser host also consume published
-`gik-components`, allowing the app directory to run independently.
-
-The portfolio intelligence Cell declares `dpp.manifest` and context query/ingest
-sources. Its host stores scoped observations in the Blueprint instance's durable
-storage and supplies selected history alongside the current valuation to the
-intelligence provider. See the [portfolio test cases](src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md)
-for correlation, retry, and lifecycle guarantees.
-
-Cell expressions read settled results as `fetched_sources.<id>`; source
-configuration arrays remain named `sources`. Manifest text does not grant
-execution permission or automatically start agents or timers. Dependency
-minimums are maintained in the consumer package manifests, not a second version
-table here.
-
-Blueprint service declarations own their concrete non-secret configuration,
-including service endpoints and logical `credentialRef` values. The browser
-host authorizes endpoints declared by repository-seeded Blueprints and resolves
-the referenced secret from browser credential storage when the service is used.
-Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
-
-## Continuous awareness example
-
-The [Senses clock Blueprint](src/bootstrap/blueprints/senses-clock/blueprint.json)
-declares a timer Sense and a bounded report source in the same Cell. The
-[headless host](src/headless/senses-clock-host.ts) registers existing service
-kinds, reconciles committed bindings, journals each Signal, and executes the
-resulting source effects.
-
-```sh
-npm exec -- tsx src/headless/senses-clock-demo.ts
-npm test -- src/headless/senses-clock-host.test.ts
-```
-
-The bounded demo prints counter and report snapshots, then closes its worker and
-timer. It uses the published memory storage provider; callers can supply another
-compatible durable provider and references. The integration test reuses that
-storage across host restart and verifies repeated deliveries, source settlement,
-disable, re-enable, recovery, and cleanup. The timer uses fixed-delay intervals,
-skips missed occurrences, and begins a fresh interval after reconnect.
+For browser-only examples, purpose-bearing portfolio Cells, incident analysis,
+the headless Sense demo, and provisioning prerequisites, use the
+[sample guide](docs/samples.md). It distinguishes runnable browser previews
+from local servers and external-service integrations.
 
 ## Application boundary
 
@@ -91,6 +49,7 @@ and components consume through well-defined props and events.
 
 ## Live site
 
+- [Documentation hub](https://nsreehari.github.io/gik-samples/docs/) - concepts, samples, packages, and hosting
 - [Build a sample app](https://nsreehari.github.io/gik-samples/getting-started/) - walkthrough and reference source
 - [Root sample app](https://nsreehari.github.io/gik-samples/)
 - [Storybook](https://nsreehari.github.io/gik-samples/storybook/)

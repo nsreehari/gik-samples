@@ -80,6 +80,14 @@ export function ApplicationSwitcher({ currentId }: { currentId?: string }): Reac
           <a
             role="menuitem"
             className="gx-switcher-row"
+            href={`${import.meta.env.BASE_URL}docs/`}
+          >
+            <span className="gx-switcher-check" aria-hidden="true" />
+            <span>Documentation</span>
+          </a>
+          <a
+            role="menuitem"
+            className="gx-switcher-row"
             href={`${import.meta.env.BASE_URL}getting-started/`}
           >
             <span className="gx-switcher-check" aria-hidden="true" />

@@ -30,6 +30,8 @@ test("collects all 11 exact npm archives with index, source metadata, and verifi
   assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.0");
   const checksums = await readFile(join(options.outputDirectory, "SHA256SUMS"), "utf8");
   const index = await readFile(join(options.outputDirectory, "index.html"), "utf8");
+  assert.ok(index.includes('href="../docs/"'));
+  assert.ok(index.includes('href="../docs/site.css"'));
   for (const entry of manifest.packages) {
     const archive = await readFile(join(options.outputDirectory, entry.file));
     assert.deepEqual(archive, options.bytes);

@@ -94,6 +94,22 @@ try {
     || !guide.includes("npm run check")) {
     throw new Error("Pages sample app guide is missing its walkthrough or reference source");
   }
+  const docsUrl = new URL("docs/", pageUrl);
+  const docsResponse = await fetch(docsUrl);
+  if (!docsResponse.ok) throw new Error(`Documentation hub returned HTTP ${docsResponse.status}`);
+  const docs = await docsResponse.text();
+  if (!docs.includes('id="concepts"') || !docs.includes('id="samples"')
+    || !docs.includes('id="packages"') || !docs.includes('id="hosting"')) {
+    throw new Error("Pages documentation hub is missing its learning paths");
+  }
+  const stylesheetResponse = await fetch(new URL("site.css", docsUrl));
+  if (!stylesheetResponse.ok || !stylesheetResponse.headers.get("content-type")?.includes("text/css")) {
+    throw new Error("Pages documentation stylesheet was not served as CSS");
+  }
+  const storybookResponse = await fetch(new URL("storybook/index.json", pageUrl));
+  if (!storybookResponse.ok || !(await storybookResponse.json()).entries?.["start-here--overview"]) {
+    throw new Error("Built Storybook is missing its documentation entry point");
+  }
   if (process.env.CHECK_PACKAGE_DOWNLOADS === "true") {
     const vendorUrl = new URL("vendor/", pageUrl);
     const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
@@ -131,6 +147,10 @@ try {
   if (!html.includes(new URL(guideUrl).pathname)) {
     throw new Error("Built Pages host does not link to the sample app guide");
   }
+  if (!html.includes(docsUrl.pathname)) {
+    throw new Error("Built Pages host does not link to the documentation hub");
+  }
+  console.log(`Documentation hub, shared CSS, and Storybook navigation passed at ${docsUrl}`);
   console.log(`Sample app guide and home navigation passed at ${guideUrl}`);
   console.log(`Pages smoke test passed at ${pageUrl}`);
 } finally {
