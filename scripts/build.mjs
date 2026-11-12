@@ -22,9 +22,7 @@ await run(process.execPath, [npmCli, "run", "build", "--workspace", "gik-compone
 await Promise.all([
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
   ...(siteOnly ? [] : [run(process.execPath, [npmCli, "run", "finbook:build"])]),
-]);
-if (!dev) {
-  await run(process.execPath, [
+  ...(dev ? [] : [run(process.execPath, [
     npmCli,
     "exec",
     "--",
@@ -34,8 +32,8 @@ if (!dev) {
     "storybook/.storybook",
     "-o",
     "storybook-static",
-  ]);
-}
+  ])]),
+]);
 await run(process.execPath, [
   npmCli,
   "exec",

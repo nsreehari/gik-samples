@@ -25,3 +25,22 @@ appendFileSync(process.env.BUILD_CALLS, JSON.stringify(process.argv.slice(2)) + 
     assert.ok(invoked.some((args) => args.includes("vite")));
   }
 });
+
+test("a failed Storybook build blocks browser assembly", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "gik-build-failure-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const runner = join(directory, "npm-fixture.mjs");
+  const calls = join(directory, "calls.jsonl");
+  await writeFile(runner, `import { appendFileSync } from "node:fs";
+const args = process.argv.slice(2);
+appendFileSync(process.env.BUILD_CALLS, JSON.stringify(args) + "\\n");
+if (args.includes("storybook")) process.exitCode = 1;`);
+  assert.throws(() => execFileSync(process.execPath, [
+    fileURLToPath(new URL("../build.mjs", import.meta.url)), "--site-only",
+  ], {
+    env: { ...process.env, npm_execpath: runner, BUILD_CALLS: calls },
+    stdio: "pipe",
+  }), /exited with 1/);
+  const invoked = (await readFile(calls, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(invoked.some((args) => args.includes("vite")), false);
+});

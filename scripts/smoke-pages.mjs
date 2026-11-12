@@ -48,7 +48,7 @@ async function waitForPreview() {
   throw new Error(`Timed out waiting for ${pageUrl}:\n${previewOutput}`);
 }
 
-function dumpPage() {
+function dumpPage(url = pageUrl) {
   return new Promise((resolve, reject) => {
     const browser = spawn(chrome, [
       "--headless",
@@ -57,13 +57,13 @@ function dumpPage() {
       "--disable-dev-shm-usage",
       "--virtual-time-budget=15000",
       "--dump-dom",
-      pageUrl,
+      url,
     ]);
     let stdout = "";
     let stderr = "";
     const timeout = setTimeout(() => {
       browser.kill();
-      reject(new Error(`Chrome timed out rendering ${pageUrl}:\n${stderr}`));
+      reject(new Error(`Chrome timed out rendering ${url}:\n${stderr}`));
     }, 30_000);
     browser.stdout.on("data", (chunk) => {
       stdout += chunk;
@@ -150,6 +150,19 @@ try {
   if (!html.includes(docsUrl.pathname)) {
     throw new Error("Built Pages host does not link to the documentation hub");
   }
+  for (const [id, viewMode] of [
+    ["primitive-components-metric--standard", "story"],
+    ["primitive-components-metric--docs", "docs"],
+  ]) {
+    const url = new URL("storybook/iframe.html", pageUrl);
+    url.searchParams.set("id", id);
+    url.searchParams.set("viewMode", viewMode);
+    const story = await dumpPage(url.href);
+    if (!story.includes("Authoring contract") || !story.includes("All displayed examples pass")) {
+      throw new Error(`Built Storybook ${viewMode} did not render the validated component contract`);
+    }
+  }
+  console.log("Storybook component canvas and autodocs rendered their validated contracts");
   console.log(`Documentation hub, shared CSS, and Storybook navigation passed at ${docsUrl}`);
   console.log(`Sample app guide and home navigation passed at ${guideUrl}`);
   console.log(`Pages smoke test passed at ${pageUrl}`);

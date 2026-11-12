@@ -48,6 +48,11 @@ npm run build
 
 The build first compiles `gik-components`, validates the bootstrap catalog, and
 produces the Finbook app, browser app, and Storybook output.
+Bootstrap validation, Finbook, and Storybook run concurrently after Components
+compilation; the browser build waits for all required outputs. Storybook resolves
+local Components source to avoid docgen parsing minified distribution bundles.
+Autodocs and accessibility support remain enabled. Studio and extracted Finbook
+still validate their normal built/published package entry points.
 
 ## 3. Typecheck
 
