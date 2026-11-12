@@ -61,7 +61,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
@@ -70,8 +70,8 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Validate vendored packages
-        run: npm run validate:vendor
+      - name: Install Finbook dependencies
+        run: npm install --prefix apps/finbook --no-audit --no-fund
 
       - name: Build
         run: npm run build
@@ -131,7 +131,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
@@ -173,13 +173,17 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Install Finbook dependencies
+        run: npm install --prefix apps/finbook --no-audit --no-fund
 
       - name: Build site
         run: npm run build

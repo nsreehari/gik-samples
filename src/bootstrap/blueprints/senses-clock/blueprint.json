@@ -70,7 +70,7 @@
           "when": "inputs.count > 0",
           "input": { "kind": "jsonata", "expr": "{'tick':inputs.count}" }
         }],
-        "compute": [{ "id": "report", "assign": "report.latest", "expression": "sources.report" }],
+        "compute": [{ "id": "report", "assign": "report.latest", "expression": "fetched_sources.report" }],
         "outputs": [{ "token": "latest-report", "from": "computed.report.latest" }],
         "events": {
           "review-due": { "payloadSchema": { "type": "object" } },

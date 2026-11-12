@@ -4,5 +4,3 @@ storybook-static/
 coverage/
 .tmp/
 *.tgz
-!vendor/gik-packages/*.tgz
-!apps/finbook/vendor/gik-packages/*.tgz

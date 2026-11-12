@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { JsonSchemaMcpServer } from '../../src/json-schema-server.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import fs from 'node:fs';
-import * as z from 'zod/v4';
 
-const server = new McpServer({
+const server = new JsonSchemaMcpServer({
   name: 'mock-upstream',
   version: '1.0.0',
 });
@@ -16,9 +15,13 @@ server.registerTool(
     title: 'Upstream Echo',
     description: 'Echo arguments from the mock upstream MCP server.',
     inputSchema: {
-      message: z.string().describe('Message to echo.'),
-      count: z.int().optional(),
-      mode: z.union([z.literal('brief'), z.literal('full')]).optional(),
+      type: 'object',
+      required: ['message'],
+      properties: {
+        message: { type: 'string', description: 'Message to echo.' },
+        count: { type: 'integer' },
+        mode: { anyOf: [{ type: 'string', const: 'brief' }, { type: 'string', const: 'full' }] },
+      },
     },
     annotations: {
       readOnlyHint: true,
@@ -44,7 +47,7 @@ if (process.env.MOCK_UPSTREAM_EXTRA_TOOL_FILE && fs.existsSync(process.env.MOCK_
     {
       title: 'Upstream Extra',
       description: 'A tool added after proxy startup.',
-      inputSchema: {},
+      inputSchema: { type: 'object', properties: {} },
     },
     async () => ({ content: [{ type: 'text', text: 'extra-ready' }] }),
   );
