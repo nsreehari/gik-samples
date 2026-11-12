@@ -43,6 +43,12 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Demonstrate published Sense services
+        run: node --import tsx src/headless/senses-clock-demo.ts
+
+      - name: Test standalone Finbook
+        run: npm test --prefix apps/finbook
+
       - name: Smoke-test built browser host
         run: npm run test:pages
         env:
