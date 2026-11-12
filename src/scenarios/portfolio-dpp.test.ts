@@ -82,7 +82,8 @@ test("portfolio DPP keeps stable scope across valuations, gates stale evidence, 
       const output = provider.eval(source.output.expr, { ...settled, response: report }) as any;
       assert.equal(output.requestKey, request.requestKey);
       assert.deepEqual(
-        cell.compute && source.id === "portfolio-semantic-intelligence.source"
+        cell.compute?.some(({ id }: { id: string }) => id === "generated-portfolio-report")
+          && source.id === "portfolio-semantic-intelligence.source"
           ? output.report.report
           : output.report,
         report,
@@ -115,13 +116,14 @@ test("semantic intelligence preserves saved-report envelopes and suppresses stal
       const [, presentation, providerId] = program.id.match(/^semantic-(.+)-(foundry|copilot)$/)!;
       assert.equal(envelope.analysisKey, `${providerId}/${presentation}`);
       const save = blueprint.cells["portfolio-intelligence-resolution"].sources[0];
-      assert.deepEqual(provider.eval(save.input.expr, {
+      const saveInput = provider.eval(save.input.expr, {
         inputs: {
           ...inputs,
           analysisContext: { ...inputs.analysisContext, analysisKey: envelope.analysisKey },
           generatedReport: envelope,
         },
-      }), {
+      }) as Record<string, Json>;
+      assert.deepEqual({ ...saveInput }, {
         portfolio_key: "portfolio-snapshot", analysis_key: envelope.analysisKey, report: envelope,
       });
       const changed = { ...context, inputs: { ...inputs, refreshGeneration: 2 } };
