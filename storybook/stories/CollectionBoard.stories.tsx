@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { collectionBoardDefinition } from "@gik-ai/components/primitives";
+import { collectionBoardDefinition } from "gik-components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = {

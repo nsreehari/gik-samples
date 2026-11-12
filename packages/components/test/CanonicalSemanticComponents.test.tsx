@@ -3,7 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
-import { createGikComponentDeclarativeBundle } from "../src/GikComponentDeclarative";
+import { createGikComponentDeclarativeBundle, semanticProjectionProvider } from "../src/GikComponentDeclarative";
 import {
   semanticComponentCapabilities,
   semanticComponentDefinitions,
@@ -36,7 +36,10 @@ test("canonical semantics are registered with capabilities and recognized by dec
     assert.equal(semanticComponentViews[name], semanticComponentDefinitions[name].component);
     assert.ok(semanticComponentCapabilities[name].propsSchema);
     const trial = semanticComponentDefinitions[name].materializeTrial();
-    const bundle = createGikComponentDeclarativeBundle({ id: trial.id, capability: trial.capability, props: trial.props });
+    const bundle = createGikComponentDeclarativeBundle(
+      { id: trial.id, capability: trial.capability, props: trial.props },
+      { state: {}, effectHandlers: {}, contexts: {}, providers: [semanticProjectionProvider] },
+    );
     const vocabulary = "payload" in bundle.vocabulary ? bundle.vocabulary.payload : bundle.vocabulary;
     assert.ok(vocabulary.capabilities[`semantic:${name}`]?.propsSchema);
   }

@@ -14,16 +14,17 @@ experiences.
 
 ## Development
 
-Use Node.js 22 or later:
+Use Node.js 24:
 
 ```sh
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
+npm install --prefix apps/finbook --no-audit --no-fund
 npm run dev
 ```
 
-Do not replace vendored `@gik-ai/*` packages with sibling checkout dependencies.
-Do not regenerate vendored archives unless a maintainer explicitly approves the
-provenance change.
+Do not replace published `gik-*` packages with sibling checkout dependencies
+or vendored archives. Keep `gik-components` on the local workspace directory
+using `file:` dependencies, not a tarball.
 
 ## Pull requests
 
@@ -43,6 +44,10 @@ npm run build
 npm run typecheck
 npm test
 ```
+
+With explicit maintainer approval, the PR CI workflow may perform installs and
+validation instead of local execution. Report the successful workflow run;
+do not treat a pending or failed check as validated.
 
 The required `validate` check, a current branch, and resolved conversations are
 enforced before merge. The sole maintainer performs the human review and merge

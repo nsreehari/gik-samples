@@ -1,4 +1,4 @@
-import type { Json } from "@gik-ai/kernel";
+import type { Json } from "gik-kernel";
 
 export interface McpToolDescriptor {
   name: string;
@@ -104,7 +104,7 @@ export function createMcpHttpClient(
           protocolVersion: "2025-06-18",
           capabilities: {},
           clientInfo: {
-            name: "@gik-ai/finbook",
+            name: "gik-finbook",
             version: "0.1.0",
           },
         },

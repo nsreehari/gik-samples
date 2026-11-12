@@ -1,5 +1,5 @@
-import type { CapabilityDescriptor } from "@gik-ai/kernel";
-import type { ProjectionView } from "@gik-ai/react";
+import type { CapabilityDescriptor } from "gik-kernel";
+import type { ProjectionView } from "gik-react";
 
 import {
   FluentButton,
@@ -35,6 +35,7 @@ import {
 } from "./FluentDataControls";
 import { FluentDialog, fluentDialogDefinition } from "./FluentDialog";
 import { FluentText, fluentTextDefinition } from "./FluentText";
+import { FluentStack, FluentStackItem, fluentStackDefinition, fluentStackItemDefinition } from "./FluentStack";
 import { FluentToolbar, fluentToolbarDefinition } from "./FluentToolbar";
 import { FluentPanel, FluentRow, fluentPanelDefinition, fluentRowDefinition } from "./FluentLayoutControls";
 import {
@@ -59,6 +60,8 @@ export const fluentComponentViews: Record<string, ProjectionView> = {
   searchbox: FluentSearchbox,
   row: FluentRow,
   spinner: FluentSpinner,
+  stack: FluentStack,
+  "stack-item": FluentStackItem,
   switch: FluentSwitch,
   table: FluentTable,
   text: FluentText,
@@ -82,6 +85,8 @@ export const fluentComponentDefinitions = {
   searchbox: fluentSearchboxDefinition,
   row: fluentRowDefinition,
   spinner: fluentSpinnerDefinition,
+  stack: fluentStackDefinition,
+  "stack-item": fluentStackItemDefinition,
   switch: fluentSwitchDefinition,
   table: fluentTableDefinition,
   text: fluentTextDefinition,

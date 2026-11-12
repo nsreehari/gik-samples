@@ -1,6 +1,6 @@
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { Json } from "@gik-ai/kernel";
-import type { ProjectionView } from "@gik-ai/react";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { Json } from "gik-kernel";
+import type { ProjectionView } from "gik-react";
 
 import {
   defineComponent,

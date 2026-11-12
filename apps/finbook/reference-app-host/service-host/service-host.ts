@@ -1,12 +1,12 @@
-import { executeQueuedCellSourceEffect } from "@gik-ai/blueprint/worker";
-import type { BlueprintRuntime } from "@gik-ai/controlface/blueprint";
-import { DefaultServiceHost } from "@gik-ai/controlface/services";
+import { executeQueuedCellSourceEffect } from "gik-blueprint/worker";
+import type { BlueprintRuntime } from "gik-controlface/blueprint";
+import { DefaultServiceHost } from "gik-controlface/services";
 import {
   JsonataExpressionProvider,
   unwrap,
   type ServiceDeclaration,
-} from "@gik-ai/kernel";
-import type { LoadBundleOptions } from "@gik-ai/react";
+} from "gik-kernel";
+import type { LoadBundleOptions } from "gik-react";
 
 import {
   createReferenceServiceRegistry,

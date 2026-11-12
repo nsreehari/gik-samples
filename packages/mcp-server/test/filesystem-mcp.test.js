@@ -3,20 +3,27 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { applyRuntimeSnapshotChanges } from '@gik-ai/durable-runtime';
+import { applyRuntimeSnapshotChanges } from 'gik-durable-runtime';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { NotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import * as z from 'zod/v4';
+import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv-provider.js';
 
 const serverRoot = path.resolve(import.meta.dirname, '..');
-const snapshotInvalidationNotificationSchema = NotificationSchema.extend({
-  method: z.literal('notifications/gik/runtime_snapshot_invalidated'),
-  params: z.object({
-    runtimeId: z.string(),
-    stateRef: z.string(),
-    observedRevision: z.string().optional(),
-  }),
+const validateSnapshotInvalidation = new AjvJsonSchemaValidator().getValidator({
+  type: 'object',
+  required: ['method', 'params'],
+  properties: {
+    method: { const: 'notifications/gik/runtime_snapshot_invalidated' },
+    params: {
+      type: 'object',
+      required: ['runtimeId', 'stateRef'],
+      properties: {
+        runtimeId: { type: 'string' },
+        stateRef: { type: 'string' },
+        observedRevision: { type: 'string' },
+      },
+    },
+  },
 });
 
 async function eventually(assertion, timeoutMs = 2_000) {
@@ -43,9 +50,12 @@ test('filesystem tools persist storage through the MCP stdio transport', async (
   });
   const client = new Client({ name: 'filesystem-test-client', version: '0.1.0' });
   const invalidations = [];
-  client.setNotificationHandler(snapshotInvalidationNotificationSchema, (notification) => {
+  client.fallbackNotificationHandler = (notification) => {
+    if (notification.method !== 'notifications/gik/runtime_snapshot_invalidated') return;
+    const result = validateSnapshotInvalidation(notification);
+    assert.equal(result.valid, true, result.errorMessage);
     invalidations.push(notification.params);
-  });
+  };
   t.after(async () => client.close());
   await client.connect(transport);
 

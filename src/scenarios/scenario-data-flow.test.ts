@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { materializeBlueprint, parseBlueprintReference } from "@gik-ai/blueprint";
+import { materializeBlueprint, parseBlueprintReference } from "gik-blueprint";
 
 import {
   getSampleBlueprintCatalog,
@@ -49,6 +49,12 @@ test("data flow maps terminal Blueprint Cells to canvas nodes and shared-token p
   assert.equal(
     model.nodes.find(({ id }) => id === "market-prices")?.sources[0]?.operation,
     "refreshPrices",
+  );
+  assert.deepEqual(
+    model.nodes.find(({ id }) => id === "portfolio-intelligence")?.sources
+      .filter(({ service }) => service === "portfolio-context")
+      .map(({ operation }) => operation),
+    ["query", "ingest"],
   );
   assert.equal(
     model.nodePorts["portfolio-holdings"].right?.[0].hasValue,

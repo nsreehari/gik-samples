@@ -1,10 +1,10 @@
-import type { Json, NativeServiceDeclaration } from "@gik-ai/kernel";
+import type { Json, NativeServiceDeclaration } from "gik-kernel";
 import {
   serviceConfig,
   type ServiceAdapter,
   type ServiceKindFactory,
   type ServiceKindManifest,
-} from "@gik-ai/controlface/services";
+} from "gik-controlface/services";
 
 import manifestJson from "./manifest.json";
 

@@ -1,5 +1,5 @@
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
-import type { ProjectionView } from "@gik-ai/react";
+import type { Json, ResolvedNode } from "gik-kernel";
+import type { ProjectionView } from "gik-react";
 
 export interface ComponentAuthoringGuide {
   useWhen: readonly string[];

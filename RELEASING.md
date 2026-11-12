@@ -1,4 +1,4 @@
-# Releasing `@gik-ai/components`
+# Releasing `gik-components`
 
 Package publication occurs only when a GitHub Release is published. Direct local
 publication and manual workflow dispatch are not supported.
@@ -10,15 +10,16 @@ publication and manual workflow dispatch are not supported.
 5. Mark versions containing a prerelease suffix, such as `-next.0`, as GitHub
    prereleases. They publish to npm's `next` dist-tag. Stable versions publish to
    `latest`.
-6. Publish the exact core `@gik-ai/*` dependency versions first. The Components
+6. Publish the exact core `gik-*` dependency versions first. The Components
    release gate verifies that each one exists on npm.
 7. Approve the protected `npm-publish` environment after reviewing the release
    commit, version, channel, package contents, and validation results.
 
-`@gik-ai/components` uses npm trusted publishing with GitHub owner
+`gik-components` uses npm trusted publishing with GitHub owner
 `nsreehari`, repository `gik-samples`, workflow `publish.yml`, environment
 `npm-publish`, and permission to run `npm publish`. The workflow obtains
 short-lived OIDC credentials and does not use an npm token.
 
-This repository publishes only `@gik-ai/components`. Its vendored `@gik-ai/*` archives
-are build inputs and must never be published from this repository.
+This repository publishes only `gik-components`. External `gik-*` packages are
+consumed from npm and must never be republished from this repository. Repository
+consumers keep `gik-components` linked to its local source directory.

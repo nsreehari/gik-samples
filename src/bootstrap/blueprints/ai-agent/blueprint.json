@@ -363,10 +363,10 @@
         "compute": [
           {
             "id": "agent-options",
-            "expression": "$exists(sources.`agent-query-form.source`) ? [sources.`agent-query-form.source`.{'value':$, 'label':$}] : []",
+            "expression": "$exists(fetched_sources.`agent-query-form.source`) ? [fetched_sources.`agent-query-form.source`.{'value':$, 'label':$}] : []",
             "assign": "agent.agentOptions",
             "dependencies": [
-              "sources.agent-query-form.source"
+              "fetched_sources.agent-query-form.source"
             ]
           }
         ],
@@ -462,18 +462,18 @@
         "compute": [
           {
             "id": "agent-response-assign",
-            "expression": "$exists(sources.`agent-response.source`) ? sources.`agent-response.source`.reply : ''",
+            "expression": "$exists(fetched_sources.`agent-response.source`) ? fetched_sources.`agent-response.source`.reply : ''",
             "assign": "agent.reply",
             "dependencies": [
-              "sources.agent-response.source"
+              "fetched_sources.agent-response.source"
             ]
           },
           {
             "id": "agent-conversation-assign",
-            "expression": "$exists(sources.`agent-response.source`) ? sources.`agent-response.source`.conversationId : ''",
+            "expression": "$exists(fetched_sources.`agent-response.source`) ? fetched_sources.`agent-response.source`.conversationId : ''",
             "assign": "agent.conversationId",
             "dependencies": [
-              "sources.agent-response.source"
+              "fetched_sources.agent-response.source"
             ]
           }
         ],

@@ -25,9 +25,9 @@ import {
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import type { ExternalContext } from "@gik-ai/blueprint";
-import { BlueprintProvider, BlueprintRegion } from "@gik-ai/react";
-import { BlueprintRegion as DurableBlueprintRegion } from "@gik-ai/react/durable";
+import type { ExternalContext } from "gik-blueprint";
+import { BlueprintProvider, BlueprintRegion } from "gik-react";
+import { BlueprintRegion as DurableBlueprintRegion } from "gik-react/durable";
 import { resolveCapabilityDescriptors, resolveProjectionViews } from "./runtime/provider-registry";
 import { HostServiceDependencyAccess } from "./runtime/service-dependency-access";
 import { ApplicationSwitcher } from "./ApplicationSwitcher";

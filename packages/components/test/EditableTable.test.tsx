@@ -3,7 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import type { Json, ResolvedNode } from "gik-kernel";
 
 import {
   EditableTable,

@@ -1,14 +1,14 @@
 import React from "react";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { CapabilityDescriptor, Json } from "@gik-ai/kernel";
-import type { ProjectionView, ProjectionViewProps } from "@gik-ai/react";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { CapabilityDescriptor, Json } from "gik-kernel";
+import type { ProjectionView, ProjectionViewProps } from "gik-react";
 import {
   GikComponent,
   defineComponent,
   trialNode,
   type ComponentDescription,
   type ComponentValidationReport,
-} from "@gik-ai/components";
+} from "gik-components";
 
 interface ExplorerResult {
   title: string;

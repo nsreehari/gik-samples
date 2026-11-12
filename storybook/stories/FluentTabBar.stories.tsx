@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fluentTabBarDefinition } from "@gik-ai/components/fluent";
+import { fluentTabBarDefinition } from "gik-components/fluent";
 import { ComponentStory } from "./ComponentStory";
 const meta = { title: "Fluent Components/Tab Bar", component: ComponentStory, tags: ["autodocs"], args: { definition: fluentTabBarDefinition, variant: "standard" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;
 export default meta;

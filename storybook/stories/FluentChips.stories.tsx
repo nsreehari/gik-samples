@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fluentChipsDefinition } from "@gik-ai/components/fluent";
+import { fluentChipsDefinition } from "gik-components/fluent";
 import { ComponentStory } from "./ComponentStory";
 const meta = { title: "Fluent Components/Chips", component: ComponentStory, tags: ["autodocs"], args: { definition: fluentChipsDefinition, variant: "standard" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;
 export default meta;

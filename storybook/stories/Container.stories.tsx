@@ -1,7 +1,7 @@
 import React from "react";
 import { makeStyles, tokens } from "@fluentui/react-components";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Container, CONTAINER_VARIANTS, containerDefinition, type ContainerVariant } from "@gik-ai/components/primitives";
+import { Container, CONTAINER_VARIANTS, containerDefinition, type ContainerVariant } from "gik-components/primitives";
 
 import { ComponentStory } from "./ComponentStory";
 

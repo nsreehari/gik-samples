@@ -1,4 +1,8 @@
-import { ServiceKindRegistry, type ServiceKindFactory } from "@gik-ai/controlface/services";
+import {
+  createContextStoreServiceKind,
+  ServiceKindRegistry,
+  type ServiceKindFactory,
+} from "gik-controlface/services";
 
 import { copilotAgentKind } from "./copilot-agent";
 import { createDeterministicAgentKind, type DeterministicServiceHandler } from "./deterministic-agent";
@@ -24,6 +28,7 @@ export function createSampleServiceKindRegistry(
   const factories: ServiceKindFactory[] = [
     createDeterministicAgentKind(options.deterministicHandlers ?? {}),
     createDurableStorageKind(options.durableStorageConnections ?? {}),
+    createContextStoreServiceKind(),
     foundryAgentKind,
     copilotAgentKind,
     mcpServiceKind,

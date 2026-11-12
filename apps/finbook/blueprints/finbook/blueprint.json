@@ -174,7 +174,7 @@
             "id": "finbook-selector.accounts",
             "service": "finbook",
             "operation": "listAccounts",
-            "when": "$not($exists(sources.`finbook-selector.accounts`))",
+            "when": "$not($exists(fetched_sources.`finbook-selector.accounts`))",
             "input": {
               "kind": "jsonata",
               "expr": "{}"
@@ -188,10 +188,10 @@
         "compute": [
           {
             "id": "account-options",
-            "expression": "$exists(sources.`finbook-selector.accounts`) ? sources.`finbook-selector.accounts`.{'value':account,'label':name} : []",
+            "expression": "$exists(fetched_sources.`finbook-selector.accounts`) ? fetched_sources.`finbook-selector.accounts`.{'value':account,'label':name} : []",
             "assign": "finbook.accountOptions",
             "dependencies": [
-              "sources.finbook-selector.accounts"
+              "fetched_sources.finbook-selector.accounts"
             ]
           }
         ],
@@ -304,10 +304,10 @@
         "compute": [
           {
             "id": "explorer-result",
-            "expression": "$exists(sources.`finbook-explorer.report`) ? sources.`finbook-explorer.report` : {'title':'Finbook report','description':'Choose an account, financial year, and report.','rows':[]}",
+            "expression": "$exists(fetched_sources.`finbook-explorer.report`) ? fetched_sources.`finbook-explorer.report` : {'title':'Finbook report','description':'Choose an account, financial year, and report.','rows':[]}",
             "assign": "finbook.explorerResult",
             "dependencies": [
-              "sources.finbook-explorer.report"
+              "fetched_sources.finbook-explorer.report"
             ]
           }
         ],

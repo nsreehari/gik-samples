@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
-import { unwrap } from "@gik-ai/kernel";
+import { unwrap } from "gik-kernel";
 
 import {
   CONTAINER_VARIANTS,
   ContainerPrimitive,
   containerDefinition,
   createGikComponentDeclarativeBundle,
+  primitiveProjectionProvider,
 } from "../src/shared";
 
 test("container variants preserve the same slotted children", () => {
@@ -39,7 +40,7 @@ test("GikComponentDeclarative composes nested container children", () => {
     edges: {
       children: [{ id: "nested", capability: "primitive:container", props: { variant: "column" } }],
     },
-  });
+  }, { state: {}, effectHandlers: {}, contexts: {}, providers: [primitiveProjectionProvider] });
   const vocabulary = unwrap(bundle.vocabulary);
   assert.deepEqual(vocabulary.externals?.projectionViews, { primitive: { from: "primitive", use: ["container"] } });
   assert.deepEqual(vocabulary.capabilities["primitive:container"].slots, ["children"]);

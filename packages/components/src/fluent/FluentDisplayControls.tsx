@@ -6,7 +6,7 @@ import {
   type PersonaProps,
   type SpinnerProps,
 } from "@fluentui/react-components";
-import { readProps, type ProjectionView } from "@gik-ai/react";
+import { readProps, type ProjectionView } from "gik-react";
 
 import type { ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { sourceFindingsDefinition } from "@gik-ai/components/software";
+import { sourceFindingsDefinition } from "gik-components/software";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Software Components/Source Findings", component: ComponentStory, tags: ["autodocs"], args: { definition: sourceFindingsDefinition, variant: "findings" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

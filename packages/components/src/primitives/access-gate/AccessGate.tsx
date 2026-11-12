@@ -1,7 +1,7 @@
 import React from "react";
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import { readProps, type ProjectionViewProps } from "@gik-ai/react";
+import type { Json, ResolvedNode } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import { readProps, type ProjectionViewProps } from "gik-react";
 
 import { FluentButton } from "../../fluent/FluentButtons";
 import { FluentDialog } from "../../fluent/FluentDialog";

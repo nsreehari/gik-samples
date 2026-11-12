@@ -3,7 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
-import { createGikComponentDeclarativeBundle } from "../src/GikComponentDeclarative";
+import { createGikComponentDeclarativeBundle, fluentProjectionProvider } from "../src/GikComponentDeclarative";
 import { fluentTextDefinition } from "../src/fluent/FluentText";
 
 test("fluent:text separates HTML semantics from visual variants", () => {
@@ -31,7 +31,7 @@ test("GikComponentDeclarative discovers fluent:text", () => {
     id: "page-title",
     capability: "fluent:text",
     props: { value: "Workbench", as: "h1", variant: "title" },
-  });
+  }, { state: {}, effectHandlers: {}, contexts: {}, providers: [fluentProjectionProvider] });
   const vocabulary = "payload" in bundle.vocabulary ? bundle.vocabulary.payload : bundle.vocabulary;
   assert.ok("fluent:text" in vocabulary.capabilities);
   assert.deepEqual(vocabulary.externals?.projectionViews, { fluent: { from: "fluent", use: ["text"] } });

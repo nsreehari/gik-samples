@@ -1,4 +1,3 @@
-import * as z from 'zod/v4';
 import {
   authenticateRemoteMcp,
   callRemoteMcpTool,
@@ -164,8 +163,8 @@ export class ProxyCatalog {
       {
         title: tool.title || tool.name,
         description: tool.description || '',
-        inputSchema: z.fromJSONSchema(tool.inputSchema),
-        ...(tool.outputSchema ? { outputSchema: z.fromJSONSchema(tool.outputSchema) } : {}),
+        inputSchema: tool.inputSchema,
+        ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         ...(tool.annotations ? { annotations: tool.annotations } : {}),
       },
       (args) => callRemoteMcpTool(tool.proxyConnection, tool.remoteToolName, args),
@@ -178,7 +177,7 @@ export class ProxyCatalog {
       {
         title: 'Proxy Authentication Status',
         description: 'Show discovery and authentication state for configured upstream MCP proxies.',
-        inputSchema: { serverName: z.string().optional() },
+        inputSchema: { type: 'object', properties: { serverName: { type: 'string' } } },
       },
       (args) => toolResult({ proxies: this.getStatuses(args.serverName) }),
     );
@@ -188,8 +187,14 @@ export class ProxyCatalog {
         title: 'Sign In To MCP Proxy',
         description: 'Check cached authentication and refresh an upstream MCP proxy. Interactive sign-in occurs only when forceLogin is true.',
         inputSchema: {
-          serverName: z.string().optional(),
-          forceLogin: z.boolean().optional().describe('Open the configured interactive login even if a cached token exists.'),
+          type: 'object',
+          properties: {
+            serverName: { type: 'string' },
+            forceLogin: {
+              type: 'boolean',
+              description: 'Open the configured interactive login even if a cached token exists.',
+            },
+          },
         },
       },
       async (args) => toolResult(await this.signIn(args.serverName, args.forceLogin === true)),
@@ -199,7 +204,7 @@ export class ProxyCatalog {
       {
         title: 'Refresh MCP Proxy Tools',
         description: 'Rediscover tools from one or all configured upstream MCP proxies.',
-        inputSchema: { serverName: z.string().optional() },
+        inputSchema: { type: 'object', properties: { serverName: { type: 'string' } } },
       },
       async (args) => toolResult({ refresh: await this.refresh(args.serverName) }),
     );

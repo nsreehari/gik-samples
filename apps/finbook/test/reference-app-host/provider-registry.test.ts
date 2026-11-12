@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import type { CapabilityDescriptor } from "@gik-ai/kernel";
-import type { ProjectionView } from "@gik-ai/react";
+import type { CapabilityDescriptor } from "gik-kernel";
+import type { ProjectionView } from "gik-react";
 
 import { createProjectionProviderRegistry } from "../../reference-app-host/provider-registry";
 

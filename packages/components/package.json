@@ -1,5 +1,5 @@
 {
-  "name": "@gik-ai/components",
+  "name": "gik-components",
   "version": "0.2.1",
   "description": "Self-describing declarative Fluent components for the Generative Interaction Kernel.",
   "license": "MIT",
@@ -70,14 +70,15 @@
     "react-dom": "^18.3.1"
   },
   "dependencies": {
-    "@gik-ai/evaluators": "0.1.2",
-    "@gik-ai/kernel": "0.1.2",
-    "@gik-ai/react": "0.3.1",
+    "gik-evaluators": ">=0.4.0",
+    "gik-kernel": ">=0.4.1",
+    "gik-react": ">=0.4.2",
     "@xyflow/react": "^12.11.2",
     "mermaid": "^11.16.0"
   },
   "scripts": {
     "build": "tsup",
+    "generate:agent-facing": "node --import tsx/esm scripts/generate-agent-facing-catalog.ts",
     "prepack": "npm run build"
   }
 }

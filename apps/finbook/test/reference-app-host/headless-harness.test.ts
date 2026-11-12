@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import type { BlueprintArtifact } from "@gik-ai/react";
+import type { BlueprintArtifact } from "gik-react";
 
 import blueprintJson from "../../blueprints/finbook/blueprint.json";
 import { openReferenceAppHeadless } from "../../reference-app-host/headless-harness";

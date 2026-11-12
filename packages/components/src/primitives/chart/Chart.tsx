@@ -1,8 +1,8 @@
 import React from "react";
 import { Badge, Text, makeStyles, tokens } from "@fluentui/react-components";
-import type { Json } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { ProjectionView } from "@gik-ai/react";
+import type { Json } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { ProjectionView } from "gik-react";
 
 import { defineComponent, trialNode, type ComponentDescription, type ComponentValidationReport } from "../../shared/definition";
 import { componentRootProps, componentStylePropsSchema, readPath, records, textAt } from "../../shared/component";

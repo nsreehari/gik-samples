@@ -5,10 +5,9 @@ import { randomUUID } from 'node:crypto';
 import process from 'node:process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { JsonSchemaMcpServer } from './json-schema-server.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as z from 'zod/v4';
 import { loadManifests } from './manifest-loader.js';
 import { resolveHandler } from './handler-registry.js';
 import { ProxyCatalog } from './proxy-catalog.js';
@@ -85,19 +84,13 @@ function validateTransportCompatibility(tools, transport) {
 function registerManifestTools(server, tools) {
   for (const tool of tools) {
     const handler = resolveHandler(tool.handler);
-    const inputSchema = tool.inputSchema
-      ? convertJsonSchemaToZodShape(tool.inputSchema)
-      : undefined;
-    const outputSchema = tool.outputSchema
-      ? convertJsonSchemaToZodShape(tool.outputSchema)
-      : undefined;
     server.registerTool(
       tool.name,
       {
         title: tool.title || tool.name,
         description: tool.description || '',
-        ...(inputSchema ? { inputSchema } : {}),
-        ...(outputSchema ? { outputSchema } : {}),
+        ...(tool.inputSchema ? { inputSchema: tool.inputSchema } : {}),
+        ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         ...(tool.annotations ? { annotations: tool.annotations } : {}),
       },
       async (args) => handler(args, tool)
@@ -105,90 +98,8 @@ function registerManifestTools(server, tools) {
   }
 }
 
-function applySchemaConstraints(schema, spec) {
-  if (typeof spec.description === 'string' && spec.description.trim()) {
-    schema = schema.describe(spec.description.trim());
-  }
-  if (typeof spec.minLength === 'number' && typeof schema.min === 'function') {
-    schema = schema.min(spec.minLength);
-  }
-  if (typeof spec.maxLength === 'number' && typeof schema.max === 'function') {
-    schema = schema.max(spec.maxLength);
-  }
-  if (typeof spec.minimum === 'number' && typeof schema.gte === 'function') {
-    schema = schema.gte(spec.minimum);
-  }
-  if (typeof spec.maximum === 'number' && typeof schema.lte === 'function') {
-    schema = schema.lte(spec.maximum);
-  }
-  return schema;
-}
-
-function convertJsonSchemaNode(spec) {
-  if (!spec || typeof spec !== 'object') {
-    return z.any();
-  }
-
-  if (Array.isArray(spec.enum) && spec.enum.length > 0) {
-    const literals = spec.enum.map((value) => z.literal(value));
-    const schema = literals.length === 1 ? literals[0] : z.union(literals);
-    return applySchemaConstraints(schema, spec);
-  }
-
-  if (spec.type === 'string') {
-    return applySchemaConstraints(z.string(), spec);
-  }
-  if (spec.type === 'integer') {
-    return applySchemaConstraints(z.int(), spec);
-  }
-  if (spec.type === 'number') {
-    return applySchemaConstraints(z.number(), spec);
-  }
-  if (spec.type === 'boolean') {
-    return applySchemaConstraints(z.boolean(), spec);
-  }
-  if (spec.type === 'array') {
-    const itemSchema = convertJsonSchemaNode(spec.items);
-    let schema = z.array(itemSchema);
-    if (typeof spec.minItems === 'number') schema = schema.min(spec.minItems);
-    if (typeof spec.maxItems === 'number') schema = schema.max(spec.maxItems);
-    return applySchemaConstraints(schema, spec);
-  }
-  if (spec.type === 'object') {
-    const shape = convertJsonSchemaToZodShape(spec);
-    const allowsAdditionalProperties = spec.additionalProperties !== false;
-    if (allowsAdditionalProperties) {
-      if (spec.additionalProperties && typeof spec.additionalProperties === 'object') {
-        return z.object(shape).catchall(convertJsonSchemaNode(spec.additionalProperties));
-      }
-      return z.object(shape).catchall(z.any());
-    }
-    return z.object(shape);
-  }
-
-  return z.any();
-}
-
-function convertJsonSchemaToZodShape(schema) {
-  if (!schema || schema.type !== 'object' || !schema.properties || typeof schema.properties !== 'object') {
-    return {};
-  }
-
-  const required = new Set(Array.isArray(schema.required) ? schema.required : []);
-
-  return Object.fromEntries(
-    Object.entries(schema.properties).map(([key, value]) => {
-      let fieldSchema = convertJsonSchemaNode(value);
-      if (!required.has(key)) {
-        fieldSchema = fieldSchema.optional();
-      }
-      return [key, fieldSchema];
-    }),
-  );
-}
-
 function createMcpServer(loaded, proxyCatalog) {
-  const server = new McpServer({
+  const server = new JsonSchemaMcpServer({
     name: loaded.server.name,
     version: loaded.server.version,
   });
@@ -324,7 +235,7 @@ async function startStreamableHttpServer(loaded, proxyCatalog) {
     rootDir: FILESYSTEM_STORAGE_ROOT,
     async publish(invalidation) {
       await Promise.allSettled([...sessionServers.values()].map((server) =>
-        server.server.notification({
+        server.notification({
           method: FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
           params: invalidation,
         })));
@@ -624,7 +535,7 @@ async function main() {
     const transport = new StdioServerTransport();
     const snapshotWatcher = createFilesystemSnapshotInvalidationWatcher({
       rootDir: FILESYSTEM_STORAGE_ROOT,
-      publish: (invalidation) => server.server.notification({
+      publish: (invalidation) => server.notification({
         method: FILESYSTEM_SNAPSHOT_INVALIDATION_NOTIFICATION,
         params: invalidation,
       }),

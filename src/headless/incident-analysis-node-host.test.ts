@@ -4,11 +4,11 @@ import { test } from "vitest";
 import {
   materializeBlueprint,
   parseBlueprintReference,
-} from "@gik-ai/blueprint";
-import { executeQueuedCellSourceEffect } from "@gik-ai/blueprint/worker";
-import { evalAsyncJsonata, runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { Json, OrchestratorResult, ResolvedNode } from "@gik-ai/kernel";
-import { BlueprintController } from "@gik-ai/react";
+} from "gik-blueprint";
+import { executeQueuedCellSourceEffect } from "gik-blueprint/worker";
+import { evalAsyncJsonata, runDeclarativeValidators } from "gik-evaluators";
+import type { Json, OrchestratorResult, ResolvedNode } from "gik-kernel";
+import { BlueprintController } from "gik-react";
 
 import { resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
 import {
@@ -30,7 +30,7 @@ const bootstrapAssets = JSON.parse(readFileSync(
 const sourceReport = bootstrapAssets.records.find(({ key }) =>
   key === "source:password-spray-mailbox")?.value.content;
 const savedEnvelope = bootstrapAssets.records.find(({ key }) =>
-  key === "seed-asset:password-spray-mailbox/semantic")?.value;
+  key === "seed-asset:password-spray-mailbox/refinement")?.value;
 assert.ok(typeof sourceReport === "string");
 assert.ok(savedEnvelope);
 const generatedReport = savedEnvelope.analysisReport;
@@ -161,9 +161,10 @@ test("Fixed-presentation analysis requests and accepts one inert multi-view repo
   assert.equal(request.presentationMode, "fixed-presentation");
   assert.deepEqual(request.acceptedCapabilities, fixedPresentationCapabilities);
   assert.doesNotMatch(JSON.stringify(request.acceptedCapabilities), /primitive:markdown/);
-  assert.match(String(request.instructions), /compose_response_validate/);
-  assert.match(String(request.instructions), /compose_response_simulate/);
-  assert.match(String(request.instructions), /compose_response_set_in_progress_proposal/);
+  assert.match(String(request.instructions), /authoritative requirements for this invocation/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_set_in_progress_proposal/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_validate/);
+  assert.doesNotMatch(String(request.instructions), /compose_response_simulate/);
   assert.deepEqual(
     ((request.authoringBrief as Record<string, Json>).blueprintProfile as Record<string, Json>)
       .presentation,
@@ -282,6 +283,96 @@ test("Fixed-presentation analysis requests and accepts one inert multi-view repo
 
 });
 
+test("Agent-generated-presentation analysis lets the agent author a governed presentation", async () => {
+  const blueprint = resolveSampleBlueprintSource("incident-analysis-new-shell");
+  assert.ok(blueprint.payload.cells);
+  const source = blueprint.payload.cells["incident-analysis"].sources?.find(({ id }) =>
+    id === "incident-analysis.agent-generated-presentation-source");
+  assert.ok(source?.input);
+  const service = blueprint.payload.services?.["incident-report-agent-generated-presentation"];
+  assert.ok(service && "kind" in service);
+  const serviceConfig = service.config as Record<string, Json>;
+  assert.equal(serviceConfig.maxOutputTokens, 5000);
+  assert.deepEqual(serviceConfig.agentTools, ["compose_response_set_in_progress_proposal"]);
+  const requestTransform = service.operations.authorReportBlueprint.request?.transform;
+  assert.ok(requestTransform);
+
+  const sourceInput = await evalAsyncJsonata(source.input.expr, {
+    inputs: { selectedSourceContent: sourceReport },
+  }) as Record<string, Json>;
+  const request = await evalAsyncJsonata(requestTransform.expr, {
+    input: sourceInput,
+  }) as Record<string, Json>;
+
+  assert.equal(request.agentName, "Incident-Report-Agent-Generated-Presentation-Agent");
+  assert.equal(request.presentationMode, "agent-generated-presentation");
+  assert.deepEqual(request.acceptedCapabilities, fixedPresentationCapabilities);
+  assert.doesNotMatch(JSON.stringify(request.acceptedCapabilities), /primitive:markdown/);
+  assert.doesNotMatch(String(request.message), /sectionRegions|correlated-alerts|recommended-actions/);
+  const authoringBrief = request.authoringBrief as Record<string, Json>;
+  assert.deepEqual(authoringBrief.toolPlan, [
+    "Choose only from the supplied viewTemplates.",
+    "Call compose_response_set_in_progress_proposal once with the complete fragment. The host ends the lifecycle on success.",
+  ]);
+  assert.deepEqual(
+    Object.keys(authoringBrief.viewTemplates as Record<string, Json>),
+    fixedPresentationCapabilities,
+  );
+  assert.deepEqual(
+    authoringBrief.responseFragment,
+    {
+      presentationSlots: "<complete presentation slot hierarchy>",
+      presentationRoot: "<root slot id>",
+      potentialViews: "<named views attached to generated slots>",
+      reportState: "<static source-grounded report state>",
+    },
+  );
+
+  const workspaceSpec = parseAgentResponseWorkspaceSpec(request.authoringWorkspace);
+  assert.ok(workspaceSpec);
+  assert.deepEqual(workspaceSpec.slots, [
+    { field: "presentationSlots", pointer: "/payload/presentation/slots" },
+    { field: "presentationRoot", pointer: "/payload/presentation/root" },
+    { field: "potentialViews", pointer: "/payload/cells/report/potentialViews" },
+    { field: "reportState", pointer: "/payload/runtime/state/report" },
+  ]);
+
+  const authored = fixedPresentationReport();
+  const authoredPayload = authored.payload as Record<string, Json>;
+  const authoredCell = (authoredPayload.cells as Record<string, Record<string, Json>>).report;
+  const authoredRuntime = authoredPayload.runtime as Record<string, Json>;
+  const authoredPresentation = authoredPayload.presentation as Record<string, Json>;
+  const composed = composeAgentResponse(workspaceSpec, {
+    presentationSlots: authoredPresentation.slots,
+    presentationRoot: authoredPresentation.root,
+    potentialViews: authoredCell.potentialViews,
+    reportState: (authoredRuntime.state as Record<string, Json>).report,
+  });
+  const composedPayload = composed.payload as unknown as Record<string, Json>;
+  assert.deepEqual(composedPayload.presentation, authoredPresentation);
+
+  const validation = runDeclarativeValidators(
+    source.acceptanceCriteria ?? [],
+    composed as unknown as Json,
+    { bindings: { request } },
+  );
+  assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+
+  const missingSlotView = structuredClone(composed);
+  const invalidPayload = missingSlotView.payload as unknown as Record<string, Json>;
+  const invalidCell = (invalidPayload.cells as Record<string, Record<string, Json>>).report;
+  const invalidViews = invalidCell.potentialViews as Record<string, Json>;
+  delete invalidViews.header;
+  const invalidValidation = runDeclarativeValidators(
+    source.acceptanceCriteria ?? [],
+    missingSlotView as unknown as Json,
+    { bindings: { request } },
+  );
+  assert.equal(invalidValidation.ok, false);
+  assert.ok(invalidValidation.errors.some(({ code }) =>
+    code === "incident-report-agent-generated-presentation-shape"));
+});
+
 test("Node host carries an Incident Analysis response through cache update to report-viewer", async () => {
   const blueprint = resolveSampleBlueprintSource("incident-analysis-new-shell");
   assert.ok(blueprint.payload.cells);
@@ -302,11 +393,11 @@ test("Node host carries an Incident Analysis response through cache update to re
     response: generatedReport,
   });
   assert.deepEqual(templatedLegacyResponse, generatedReport);
-  const semanticSource = blueprint.payload.cells["incident-analysis"].sources?.find(({ id }) =>
-    id === "incident-analysis.source");
-  assert.ok(semanticSource);
+  const refinementSource = blueprint.payload.cells["incident-analysis"].sources?.find(({ id }) =>
+    id === "incident-analysis.refinement-source");
+  assert.ok(refinementSource);
   const validation = runDeclarativeValidators(
-    semanticSource.acceptanceCriteria ?? [],
+    refinementSource.acceptanceCriteria ?? [],
     templatedReport,
   );
   assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
@@ -314,7 +405,7 @@ test("Node host carries an Incident Analysis response through cache update to re
     response: { markdown: "" },
   });
   const emptyValidation = runDeclarativeValidators(
-    semanticSource.acceptanceCriteria ?? [],
+    refinementSource.acceptanceCriteria ?? [],
     emptyReport,
   );
   assert.equal(emptyValidation.ok, false);
@@ -363,6 +454,7 @@ test("Node host carries an Incident Analysis response through cache update to re
                 throw new Error(`Unexpected Node-host service operation '${executingEffect.control.tool}'`);
             }
           });
+
         },
       }),
     },
@@ -412,6 +504,82 @@ test("Node host carries an Incident Analysis response through cache update to re
     assert.ok(report);
     assert.equal(report.visible, true);
     assert.deepEqual(report.props.blueprint, generatedReport);
+  } finally {
+    controller.stop();
+  }
+});
+
+test("Node host terminally settles a 429 after one configured source attempt", async () => {
+  const blueprint = resolveSampleBlueprintSource("incident-analysis-new-shell");
+  const materializedBlueprint = materializeBlueprint({
+    blueprint,
+    resolveBlueprint(reference) {
+      return resolveSampleBlueprintSource(parseBlueprintReference(reference).id);
+    },
+  });
+  let analysisAttempts = 0;
+  const controller = new BlueprintController(blueprint, {
+    materializedBlueprint,
+    effectRetry: { maxAttempts: 1 },
+    native: {
+      wrapOrchestrator: (fallback, state) => ({
+        ...fallback,
+        invoke: async (effect, control) => {
+          if (effect.kind !== "invoke" || !effect.control.sourceId) {
+            return fallback?.invoke?.(effect, control);
+          }
+          return executeQueuedCellSourceEffect(effect, state.snapshot(), (executingEffect): OrchestratorResult => {
+            if (executingEffect.kind !== "invoke" || !("tool" in executingEffect.control)) {
+              throw new Error(`Unexpected Node-host effect '${executingEffect.kind}'`);
+            }
+            switch (executingEffect.control.tool) {
+              case "listSourceReports":
+                return { sourceOutput: { sources: [{ id: "password-spray-mailbox", label: "Password spray" }] } };
+              case "getSourceReport":
+                return { sourceOutput: { content: sourceReport } };
+              case "getSavedReport":
+                return { sourceOutput: null };
+              case "analyzeReportBlueprint":
+                analysisAttempts += 1;
+                throw new Error("Too many requests");
+              default:
+                throw new Error(`Unexpected Node-host service operation '${executingEffect.control.tool}'`);
+            }
+          });
+        },
+      }),
+    },
+  });
+
+  try {
+    await controller.start();
+    await controller.emit("analysis-params--primary--in-params-form", "save", {
+      values: { source: "password-spray-mailbox", model: "refinement" },
+    });
+    await eventually(() => {
+      const tree = controller.getTree();
+      assert.ok(tree);
+      const analyzeButton = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--request--in-analysis-report");
+      assert.equal(analyzeButton?.visible, true);
+    });
+
+    await controller.emit("incident-analysis--request--in-analysis-report", "press", {});
+    await eventually(() => {
+      const tree = controller.getTree();
+      assert.ok(tree);
+      const analysisSpinner = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--progress--in-analysis-report");
+      const analysisError = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--error--in-analysis-report");
+      const analyzeButton = flatten(tree).find(({ id }) =>
+        id === "incident-analysis--request--in-analysis-report");
+      assert.equal(analysisAttempts, 1);
+      assert.equal(analysisSpinner?.visible, false);
+      assert.equal(analysisError?.visible, true);
+      assert.equal(analysisError?.props.value, "Too many requests");
+      assert.equal(analyzeButton?.visible, true);
+    });
   } finally {
     controller.stop();
   }

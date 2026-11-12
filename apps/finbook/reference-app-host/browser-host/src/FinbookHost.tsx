@@ -1,15 +1,15 @@
 import React from "react";
-import { openBlueprint } from "@gik-ai/controlface/blueprint";
+import { openBlueprint } from "gik-controlface/blueprint";
 import {
   BlueprintHost,
   validateBlueprintArtifact,
   type BlueprintArtifact,
   type BundleNative,
-} from "@gik-ai/react";
+} from "gik-react";
 import {
   primitiveComponentCapabilities,
   primitiveComponentViews,
-} from "@gik-ai/components/primitives";
+} from "gik-components/primitives";
 
 import finbookBlueprintJson from "../../../blueprints/finbook/blueprint.json";
 import {

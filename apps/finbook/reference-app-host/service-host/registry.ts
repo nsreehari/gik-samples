@@ -1,4 +1,4 @@
-import { ServiceKindRegistry } from "@gik-ai/controlface/services";
+import { ServiceKindRegistry } from "gik-controlface/services";
 
 import { createMcpServiceKind } from "./mcp-service-kind";
 import {

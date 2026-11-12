@@ -18,8 +18,8 @@ import {
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import type { Json } from "@gik-ai/kernel";
-import { readProps, type ProjectionView } from "@gik-ai/react";
+import type { Json } from "gik-kernel";
+import { readProps, type ProjectionView } from "gik-react";
 
 import { eventContract, type ComponentDescription } from "../shared/definition";
 import { componentRootProps, withComponentStylePropsSchema } from "../shared/component";

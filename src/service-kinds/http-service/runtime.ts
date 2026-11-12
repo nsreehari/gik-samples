@@ -1,4 +1,4 @@
-import type { Json } from "@gik-ai/kernel";
+import type { Json } from "gik-kernel";
 import type { WorkerServiceInvocation } from "../worker-service-kind";
 
 export interface HttpServiceExecutionOptions {

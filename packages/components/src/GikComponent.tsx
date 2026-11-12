@@ -1,5 +1,5 @@
 import React from "react";
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
+import type { Json, ResolvedNode } from "gik-kernel";
 
 import { fluentComponentDefinitions } from "./fluent/registry";
 import { primitiveComponentDefinitions } from "./primitives/registry";

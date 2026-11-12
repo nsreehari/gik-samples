@@ -6,18 +6,18 @@
 // Blueprint -- so neither route can drift into its own divergent wiring.
 
 import React from "react";
-import type { BlueprintArtifact, ExternalContext, MaterializedBlueprint } from "@gik-ai/blueprint";
-import type { Json } from "@gik-ai/kernel";
-import type { BundleNative, ReactBlueprintHostRegistry } from "@gik-ai/react";
-import { createIndexedDbProvider } from "@gik-ai/durable-runtime/storage/indexed-db";
-import { createIndexedDbStorageRef } from "@gik-ai/durable-runtime/storage/indexed-db/api";
-import { createDurableRuntime } from "@gik-ai/durable-runtime";
+import type { BlueprintArtifact, ExternalContext, MaterializedBlueprint } from "gik-blueprint";
+import type { Json } from "gik-kernel";
+import type { BundleNative, ReactBlueprintHostRegistry } from "gik-react";
+import { createIndexedDbProvider } from "gik-durable-runtime/storage/indexed-db";
+import { createIndexedDbStorageRef } from "gik-durable-runtime/storage/indexed-db/api";
+import { createDurableRuntime } from "gik-durable-runtime";
 import {
   createBlueprintProposalDurableTransitionAdapter,
   createDurableBlueprintProposalStore,
   createInMemoryBlueprintProposalStore,
   type BlueprintProposalStore,
-} from "@gik-ai/blueprint-agent-host";
+} from "gik-blueprint-agent-host";
 import type { UseProposal } from "./runtime/blueprint-agent-lifecycle";
 import { resolveSampleBlueprintSource } from "../../bootstrap/catalog/blueprint-catalog";
 import {
@@ -77,53 +77,46 @@ export interface BlueprintHostSetup {
   resolveNative: (materializedBlueprint: MaterializedBlueprint) => BundleNative;
 }
 
-export function useBlueprintHostSetup({
+export function createBlueprintHostSetup({
   id,
   durableEnabled,
   externalContext,
 }: BlueprintHostSetupInput): BlueprintHostSetup {
   const blueprintStorageRootInstanceId = `${id}:default`;
-  const blueprintStorage = React.useMemo(
-    () => createBrowserBlueprintStorageConnectionFactory(durableEnabled),
-    [durableEnabled],
-  );
-  const proposalStore = React.useMemo(
-    () => createSampleBlueprintProposalStore({ durableEnabled, blueprintId: id }),
-    [durableEnabled, id],
-  );
-  const blueprintRegistry = React.useMemo(
-    () => createSampleBlueprintHostRegistry({
-      createProposalStore: (blueprintId, childContext) => createSampleBlueprintProposalStore({
-        durableEnabled,
-        blueprintId,
-        instanceId: `${childContext.parentInstanceId}/cells/${childContext.cellId}`,
-      }),
-      blueprintStorage,
-      blueprintStorageRootInstanceId,
+  const blueprintStorage = createBrowserBlueprintStorageConnectionFactory(durableEnabled);
+  const proposalStore = createSampleBlueprintProposalStore({ durableEnabled, blueprintId: id });
+  const blueprintRegistry = createSampleBlueprintHostRegistry({
+    createProposalStore: (blueprintId, childContext) => createSampleBlueprintProposalStore({
+      durableEnabled,
+      blueprintId,
+      instanceId: `${childContext.parentInstanceId}/cells/${childContext.cellId}`,
     }),
-    [blueprintStorage, blueprintStorageRootInstanceId, durableEnabled],
-  );
-  const { blueprint, native } = React.useMemo(() => ({
-    blueprint: resolveSampleBlueprintSource(id),
-    native: resolveBlueprintNative(id, {
+    blueprintStorage,
+    blueprintStorageRootInstanceId,
+  });
+  const blueprint = resolveSampleBlueprintSource(id);
+  const native = resolveBlueprintNative(id, {
+    proposalStore,
+    blueprintStorage,
+    instanceId: blueprintStorageRootInstanceId,
+  });
+  const context = resolveBlueprintInitialContext(id, externalContext);
+  const resolveNative = (materializedBlueprint: MaterializedBlueprint) =>
+    resolveBlueprintNativeFromMaterialized(id, materializedBlueprint, {
       proposalStore,
       blueprintStorage,
       instanceId: blueprintStorageRootInstanceId,
-    }),
-  }), [blueprintStorage, blueprintStorageRootInstanceId, id, proposalStore]);
-  const context = React.useMemo(
-    () => resolveBlueprintInitialContext(id, externalContext),
-    [externalContext, id],
-  );
-  const resolveNative = React.useCallback(
-    (materializedBlueprint: MaterializedBlueprint) =>
-      resolveBlueprintNativeFromMaterialized(id, materializedBlueprint, {
-        proposalStore,
-        blueprintStorage,
-        instanceId: blueprintStorageRootInstanceId,
-      }),
-    [blueprintStorage, blueprintStorageRootInstanceId, id, proposalStore],
-  );
-
+    });
   return { blueprint, native, context, blueprintRegistry, resolveNative };
+}
+
+export function useBlueprintHostSetup({
+  id,
+  durableEnabled,
+  externalContext,
+}: BlueprintHostSetupInput): BlueprintHostSetup {
+  return React.useMemo(
+    () => createBlueprintHostSetup({ id, durableEnabled, externalContext }),
+    [durableEnabled, externalContext, id],
+  );
 }

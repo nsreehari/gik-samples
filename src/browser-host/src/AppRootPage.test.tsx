@@ -6,7 +6,7 @@ import {
   listExportedPresentationRegions,
   materializeBlueprint,
   type BlueprintArtifact,
-} from "@gik-ai/blueprint";
+} from "gik-blueprint";
 
 const captured = vi.hoisted(() => ({
   providers: [] as Array<{ id: string; props: Record<string, unknown> }>,
@@ -16,7 +16,7 @@ const captured = vi.hoisted(() => ({
 // The real provider/region pair is covered by the adapter's own tests. Here the question is purely
 // compositional: does this page run ONE Blueprint and place exactly the two named regions under it,
 // with the external context on the provider and never on a region?
-vi.mock("@gik-ai/react", async (importOriginal) => {
+vi.mock("gik-react", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   const react = await import("react");
   const ownerContext = react.createContext<string | null>(null);

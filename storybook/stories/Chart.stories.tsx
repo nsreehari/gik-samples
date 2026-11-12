@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { chartDefinition } from "@gik-ai/components/primitives";
-import type { ResolvedNode } from "@gik-ai/kernel";
+import { chartDefinition } from "gik-components/primitives";
+import type { ResolvedNode } from "gik-kernel";
 import { ComponentStory, type ComponentStoryExample } from "./ComponentStory";
 
 const setKind = (kind: "bar" | "line" | "pie") => (trial: ResolvedNode) => {

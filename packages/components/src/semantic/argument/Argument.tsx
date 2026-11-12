@@ -1,8 +1,8 @@
 import React from "react";
 import { Badge, Card, Text, makeStyles, tokens, type BadgeProps } from "@fluentui/react-components";
-import type { Json } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { ProjectionView } from "@gik-ai/react";
+import type { Json } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { ProjectionView } from "gik-react";
 
 import { GraphDiagram, type GraphDiagramModel } from "../../primitives/graph-diagram";
 import { asRecord, componentRootProps, componentStylePropsSchema, records, textAt, type DataRecord } from "../../shared/component";

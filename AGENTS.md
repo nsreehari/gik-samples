@@ -5,11 +5,12 @@ These instructions apply to every coding agent working in this repository.
 ## Repository
 
 - This is the public samples and Components repository for GIK.
-- Use Node.js 22 or later.
-- Install locked dependencies with `npm ci --no-audit --no-fund`.
-- The committed archives under `vendor/gik-packages` are a temporary,
-  integrity-checked distribution bridge.
+- Use Node.js 24.
+- Install dependencies with `npm install --no-audit --no-fund`.
 - Do not resolve GIK packages from sibling checkouts.
+- Keep `gik-components` on the local workspace package.
+- All external `gik-*` dependencies resolve from published npm packages.
+  `gik-components` uses a local directory dependency, never a tarball.
 
 ## Before editing
 
@@ -48,7 +49,7 @@ These instructions apply to every coding agent working in this repository.
 
 ## Validation
 
-- Build `@gik-ai/components` before checking consumers when its `dist` is absent.
+- Build `gik-components` before checking consumers when its `dist` is absent.
 - Run the smallest relevant tests while developing.
 - Before completing a code change, run:
 
@@ -58,7 +59,11 @@ These instructions apply to every coding agent working in this repository.
   npm test
   ```
 
-- Run `npm run validate:vendor` after any package-distribution investigation.
+- Install and test the standalone Finbook and MCP server packages when their
+  dependencies change.
+- GitHub Actions may run installs, builds, typechecks, and tests instead of
+  running them locally when explicitly requested by the maintainer. Report the
+  exact workflow run and do not claim validation until its checks pass.
 - Do not weaken, skip, or make failing validation non-blocking.
 - Report every validation command and anything that could not be run.
 

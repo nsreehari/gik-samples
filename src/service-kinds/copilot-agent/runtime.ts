@@ -1,5 +1,5 @@
-import type { Json } from "@gik-ai/kernel";
-import { serviceConfig } from "@gik-ai/controlface/services";
+import type { Json } from "gik-kernel";
+import { serviceConfig } from "gik-controlface/services";
 import type { WorkerServiceInvocation } from "../worker-service-kind";
 import { executeMcpServiceInvocation } from "../mcp/runtime";
 import { parseAgentJsonReply } from "../agent-json-response";

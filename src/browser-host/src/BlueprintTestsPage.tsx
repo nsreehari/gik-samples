@@ -1,5 +1,5 @@
 import React from "react";
-import { parseBlueprintReference } from "@gik-ai/blueprint";
+import { parseBlueprintReference } from "gik-blueprint";
 import {
   Badge,
   Body1,

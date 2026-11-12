@@ -1,11 +1,11 @@
-import type { MaterializedBlueprint } from "@gik-ai/blueprint";
+import type { MaterializedBlueprint } from "gik-blueprint";
 import {
   projectCellRunState,
   type BlueprintRunState,
   type CellRunState,
   type Json,
   type ProjectedSourceRunState,
-} from "@gik-ai/kernel";
+} from "gik-kernel";
 
 export interface ScenarioDataFlowNode {
   [key: string]: unknown;
@@ -70,8 +70,8 @@ function outputValue(
   cellState: CellRunState | undefined,
 ): Json | undefined {
   if (!from) return undefined;
-  if (from.startsWith("sources.")) {
-    return cellState?.sourceValues?.[from.slice("sources.".length)];
+  if (from.startsWith("fetched_sources.")) {
+    return cellState?.sourceValues?.[from.slice("fetched_sources.".length)];
   }
   if (from.startsWith("computed.")) {
     return readPath(state, from.slice("computed.".length));
@@ -122,7 +122,7 @@ export function createScenarioDataFlowModel(
       id,
       title: cellTitle(id, cell.metadata),
       tone: failed ? "danger" : running || activeCell === id ? "accent" : "neutral",
-      sources: (cell.sources ?? []).map((source) => ({
+      sources: [...(cell.sources ?? []), ...(cell.dpp?.context.sources ?? [])].map((source) => ({
         service: source.service,
         operation: source.operation,
         status: sourceStatus(projectedSources.get(source.id)),

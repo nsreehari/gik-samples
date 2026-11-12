@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { noteDefinition } from "@gik-ai/components/primitives";
+import { noteDefinition } from "gik-components/primitives";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Primitive Components/Note", component: ComponentStory, tags: ["autodocs"], args: { definition: noteDefinition }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

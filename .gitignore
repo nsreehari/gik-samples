@@ -2,5 +2,5 @@ node_modules/
 dist/
 storybook-static/
 coverage/
+.tmp/
 *.tgz
-!vendor/gik-packages/*.tgz

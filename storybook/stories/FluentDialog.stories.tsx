@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fluentDialogDefinition } from "@gik-ai/components/fluent";
+import { fluentDialogDefinition } from "gik-components/fluent";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = {

@@ -17,16 +17,47 @@ the copied scripts, or reviewed and applied through the loopback companion.
 
 The curated repository Blueprints remain immutable seeds. The browser
 experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. Core `@gik-ai/*` dependencies resolve
-from the public npm registry; only the unpublished `@gik-ai/agent-lifecycle-exp`
-and `@gik-ai/blueprint-agent-host` packages still resolve from
-integrity-checked archives under `vendor/gik-packages`.
+Storybook is published at `/storybook/`. The repository consumers resolve
+`gik-components` from the local workspace source directory using `file:`
+dependencies, never a tarball. All external `gik-*` dependencies, including
+`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host`, resolve from published
+npm packages.
+
+The portfolio intelligence Cell declares `dpp.manifest` and context query/ingest
+sources. Its host stores scoped observations in the Blueprint instance's durable
+storage and supplies selected history alongside the current valuation to the
+intelligence provider. See the [portfolio test cases](src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md)
+for correlation, retry, and lifecycle guarantees.
+
+The dependency minimums include both Cell Senses and DPP support: Blueprint and
+Controlface 0.5.0, Evaluators 0.4.0, Kernel 0.4.1, and React 0.4.2.
+These minimums also apply to the standalone Finbook app and its browser host.
 
 Blueprint service declarations own their concrete non-secret configuration,
 including service endpoints and logical `credentialRef` values. The browser
 host authorizes endpoints declared by repository-seeded Blueprints and resolves
 the referenced secret from browser credential storage when the service is used.
 Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
+
+## Continuous awareness example
+
+The [Senses clock Blueprint](src/bootstrap/blueprints/senses-clock/blueprint.json)
+declares a timer Sense and a bounded report source in the same Cell. The
+[headless host](src/headless/senses-clock-host.ts) registers existing service
+kinds, reconciles committed bindings, journals each Signal, and executes the
+resulting source effects.
+
+```sh
+npm exec -- tsx src/headless/senses-clock-demo.ts
+npm test -- src/headless/senses-clock-host.test.ts
+```
+
+The bounded demo prints counter and report snapshots, then closes its worker and
+timer. It uses the published memory storage provider; callers can supply another
+compatible durable provider and references. The integration test reuses that
+storage across host restart and verifies repeated deliveries, source settlement,
+disable, re-enable, recovery, and cleanup. The timer uses fixed-delay intervals,
+skips missed occurrences, and begins a fresh interval after reconnect.
 
 ## Application boundary
 
@@ -46,17 +77,18 @@ and components consume through well-defined props and events.
 ## Development
 
 ```sh
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
+npm install --prefix apps/finbook --no-audit --no-fund
 npm run dev
 ```
 
-The MCP server is a standalone package with its own lockfile. In another
-terminal, install that package, copy `.env.template` to `.env`, configure
+The MCP server is a standalone package. In another terminal, install that
+package, copy `.env.template` to `.env`, configure
 `GIK_WORKSPACE_ROOTS` and `GIK_ALLOWED_ORIGINS`, then start it:
 
 ```sh
 cd packages/mcp-server
-npm ci
+npm install
 node src/index.js --transport streamable-http
 ```
 
@@ -74,9 +106,8 @@ server-reviewed plans; Azure tokens never reach the browser. See
 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
 HTTP bearer, and download-fallback details.
 
-The committed vendored packages are validated during every production build. Run
-`npm run validate:vendor` directly to verify their provenance, checksums, and
-contents without building the application.
+Use Node.js 24. Build `gik-components` before standalone Finbook consumers so
+the local directory dependency has its generated entry points available.
 
 ## Validation
 
@@ -85,6 +116,11 @@ npm run build
 npm run typecheck
 npm test
 ```
+
+The PR CI workflow runs these checks against public npm on GitHub-hosted
+runners, plus standalone Finbook/MCP tests and a built-browser smoke test.
+This supports CI-only validation when local registry mirrors have not yet
+received a published GIK version; it does not change local registry settings.
 
 See [VALIDATION.md](VALIDATION.md) for the full deterministic local validation
 sequence, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,

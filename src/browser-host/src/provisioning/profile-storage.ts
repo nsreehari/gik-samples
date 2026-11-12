@@ -1,4 +1,4 @@
-import type { StorageApi } from "@gik-ai/durable-runtime";
+import type { StorageApi } from "gik-durable-runtime";
 import type { DurableStorageConnection } from "../../../service-kinds";
 import { createBrowserBlueprintStorageConnectionFactory } from "../runtime/blueprint-storage";
 import {

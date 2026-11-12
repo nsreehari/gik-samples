@@ -11,6 +11,13 @@
       "model": { "type": "string", "minLength": 1 },
       "agent": { "type": "string", "minLength": 1 },
       "credentialRef": { "type": "string", "minLength": 1 },
+      "maxOutputTokens": { "type": "integer", "minimum": 256, "maximum": 16384 },
+      "agentTools": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "uniqueItems": true,
+        "maxItems": 32
+      },
       "responseMode": { "type": "string", "enum": ["text", "json"] }
     },
     "required": ["endpoint", "credentialRef"]

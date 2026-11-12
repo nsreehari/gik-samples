@@ -6,11 +6,11 @@ import {
   type BlueprintHostRegistry,
   type ExternalContext,
   type MaterializedBlueprint,
-} from "@gik-ai/blueprint";
-import { resolveDeclarativeFormInitialValue } from "@gik-ai/evaluators";
-import { openBlueprint, type BlueprintRuntime } from "@gik-ai/controlface/blueprint";
-import { createIndexedDbRecordLibrary } from "@gik-ai/durable-runtime/storage/indexed-db";
-import type { Json } from "@gik-ai/kernel";
+} from "gik-blueprint";
+import { resolveDeclarativeFormInitialValue } from "gik-evaluators";
+import { openBlueprint, type BlueprintRuntime } from "gik-controlface/blueprint";
+import { createIndexedDbRecordLibrary } from "gik-durable-runtime/storage/indexed-db";
+import type { Json } from "gik-kernel";
 import { loadBlueprintCatalogBundle } from "../load-catalog";
 import {
   parseBlueprintBootstrapAssets,

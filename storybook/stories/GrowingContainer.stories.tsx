@@ -5,7 +5,7 @@ import {
   GrowingContainer,
   growingContainerDefinition,
   type GrowingContainerFollowEnd,
-} from "@gik-ai/components/primitives";
+} from "gik-components/primitives";
 
 import { ComponentStory } from "./ComponentStory";
 

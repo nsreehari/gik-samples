@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { eventSeriesDefinition } from "@gik-ai/components/semantic";
+import { eventSeriesDefinition } from "gik-components/semantic";
 import { ComponentStory } from "./ComponentStory";
 
 const meta = { title: "Semantic Components/Event Series", component: ComponentStory, tags: ["autodocs"], args: { definition: eventSeriesDefinition, variant: "chronology" }, parameters: { controls: { disable: true } } } satisfies Meta<typeof ComponentStory>;

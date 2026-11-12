@@ -24,6 +24,49 @@ or external-context transport behavior.
 | `portfolio-intelligence-as-of` | none | none |
 | `board` | none | none |
 
+## Durable purpose and context
+
+The existing `portfolio-intelligence` Cell owns `dpp`; it is not a new Cell
+kind. Its manifest retains the portfolio-value participant's full durable
+charter and evolving working model. Expressions read the complete immutable
+manifest as `dpp.manifest`, and completed ordinary/context source values as
+`fetched_sources.<sourceId>` (never the old `sources` expression root).
+The `sources` configuration arrays and service source configuration are unchanged.
+
+The manifest's `context-store.query` and `context-store.ingest` values identify
+the actor's context sources. They resolve the `context-store.query/v1` and
+`context-store.ingest/v1` contracts on the native `context-store` service with
+`config.storeRef: portfolio-context`. Context sources coexist with the actor's
+ordinary intelligence sources; supporting saved-report Cells remain separate.
+
+The host explicitly authorizes this store and routes it through the service-kind
+`execute` path to the Blueprint/instance's durable KV storage. There is no
+in-memory or implicit provider fallback. Records are additionally isolated by
+stable `portfolio.id` scope, not serialized changing valuations. A snapshot and
+refresh generation identify each query and observation; retries preserve the
+first stored observation. The query selects at most ten prior observations in
+descending observation-time order. Unsupported query selectors fail explicitly.
+The host hashes storage keys while preserving original record IDs, so snapshot
+identifiers remain usable with filesystem-backed as well as browser storage.
+
+All intelligence variants receive the full purpose manifest and selected
+historical/saved-report evidence alongside current facts, retaining existing
+report response formats. Requests wait for a matching query response, so a
+valuation change cannot consume stale context. Ingestion records identified
+portfolio evidence with a timestamp fixed by query completion, not a ticking
+source-input clock. It does not grant trading authority. Removing the actor
+leaves holdings, prices, and valuation responsibilities intact.
+
+Query, ingestion, and report sources explicitly stop after completing the current
+snapshot/refresh key. Internal fetched report results wrap the unchanged report
+as `{requestKey, report}`; the key comes from immutable launch `inputs` in the
+source output transform. Compute and output gates unwrap only a matching report
+for saving, preventing stale report completion from being cached under a new
+snapshot. A stored acknowledgment cannot trigger another ingestion/query cycle.
+
+Focused coverage: `src/scenarios/portfolio-dpp.test.ts` and
+`src/service-kinds/context-store/runtime.test.ts`.
+
 ## Behavioral cases
 
 1. Initial holdings trigger quote retrieval, exact position/value calculation,

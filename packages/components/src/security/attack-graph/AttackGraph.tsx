@@ -1,8 +1,8 @@
 import React from "react";
 import { Text, makeStyles, tokens } from "@fluentui/react-components";
-import type { Json, ResolvedNode } from "@gik-ai/kernel";
-import { runDeclarativeValidators } from "@gik-ai/evaluators";
-import type { ProjectionView } from "@gik-ai/react";
+import type { Json, ResolvedNode } from "gik-kernel";
+import { runDeclarativeValidators } from "gik-evaluators";
+import type { ProjectionView } from "gik-react";
 
 import { GraphDiagram, buildGraphCanvasModel, type GraphDiagramModel } from "../../primitives/graph-diagram";
 import { formatTimestamp } from "../../primitives/datetime";
