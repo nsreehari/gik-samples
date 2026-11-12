@@ -1,12 +1,17 @@
 # gik-components
 
-## Unreleased
+## 0.3.0
 
-### Patch Changes
+### Minor Changes
 
 - Make `GikComponentDeclarative` consume explicit projection providers so hosts
   supply built-in and application-owned namespaces through the same provider
   array contract.
+- Require the published DPP-compatible GIK packages: Evaluators >=0.4.0,
+  Kernel >=0.4.1, and React >=0.4.2.
+
+### Patch Changes
+
 - Merge repeated provider namespaces by capability so partial overrides retain
   unrelated runtime views and descriptors.
 - Regenerate the published agent-facing catalog from the complete component
