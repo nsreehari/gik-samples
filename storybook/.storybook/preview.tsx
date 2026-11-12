@@ -66,7 +66,7 @@ const preview: Preview = {
     a11y: { test: "error" },
     options: {
       storySort: {
-        order: ["Semantic Components", "Primitive Components", "*"],
+        order: ["Start here", "Semantic Components", "Primitive Components", "*"],
       },
     },
   },

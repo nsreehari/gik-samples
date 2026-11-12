@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Find your way through GIK: understand Blueprints and Cells, choose a runnable sample, explore components, and host applications safely.">
+    <title>GIK documentation | Learn, build, and explore</title>
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip" href="#start">Skip to documentation</a>
+    <header>
+      <nav aria-label="GIK resources">
+        <a href="../">GIK Studio</a>
+        <a href="./" aria-current="page">Documentation</a>
+        <a href="../getting-started/">Build a sample app</a>
+        <a href="../storybook/">Components Storybook</a>
+        <a href="../vendor/">Package downloads</a>
+      </nav>
+      <p class="eyebrow">Developer documentation</p>
+      <h1>Understand GIK. Build with purpose.</h1>
+      <p class="intro">Blueprints describe an application's meaning and behavior. Cells own
+        bounded responsibilities. Components present their data, while hosts execute
+        authorized external work. Start small, then add durable observation or agent integration.</p>
+      <nav aria-label="On this page">
+        <a href="#start">Start here</a>
+        <a href="#concepts">Core concepts</a>
+        <a href="#samples">Choose a sample</a>
+        <a href="#packages">Choose a package</a>
+        <a href="#hosting">Hosting and tools</a>
+        <a href="#contribute">Contribute</a>
+      </nav>
+    </header>
+    <main>
+      <section id="start" aria-labelledby="start-title">
+        <h2 id="start-title">Start here</h2>
+        <div class="grid">
+          <article class="card reference">
+            <h3>Try it before building</h3>
+            <p>Explore the Studio catalog and live Blueprint previews. Start with the
+              mock portfolio to avoid external service setup.</p>
+            <a href="../?b=portfolio-tracker-mock">Open the mock portfolio</a>
+          </article>
+          <article class="card reference">
+            <h3>Build your own application</h3>
+            <p>Follow Finbook from semantic Cells through presentation, host wiring,
+              an MCP backend, and standalone validation.</p>
+            <a href="../getting-started/">Follow the sample-app walkthrough</a>
+          </article>
+          <article class="card reference">
+            <h3>Explore presentation</h3>
+            <p>Inspect component examples, closed props, variants, and emitted events.
+              Storybook is a component workbench, not an application runtime.</p>
+            <a href="../storybook/?path=/story/start-here--overview">Open the component workbench</a>
+          </article>
+        </div>
+      </section>
+
+      <section id="concepts" aria-labelledby="concepts-title">
+        <h2 id="concepts-title">One mental model, distinct responsibilities</h2>
+        <pre aria-label="State reduction model"><code>Blueprint state + event -&gt; new state + effects
+Host executes authorized effects -&gt; results or new events</code></pre>
+        <dl>
+          <dt>Blueprint and Cell</dt>
+          <dd>A Blueprint composes semantic Cells, ports, events, services, and presentation.
+            A Cell's meaning is independent of the component used to display it.</dd>
+          <dt>Components and projection</dt>
+          <dd>Components render declared props and emit intents. Local UI mechanics stay
+            local; cross-Cell state and workflow belong to the Blueprint. Register providers explicitly.</dd>
+          <dt>Bounded sources</dt>
+          <dd>A source performs a bounded request and settles a result. Expressions read
+            settled data through <code>fetched_sources.&lt;id&gt;</code>.</dd>
+          <dt>Senses</dt>
+          <dd>A Sense declares continuing observation intent. The host reconciles committed
+            bindings and delivers discrete Signals through durable ingress; a normal source
+            fetch or generic React mount does not establish an observer.</dd>
+          <dt>Purpose-bearing Cells</dt>
+          <dd>Use a DPP only for an enduring responsibility to create value for identifiable
+            beneficiaries within explicit boundaries. Being an agent, conversation, or stateful
+            function is not sufficient. The full <code>dpp.manifest</code> expresses that
+            reference frame; context query/ingest supports the purpose, not the other way around.
+            Participation uses ordinary Cell inputs, outputs, and effects, without a mandatory
+            reasoning loop, special component, automatic scheduler, or permission grant.</dd>
+        </dl>
+        <p>For exact contracts, use the
+          <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/packages/blueprint/README.md">Blueprint README</a>,
+          <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/senses.md">Sense guide</a>, and
+          <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md">DPP guide</a>.
+          This site explains how the samples use them; it does not redefine their APIs.</p>
+      </section>
+
+      <section id="samples" aria-labelledby="samples-title">
+        <h2 id="samples-title">Choose a sample with the right prerequisites</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Mock portfolio</h3>
+            <p><strong>Browser only.</strong> A small, deterministic projection example for
+              exploring composition before connecting real services.</p>
+            <p><a href="../?b=portfolio-tracker-mock">Run in Studio</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/tree/main/src/bootstrap/blueprints/portfolio-tracker-mock">Source and tests</a></p>
+          </article>
+          <article class="card">
+            <h3>Finbook reference application</h3>
+            <p><strong>Local Node.js 24 and SQLite backend.</strong> An independently
+              extractable full-stack app using published GIK packages, app-owned components,
+              and bounded MCP sources. Pages does not host its server.</p>
+            <p><a href="../getting-started/">Setup walkthrough</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook">Complete app source</a></p>
+          </article>
+          <article class="card">
+            <h3>Portfolio intelligence and DPP</h3>
+            <p><strong>Authorized market and intelligence services.</strong> A purpose-bearing
+              Cell with scoped context, correlation guards, and retained evidence.
+              The live experience requires service access; review the behavior cases first.</p>
+            <p><a href="../?b=portfolio-tracker-new">Open in Studio</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/blob/main/src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md">Behavior and source guide</a></p>
+          </article>
+          <article class="card">
+            <h3>Continuous timer observation</h3>
+            <p><strong>Headless Node.js host.</strong> Committed Sense bindings produce
+              journaled timer Signals and bounded report requests. This is a command-line
+              example, not a hosted browser app.</p>
+            <p><a href="https://github.com/nsreehari/gik-samples/blob/main/docs/samples.md#continuous-awareness">Run and understand the demo</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/blob/main/src/headless/senses-clock-host.ts">Host implementation</a></p>
+          </article>
+          <article class="card">
+            <h3>Incident analysis</h3>
+            <p><strong>Configured agent services.</strong> Generate a report from the selected
+              source with fixed or agent-authored presentation. This is a source-grounded
+              report pipeline, not an autonomous investigator. External service access
+              must be authorized by the host.</p>
+            <p><a href="../?b=incident-analysis-new-shell">Open in Studio</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/tree/main/src/bootstrap/blueprints/incident-analysis-new-shell">Source and scenarios</a></p>
+          </article>
+        </div>
+        <p><a href="../scenarios/">Scenario Explorer</a> inspects the catalog's declared scenarios.
+          <a href="https://github.com/nsreehari/gik-samples/blob/main/docs/samples.md">Repository sample guide</a>
+          owns host prerequisites, source locations, and continuous-awareness commands.</p>
+      </section>
+
+      <section id="packages" aria-labelledby="packages-title">
+        <h2 id="packages-title">Choose a package by the job it does</h2>
+        <dl>
+          <dt>Author and host applications</dt>
+          <dd>Start with
+            <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/packages/blueprint/README.md">gik-blueprint</a> for definitions and materialization, and
+            <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/packages/react/README.md">gik-react</a> for React hosting.</dd>
+          <dt>Render declared UI</dt>
+          <dd><a href="https://github.com/nsreehari/gik-samples/blob/main/packages/components/README.md">gik-components</a>
+            supplies explicit primitive, semantic, Fluent, and opt-in domain catalogs.
+            Its README owns consumer APIs; Storybook shows individual components.</dd>
+          <dt>Run durably or integrate agents</dt>
+          <dd>Use the
+            <a href="https://github.com/nsreehari/generative-interaction-kernel#choose-a-package">core package map</a>
+            to choose kernel, evaluators, durable runtime, faces, transports, lifecycle, and
+            proposal-host boundaries. Public packages and private workspaces are distinguished there.</dd>
+          <dt>Download a verified release</dt>
+          <dd><a href="../vendor/">Package downloads</a> contains the released Components
+            archive and ten core GIK archives, with a manifest and SHA-256 checksums.
+            It is not an npm registry. Consumer manifests and the generated manifest own
+            version information, not a second version table on this site.</dd>
+        </dl>
+      </section>
+
+      <section id="hosting" aria-labelledby="hosting-title">
+        <h2 id="hosting-title">Know what runs where</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>This static site</h3>
+            <p>Pages serves Studio, this documentation, Storybook, bootstrap artifacts,
+              and package downloads. Selected Blueprints use <code>?b=&lt;id&gt;</code>.
+              Existing Studio and scenario URLs remain unchanged.</p>
+          </article>
+          <article class="card">
+            <h3>Your trusted host</h3>
+            <p>Hosts own endpoint authorization, credential resolution, effect execution,
+              observers, errors, and shutdown. Blueprint services own concrete non-secret
+              endpoints and opaque <code>credentialRef</code> values. Never commit literal secrets.</p>
+          </article>
+          <article class="card">
+            <h3>Local tools and provisioning</h3>
+            <p>The optional loopback MCP companion supplies reviewed workspace execution
+              and provisioning. You can export a portable plan without granting execution authority.
+              Pair only an approved origin and workspace.</p>
+            <p><a href="../provisioning/">Open provisioning</a> &middot;
+              <a href="https://github.com/nsreehari/gik-samples/blob/main/packages/mcp-server/README.md">Install and pair the companion</a></p>
+          </article>
+        </div>
+        <p>For standalone or hosted Finbook, use its
+          <a href="https://github.com/nsreehari/gik-samples/blob/main/apps/finbook/README.md">app README</a>
+          and <a href="https://github.com/nsreehari/gik-samples/blob/main/apps/finbook/mcp-server/storage-contract.md">persistence contract</a>.
+          A local SQLite file is not shared production storage. Hosting your own backend
+          also requires an authentication and endpoint-authorization policy.</p>
+      </section>
+
+      <section id="contribute" aria-labelledby="contribute-title">
+        <h2 id="contribute-title">Develop, validate, and maintain</h2>
+        <p>Use Node.js 24. Studio develops against local Components; standalone Finbook
+          consumes the npm package. Follow the
+          <a href="https://github.com/nsreehari/gik-samples/blob/main/VALIDATION.md">validation sequence</a>
+          and <a href="https://github.com/nsreehari/gik-samples/blob/main/CONTRIBUTING.md">contribution rules</a>.
+          The <a href="https://github.com/nsreehari/gik-samples/blob/main/RELEASING.md">release guide</a>
+          owns publication and Pages refresh behavior.</p>
+        <p><a href="https://github.com/nsreehari/gik-samples/blob/main/docs/README.md">Documentation ownership and repository map</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/tree/main/docs/decisions">Architecture decisions</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/SUPPORT.md">Support</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/SECURITY.md">Private vulnerability reporting</a></p>
+      </section>
+    </main>
+    <footer>
+      <p>Guides explain the journey. Package READMEs own APIs, source owns runnable examples,
+        and generated release metadata owns download versions.</p>
+      <nav aria-label="Next steps">
+        <a href="../">Return to Studio</a>
+        <a href="../getting-started/">Build a sample app</a>
+        <a href="https://github.com/nsreehari/gik-samples">Browse the repository</a>
+      </nav>
+    </footer>
+  </body>
+</html>

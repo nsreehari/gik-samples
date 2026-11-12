@@ -17,6 +17,19 @@ The package keeps complete, reusable units for:
 
 No credential is accepted from or returned to the browser.
 
+## Relationship to DPP and Senses
+
+Copilot runs, Lore records, and filesystem tools are host integrations, not an
+automatic DPP scheduler or a Sense adapter. The Blueprint runtime separately
+owns declared event routing and source settlements. To integrate an agent as an
+ongoing observer, route its contributions through an authorized Sense host; exposing an MCP tool
+does not establish that binding or grant proposal-application authority.
+
+See the [sample architecture decision](https://github.com/nsreehari/gik-samples/blob/main/docs/decisions/ADR-0001-reference-participant-and-agent-authoring.md)
+for the design boundary and the
+[core Sense contract](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/senses.md)
+for observation hosting.
+
 ## Install
 
 The directory is a standalone package, so it can be copied independently from
@@ -24,7 +37,7 @@ the rest of this repository.
 
 ```sh
 cd packages/mcp-server
-npm install
+npm install --no-audit --no-fund
 ```
 
 Foundry is optional. Install its SDK peers only when it is needed:

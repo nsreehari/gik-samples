@@ -171,6 +171,12 @@ export function AppRootPage({
           <a href={`${import.meta.env.BASE_URL}provisioning/`}>
             Provision an agent from a Blueprint
           </a>
+          <a href={`${import.meta.env.BASE_URL}getting-started/`}>
+            Build a sample app
+          </a>
+          <a href={`${import.meta.env.BASE_URL}docs/`}>
+            Documentation: concepts, samples, and packages
+          </a>
         </header>
 
         <Highlights />

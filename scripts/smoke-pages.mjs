@@ -85,6 +85,31 @@ function dumpPage() {
 
 try {
   await waitForPreview();
+  const guideUrl = new URL("getting-started/", pageUrl);
+  const guideResponse = await fetch(guideUrl);
+  if (!guideResponse.ok) throw new Error(`Sample app guide returned HTTP ${guideResponse.status}`);
+  const guide = await guideResponse.text();
+  if (!guide.includes("<h1>Build a sample app</h1>")
+    || !guide.includes("https://github.com/nsreehari/gik-samples/tree/main/apps/finbook")
+    || !guide.includes("npm run check")) {
+    throw new Error("Pages sample app guide is missing its walkthrough or reference source");
+  }
+  const docsUrl = new URL("docs/", pageUrl);
+  const docsResponse = await fetch(docsUrl);
+  if (!docsResponse.ok) throw new Error(`Documentation hub returned HTTP ${docsResponse.status}`);
+  const docs = await docsResponse.text();
+  if (!docs.includes('id="concepts"') || !docs.includes('id="samples"')
+    || !docs.includes('id="packages"') || !docs.includes('id="hosting"')) {
+    throw new Error("Pages documentation hub is missing its learning paths");
+  }
+  const stylesheetResponse = await fetch(new URL("site.css", docsUrl));
+  if (!stylesheetResponse.ok || !stylesheetResponse.headers.get("content-type")?.includes("text/css")) {
+    throw new Error("Pages documentation stylesheet was not served as CSS");
+  }
+  const storybookResponse = await fetch(new URL("storybook/index.json", pageUrl));
+  if (!storybookResponse.ok || !(await storybookResponse.json()).entries?.["start-here--overview"]) {
+    throw new Error("Built Storybook is missing its documentation entry point");
+  }
   if (process.env.CHECK_PACKAGE_DOWNLOADS === "true") {
     const vendorUrl = new URL("vendor/", pageUrl);
     const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
@@ -119,6 +144,14 @@ try {
   if (html.includes("GIK Studio could not start")) {
     throw new Error(`Built Pages host rendered its startup failure shell:\n${html.slice(0, 2000)}`);
   }
+  if (!html.includes(new URL(guideUrl).pathname)) {
+    throw new Error("Built Pages host does not link to the sample app guide");
+  }
+  if (!html.includes(docsUrl.pathname)) {
+    throw new Error("Built Pages host does not link to the documentation hub");
+  }
+  console.log(`Documentation hub, shared CSS, and Storybook navigation passed at ${docsUrl}`);
+  console.log(`Sample app guide and home navigation passed at ${guideUrl}`);
   console.log(`Pages smoke test passed at ${pageUrl}`);
 } finally {
   preview.kill();

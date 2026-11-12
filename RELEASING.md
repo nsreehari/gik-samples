@@ -1,7 +1,8 @@
 # Releasing `gik-components`
 
 Package publication occurs only when a GitHub Release is published. Direct local
-publication and manual workflow dispatch are not supported.
+npm publication is not supported. Workflow dispatch supports Pages-only
+deployment/refresh; it never publishes an npm package.
 
 1. Change `packages/components/package.json` through a reviewed pull request.
 2. Merge only after the required `validate` check succeeds.
@@ -21,8 +22,9 @@ publication and manual workflow dispatch are not supported.
 short-lived OIDC credentials and does not use an npm token.
 
 This repository publishes only `gik-components`. External `gik-*` packages are
-consumed from npm and must never be republished from this repository. Repository
-consumers keep `gik-components` linked to its local source directory.
+consumed from npm and must never be republished from this repository.
+Studio keeps `gik-components` linked to its local source directory. Finbook and
+its browser host consume the published package, independently of local builds.
 
 ## Pages package downloads
 

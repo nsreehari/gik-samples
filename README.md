@@ -2,62 +2,41 @@
 
 Community-facing components, Blueprint samples, and the browser App Host for the Generative Interaction Kernel.
 
+[Explore Studio](https://nsreehari.github.io/gik-samples/) |
+[Documentation hub](https://nsreehari.github.io/gik-samples/docs/) |
+[Build a sample app](https://nsreehari.github.io/gik-samples/getting-started/) |
+[Component workbench](https://nsreehari.github.io/gik-samples/storybook/)
+
+## Package and documentation map
+
+| Guide | Owns |
+| --- | --- |
+| [Documentation](docs/README.md) | Learning paths, documentation ownership, and navigation |
+| [Samples](docs/samples.md) | Example selection, prerequisites, host boundaries, and continuous-awareness demo |
+| [gik-components](packages/components/README.md) | Public projection catalogs, React adapters, explicit providers, and component authoring tools |
+| [MCP companion](packages/mcp-server/README.md) | Standalone local tooling, pairing, credentials, provisioning, and MCP transports |
+| [Finbook](apps/finbook/README.md) | Reference application setup, composition, and extraction constraints |
+| [Validation](VALIDATION.md) | The repository-wide install/build/test sequence and CI-only option |
+| [Releasing](RELEASING.md) | Components publication and generated Pages package downloads |
+| [Architecture decisions](docs/decisions/README.md) | Sample design rationale and boundaries, not another package API catalog |
+
+Core package APIs live in the
+[core package READMEs](https://github.com/nsreehari/generative-interaction-kernel#choose-a-package);
+the [DPP](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md)
+and [Sense](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/senses.md)
+guides define their cross-package contracts. This repository supplies example
+host wiring; it does not redefine those contracts.
+
 ## Reference applications
 
-- [`apps/finbook`](./apps/finbook) is a carve-out-ready declarative finance
+- [`apps/finbook`](./apps/finbook) is a declarative finance reference
   application with its own Blueprint, web host, MCP server, domain logic,
   SQLite persistence, seeds, and tests.
 
-The app publishes `/provisioning/` and `/in-memory/provisioning/`. These routes
-use the same repository/user Blueprint catalog as the Studio and store
-user-owned provisioning profiles in IndexedDB or memory respectively. They
-export portable `gik-project/1` plans containing the selected Blueprint and
-derived agent declarations. Plans can always be downloaded and applied with
-the copied scripts, or reviewed and applied through the loopback companion.
-
-The curated repository Blueprints remain immutable seeds. The browser
-experience is published at `/`, selected Blueprints use `?b=<id>`, and
-Storybook is published at `/storybook/`. The repository consumers resolve
-`gik-components` from the local workspace source directory using `file:`
-dependencies, never a tarball. All external `gik-*` dependencies, including
-`gik-agent-lifecycle-exp` and `gik-blueprint-agent-host`, resolve from published
-npm packages.
-
-The portfolio intelligence Cell declares `dpp.manifest` and context query/ingest
-sources. Its host stores scoped observations in the Blueprint instance's durable
-storage and supplies selected history alongside the current valuation to the
-intelligence provider. See the [portfolio test cases](src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md)
-for correlation, retry, and lifecycle guarantees.
-
-The dependency minimums include both Cell Senses and DPP support: Blueprint and
-Controlface 0.5.0, Evaluators 0.4.0, Kernel 0.4.1, and React 0.4.2.
-These minimums also apply to the standalone Finbook app and its browser host.
-
-Blueprint service declarations own their concrete non-secret configuration,
-including service endpoints and logical `credentialRef` values. The browser
-host authorizes endpoints declared by repository-seeded Blueprints and resolves
-the referenced secret from browser credential storage when the service is used.
-Never place literal keys, tokens, or passwords in a Blueprint or Vite variable.
-
-## Continuous awareness example
-
-The [Senses clock Blueprint](src/bootstrap/blueprints/senses-clock/blueprint.json)
-declares a timer Sense and a bounded report source in the same Cell. The
-[headless host](src/headless/senses-clock-host.ts) registers existing service
-kinds, reconciles committed bindings, journals each Signal, and executes the
-resulting source effects.
-
-```sh
-npm exec -- tsx src/headless/senses-clock-demo.ts
-npm test -- src/headless/senses-clock-host.test.ts
-```
-
-The bounded demo prints counter and report snapshots, then closes its worker and
-timer. It uses the published memory storage provider; callers can supply another
-compatible durable provider and references. The integration test reuses that
-storage across host restart and verifies repeated deliveries, source settlement,
-disable, re-enable, recovery, and cleanup. The timer uses fixed-delay intervals,
-skips missed occurrences, and begins a fresh interval after reconnect.
+For browser-only examples, purpose-bearing portfolio Cells, incident analysis,
+the headless Sense demo, and provisioning prerequisites, use the
+[sample guide](docs/samples.md). It distinguishes runnable browser previews
+from local servers and external-service integrations.
 
 ## Application boundary
 
@@ -70,16 +49,17 @@ and components consume through well-defined props and events.
 
 ## Live site
 
+- [Documentation hub](https://nsreehari.github.io/gik-samples/docs/) - concepts, samples, packages, and hosting
+- [Build a sample app](https://nsreehari.github.io/gik-samples/getting-started/) - walkthrough and reference source
 - [Root sample app](https://nsreehari.github.io/gik-samples/)
 - [Storybook](https://nsreehari.github.io/gik-samples/storybook/)
 - [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)
 - [Released GIK package downloads](https://nsreehari.github.io/gik-samples/vendor/)
 
 Pages includes versioned npm tarballs for the ten stable core GIK packages and
-the released `gik-components` version. The download index links a manifest with
-original npm URLs, npm integrity digests, and SHA-256 checksums. These archives
-are generated and verified in CI, never committed to Git. `/vendor/` is a
-download directory, not an npm registry; dependency resolution is unchanged.
+the released `gik-components` version. `/vendor/` is a download directory, not
+an npm registry. [Releasing](RELEASING.md#pages-package-downloads) owns archive
+verification, manifest contents, and post-publication refresh behavior.
 
 ## Development
 
@@ -89,47 +69,22 @@ npm install --prefix apps/finbook --no-audit --no-fund
 npm run dev
 ```
 
-The MCP server is a standalone package. In another terminal, install that
-package, copy `.env.template` to `.env`, configure
-`GIK_WORKSPACE_ROOTS` and `GIK_ALLOWED_ORIGINS`, then start it:
+For local tooling and `/provisioning/` pairing, follow the
+[MCP companion guide](packages/mcp-server/README.md). It owns the standalone
+install, exact-origin configuration, short-lived pairing tokens, Copilot CLI
+setup, and optional Foundry prerequisites. Credentials never belong in the
+portable plan or browser request.
 
-```sh
-cd packages/mcp-server
-npm install
-node src/index.js --transport streamable-http
-```
-
-Open `/provisioning/`, enter the pairing code printed by the companion,
-generate a plan, preview server-side changes, then apply and verify. The bearer
-token is short-lived and kept only in page memory. Hosted Studio origins must be
-passed exactly as additional `--origin` values. The server never binds beyond
-`127.0.0.1`.
-
-Copilot provisioning and runs use the complete local Copilot CLI subsystem.
-Foundry provisioning requires `az login`, the optional `@azure/ai-projects`
-and `@azure/identity` peers. Provider targets, models, and logical workspace
-references flow from Blueprint service config into the portable and
-server-reviewed plans; Azure tokens never reach the browser. See
-[`packages/mcp-server/README.md`](packages/mcp-server/README.md) for MCP stdio,
-HTTP bearer, and download-fallback details.
-
-Use Node.js 24. Build `gik-components` before standalone Finbook consumers so
-the local directory dependency has its generated entry points available.
+Use Node.js 24. Studio builds its local `gik-components` workspace package.
+Standalone Finbook resolves the published package and needs no sibling build.
 
 ## Validation
 
-```sh
-npm run build
-npm run typecheck
-npm test
-```
-
-The PR CI workflow runs these checks against public npm on GitHub-hosted
+The PR CI workflow runs the [validation sequence](VALIDATION.md) against public npm on GitHub-hosted
 runners, plus standalone Finbook/MCP tests and a built-browser smoke test.
 This supports CI-only validation when local registry mirrors have not yet
 received a published GIK version; it does not change local registry settings.
 
-See [VALIDATION.md](VALIDATION.md) for the full deterministic local validation
-sequence, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements,
 [SUPPORT.md](SUPPORT.md) for support boundaries, and [SECURITY.md](SECURITY.md)
 for private vulnerability reporting.

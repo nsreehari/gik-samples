@@ -81,13 +81,17 @@ export async function collectPagesPackages({
   await writeFile(join(outputDirectory, "SHA256SUMS"),
     packages.map(({ sha256, file }) => `${sha256}  ${file}\n`).join(""));
   await writeFile(join(outputDirectory, "index.html"), `<!doctype html>
-<html lang="en"><meta charset="utf-8"><title>GIK package downloads</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GIK package downloads</title><link rel="stylesheet" href="../docs/site.css"></head><body>
+<header><nav aria-label="GIK resources"><a href="../">GIK Studio</a>
+<a href="../docs/">Documentation</a><a href="../getting-started/">Build a sample app</a>
+<a href="../storybook/">Components Storybook</a></nav></header><main>
 <h1>GIK package downloads</h1>
 <p>Released npm archives, verified against npm integrity metadata. These downloads are not an npm registry.</p>
 <p><a href="manifest.json">Package manifest and npm sources</a> | <a href="SHA256SUMS">SHA-256 checksums</a></p>
 <ul>${packages.map(({ name, version, file }) =>
     `<li><a href="${file}">${name}@${version}</a></li>`).join("\n")}</ul>
-</html>
+</main></body></html>
 `);
   console.log(`Collected and integrity-verified ${packages.length} published packages into ${outputDirectory}`);
   return manifest;

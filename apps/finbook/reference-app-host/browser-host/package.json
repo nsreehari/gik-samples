@@ -11,7 +11,7 @@
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.312",
     "gik-blueprint": ">=0.5.0",
-    "gik-components": "file:../../../../packages/components",
+    "gik-components": ">=0.3.0",
     "gik-controlface": ">=0.5.0",
     "gik-evaluators": ">=0.4.0",
     "gik-kernel": ">=0.4.1",

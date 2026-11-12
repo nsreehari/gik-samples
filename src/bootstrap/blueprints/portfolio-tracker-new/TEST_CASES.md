@@ -33,8 +33,9 @@ manifest as `dpp.manifest`, and completed ordinary/context source values as
 `fetched_sources.<sourceId>` (never the old `sources` expression root).
 The `sources` configuration arrays and service source configuration are unchanged.
 
-The manifest's `context-store.query` and `context-store.ingest` values identify
-the actor's context sources. They resolve the `context-store.query/v1` and
+The manifest's `context-store.query` and `context-store.ingest` values are
+descriptive guidance, not source identifiers or permission grants. The
+declarations in `dpp.context.sources` resolve the `context-store.query/v1` and
 `context-store.ingest/v1` contracts on the native `context-store` service with
 `config.storeRef: portfolio-context`. Context sources coexist with the actor's
 ordinary intelligence sources; supporting saved-report Cells remain separate.
@@ -64,8 +65,15 @@ source output transform. Compute and output gates unwrap only a matching report
 for saving, preventing stale report completion from being cached under a new
 snapshot. A stored acknowledgment cannot trigger another ingestion/query cycle.
 
-Focused coverage: `src/scenarios/portfolio-dpp.test.ts` and
-`src/service-kinds/context-store/runtime.test.ts`.
+The backend's first-write retention is idempotent for retries, not a transaction
+across concurrent writers. External record retention and access policy belong
+to the host/backend; withdrawing a Cell does not erase stored evidence or undo
+already performed provider work.
+
+Focused coverage: [portfolio regressions](../../../scenarios/portfolio-dpp.test.ts)
+and [context backend tests](../../../service-kinds/context-store/runtime.test.ts).
+The [core DPP guide](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md)
+owns the general contract; these cases specify the sample's behavior.
 
 ## Behavioral cases
 
