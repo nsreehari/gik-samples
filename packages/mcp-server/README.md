@@ -204,3 +204,8 @@ node --test test/*.test.js
 This package consumes the published `gik-durable-runtime` and
 `gik-agent-lifecycle-exp` packages from npm. It does not depend on repository
 archives or sibling GIK checkouts.
+
+Tool manifests, proxy tools, and notification tests use JSON Schema directly.
+The host validates tool inputs and structured outputs through the MCP SDK's
+AJV provider, without converting schemas to Zod. There is no direct Zod
+dependency or application import; the MCP SDK still depends on Zod internally.

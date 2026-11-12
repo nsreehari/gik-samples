@@ -21,11 +21,10 @@
     "test": "node scripts/smoke-registered-services.js && node --test test/*.test.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "chokidar": "4.0.3",
     "gik-agent-lifecycle-exp": ">=0.3.0",
-    "gik-durable-runtime": ">=0.9.0",
-    "zod": "4.4.3"
+    "gik-durable-runtime": ">=0.9.0"
   },
   "peerDependencies": {
     "@azure/ai-projects": "^2.3.0",

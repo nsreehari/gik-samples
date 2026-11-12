@@ -38,6 +38,9 @@ jobs:
       - name: Install MCP server dependencies
         run: npm install --prefix packages/mcp-server --no-audit --no-fund
 
+      - name: Inspect MCP dependency resolution
+        run: npm ls --prefix packages/mcp-server @modelcontextprotocol/sdk body-parser zod --all
+
       - name: Build
         run: npm run build
 
