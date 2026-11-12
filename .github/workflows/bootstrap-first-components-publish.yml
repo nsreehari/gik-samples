@@ -60,7 +60,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
@@ -70,9 +70,6 @@ jobs:
         # Use npm install here because the repo does not commit package-lock files.
         # This is an ephemeral publish job, not a reproducible build.
         run: npm install --no-audit --no-fund
-
-      - name: Validate vendored packages
-        run: npm run validate:vendor
 
       - name: Build gik components package
         run: npm run build --workspace gik-components

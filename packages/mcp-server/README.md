@@ -201,6 +201,6 @@ node scripts/smoke-registered-services.js
 node --test test/*.test.js
 ```
 
-This package consumes the published `gik-durable-runtime` package, but still
-uses the repo-level vendored `gik-agent-lifecycle-exp` archive until that GIK
-package enters the public release set.
+This package consumes the published `gik-durable-runtime` and
+`gik-agent-lifecycle-exp` packages from npm. It does not depend on repository
+archives or sibling GIK checkouts.

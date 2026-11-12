@@ -23,7 +23,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
         run: npm install --global npm@11.19.0
@@ -33,6 +34,9 @@ jobs:
 
       - name: Install Finbook dependencies
         run: npm install --prefix apps/finbook --no-audit --no-fund
+
+      - name: Install MCP server dependencies
+        run: npm install --prefix packages/mcp-server --no-audit --no-fund
 
       - name: Build
         run: npm run build
@@ -48,6 +52,9 @@ jobs:
 
       - name: Test standalone Finbook
         run: npm test --prefix apps/finbook
+
+      - name: Test MCP server
+        run: npm test --prefix packages/mcp-server
 
       - name: Smoke-test built browser host
         run: npm run test:pages

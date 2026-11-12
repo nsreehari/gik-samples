@@ -27,8 +27,7 @@ When the task is clear:
   service declaration. Use `credentialRef` for secrets; never put a literal
   credential in a Blueprint, host configuration, source file, or prompt.
 - Add or update focused tests for changed behavior.
-- Run `npm run validate:vendor`, `npm run build`, `npm run typecheck`, and
-  `npm test`.
+- Run `npm run build`, `npm run typecheck`, and `npm test`.
 - Treat every validation failure as blocking.
 - Inspect the final diff for unrelated or generated changes.
 - Open a pull request containing `Closes #<issue-number>`.

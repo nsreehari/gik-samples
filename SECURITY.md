@@ -22,6 +22,6 @@ Security fixes target the current `main` branch and the live Pages deployment.
 Historical tags and generated archives are retained for reference and do not
 receive guaranteed backports.
 
-The vendored `gik-*` archives are temporary, checksum-verified build inputs.
-Changes to them, dependency manifests, workflows, endpoint configuration, or
-security policy always require human review.
+External `gik-*` packages are consumed from npm; `gik-components` uses the
+repository's local workspace directory. Changes to dependency manifests,
+workflows, endpoint configuration, or security policy always require human review.

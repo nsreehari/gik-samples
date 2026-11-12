@@ -50,6 +50,12 @@ test("data flow maps terminal Blueprint Cells to canvas nodes and shared-token p
     model.nodes.find(({ id }) => id === "market-prices")?.sources[0]?.operation,
     "refreshPrices",
   );
+  assert.deepEqual(
+    model.nodes.find(({ id }) => id === "portfolio-intelligence")?.sources
+      .filter(({ service }) => service === "portfolio-context")
+      .map(({ operation }) => operation),
+    ["query", "ingest"],
+  );
   assert.equal(
     model.nodePorts["portfolio-holdings"].right?.[0].hasValue,
     true,

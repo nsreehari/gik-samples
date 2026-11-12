@@ -137,7 +137,7 @@ test("all repository Blueprint services satisfy their registered kind contracts"
     "incident-analysis-new-shell": 3,
     "portfolio-intelligence-assets": 1,
     "portfolio-tracker-mock": 0,
-    "portfolio-tracker-new": 6,
+    "portfolio-tracker-new": 7,
   });
 
   for (const service of services) {

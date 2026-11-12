@@ -1,58 +1,62 @@
-# Local validation
+# Validation
 
-This repository uses a deterministic local validation sequence. Run the steps in
-the order below; each step assumes the previous one succeeded.
+Run the steps in the order below; each step assumes the previous one succeeded.
+With explicit maintainer approval, use the PR CI workflow to run validation
+entirely on GitHub-hosted runners instead of installing or building locally.
+CI uses public npm and does not change the local corporate registry mirror.
 
-Use Node.js 22 or later.
+Use Node.js 24.
 
 ## 1. Install dependencies
 
 ```sh
 npm install --no-audit --no-fund
+npm install --prefix apps/finbook --no-audit --no-fund
 ```
 
-This repository resolves dependencies from the current published packages and
-vendored exceptions instead of committed npm lockfiles.
+All external GIK packages resolve from published npm versions. `gik-components`
+uses the local source directory through `file:` dependencies. This repository
+does not commit npm lockfiles. Finbook retains its separate compatible XYFlow
+archives; there are no vendored GIK archives.
 
-## 2. Validate vendored and published GIK package resolution
-
-```sh
-npm run validate:vendor
-```
-
-This verifies that only the still-unpublished `gik-agent-lifecycle-exp` and
-`gik-blueprint-agent-host` packages resolve from vendored tarballs, that those
-archives match the committed manifest, and that the rest of the `gik-*`
-workspace stays on published package versions.
-
-## 3. Build
+## 2. Build
 
 ```sh
 npm run build
 ```
 
-The build compiles `gik-components`, validates the bootstrap catalog and GIK
-package resolution, and produces the browser app and Storybook output.
+The build first compiles `gik-components`, validates the bootstrap catalog, and
+produces the Finbook app, browser app, and Storybook output.
 
-## 4. Typecheck
+## 3. Typecheck
 
 ```sh
 npm run typecheck
 ```
 
 Runs `tsc --noEmit` for the components package, the browser host, the headless
-host, the testing helpers, and Storybook.
+host, the testing helpers, Storybook, and Finbook.
 
-## 5. Test
+## 4. Test
 
 ```sh
 npm test
+npm test --prefix apps/finbook
+npm run test:pages
 ```
 
-Runs the Vitest suite configured in `vitest.config.ts`.
+Runs the root Vitest suite, standalone Finbook tests/server checks, and the
+built-browser smoke test (which requires Chrome).
 
-The MCP server in `packages/mcp-server` has its own install and test command;
-see [`packages/mcp-server/README.md`](packages/mcp-server/README.md).
+The MCP server in `packages/mcp-server` has its own install and test command.
+CI also runs these when validating the migration:
+
+```sh
+npm install --prefix packages/mcp-server --no-audit --no-fund
+npm test --prefix packages/mcp-server
+```
+
+See [`packages/mcp-server/README.md`](packages/mcp-server/README.md).
 
 Do not weaken, skip, or make failing validation non-blocking. Report every
 command you ran and anything that could not be run. See

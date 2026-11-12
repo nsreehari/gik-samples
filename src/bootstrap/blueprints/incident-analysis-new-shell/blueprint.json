@@ -417,10 +417,10 @@
         "compute": [
           {
             "id": "source-options",
-            "expression": "$exists(sources.`analysis-params.source`) ? sources.`analysis-params.source`.{'value':id,'label':label} : []",
+            "expression": "$exists(fetched_sources.`analysis-params.source`) ? fetched_sources.`analysis-params.source`.{'value':id,'label':label} : []",
             "assign": "incident.sourceOptions",
             "dependencies": [
-              "sources.analysis-params.source"
+              "fetched_sources.analysis-params.source"
             ]
           }
         ],
@@ -519,10 +519,10 @@
         "compute": [
           {
             "id": "selected-source-content",
-            "expression": "sources.`source-retrieve.source`",
+            "expression": "fetched_sources.`source-retrieve.source`",
             "assign": "selectedSourceContent",
             "dependencies": [
-              "sources.source-retrieve.source"
+              "fetched_sources.source-retrieve.source"
             ]
           }
         ],
@@ -582,10 +582,10 @@
         "compute": [
           {
             "id": "saved-report-envelope",
-            "expression": "sources.`cache-envelope-retrieve.source`",
+            "expression": "fetched_sources.`cache-envelope-retrieve.source`",
             "assign": "savedReportEnvelope",
             "dependencies": [
-              "sources.cache-envelope-retrieve.source"
+              "fetched_sources.cache-envelope-retrieve.source"
             ]
           },
           {
@@ -594,7 +594,7 @@
             "assign": "savedRefresherStamp",
             "dependencies": [
               "inputs.refresherStamp",
-              "sources.cache-envelope-retrieve.source"
+              "fetched_sources.cache-envelope-retrieve.source"
             ]
           }
         ],
@@ -742,12 +742,12 @@
         "compute": [
           {
             "id": "analysis-result",
-            "expression": "$exists(sources.`incident-analysis.refinement-source`) ? sources.`incident-analysis.refinement-source` : ($exists(sources.`incident-analysis.fixed-presentation-source`) ? sources.`incident-analysis.fixed-presentation-source` : sources.`incident-analysis.agent-generated-presentation-source`)",
+            "expression": "$exists(fetched_sources.`incident-analysis.refinement-source`) ? fetched_sources.`incident-analysis.refinement-source` : ($exists(fetched_sources.`incident-analysis.fixed-presentation-source`) ? fetched_sources.`incident-analysis.fixed-presentation-source` : fetched_sources.`incident-analysis.agent-generated-presentation-source`)",
             "assign": "analysisResult",
             "dependencies": [
-              "sources.incident-analysis.agent-generated-presentation-source",
-              "sources.incident-analysis.fixed-presentation-source",
-              "sources.incident-analysis.refinement-source"
+              "fetched_sources.incident-analysis.agent-generated-presentation-source",
+              "fetched_sources.incident-analysis.fixed-presentation-source",
+              "fetched_sources.incident-analysis.refinement-source"
             ]
           }
         ],
@@ -871,10 +871,10 @@
         "compute": [
           {
             "id": "saved-report-envelope",
-            "expression": "sources.`cache-envelope-update.source`",
+            "expression": "fetched_sources.`cache-envelope-update.source`",
             "assign": "savedReportEnvelope",
             "dependencies": [
-              "sources.cache-envelope-update.source"
+              "fetched_sources.cache-envelope-update.source"
             ]
           }
         ],

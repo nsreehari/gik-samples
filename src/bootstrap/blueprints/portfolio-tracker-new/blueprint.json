@@ -204,14 +204,14 @@
                     "id": "portfolio-intelligence.source",
                     "service": "portfolio-intelligence-copilot",
                     "operation": "requestIntelligence",
-                    "when": "inputs.`portfolio-value`.summary.marketValue > 0",
+                    "when": "(inputs.`portfolio-value`.summary.marketValue > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   },
                   {
@@ -221,11 +221,11 @@
                     "when": "false",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   }
                 ]
@@ -295,10 +295,10 @@
                   },
                   {
                     "id": "saved-portfolio-report-envelope",
-                    "expression": "sources.`portfolio-intelligence-context.saved-report`",
+                    "expression": "fetched_sources.`portfolio-intelligence-context.saved-report`",
                     "assign": "savedReportEnvelope",
                     "dependencies": [
-                      "sources.portfolio-intelligence-context.saved-report"
+                      "fetched_sources.portfolio-intelligence-context.saved-report"
                     ]
                   }
                 ]
@@ -312,25 +312,25 @@
                     "when": "false",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   },
                   {
                     "id": "portfolio-semantic-intelligence.source",
                     "service": "portfolio-semantic-intelligence",
                     "operation": "generateReport",
-                    "when": "inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0",
+                    "when": "(inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'simple-markdown','acceptedCapabilities':['primitive:markdown'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice'],'constraints':['one coherent Markdown experience'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':{'primary':{'capability':'primitive:markdown','bindings':{'value':{'from':'report.markdown'}}}}},'presentation':{'slots':['report'],'root':'report'}}],'fallback':'report'}],'presentation':{'slots':['report'],'root':'report','allowedCapabilities':['primitive:markdown']},'runtime':{'externals':{'projectionViews':{'primitive':{'from':'primitive','use':['markdown']}}},'state':{'report':{'markdown':'<compose the complete report>'}}},'cells':{'report':{'id':'report'}}}},'slotPolicy':'Replace only the markdown slot. DELIMITER-CHECK: close report state and runtime before the sibling cells member; in serialized JSON, emit three closing braces immediately before ,\"cells\" and four closing braces at the end. Preserve everything else.','behavior':'inert'}}}"
+                      "expr": "$merge([{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'simple-markdown','acceptedCapabilities':['primitive:markdown'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice'],'constraints':['one coherent Markdown experience'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':{'primary':{'capability':'primitive:markdown','bindings':{'value':{'from':'report.markdown'}}}}},'presentation':{'slots':['report'],'root':'report'}}],'fallback':'report'}],'presentation':{'slots':['report'],'root':'report','allowedCapabilities':['primitive:markdown']},'runtime':{'externals':{'projectionViews':{'primitive':{'from':'primitive','use':['markdown']}}},'state':{'report':{'markdown':'<compose the complete report>'}}},'cells':{'report':{'id':'report'}}}},'slotPolicy':'Replace only the markdown slot. DELIMITER-CHECK: close report state and runtime before the sibling cells member; in serialized JSON, emit three closing braces immediately before ,\"cells\" and four closing braces at the end. Preserve everything else.','behavior':'inert'}}},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'foundry/simple-markdown','requestId':$string(inputs.refreshGeneration)}"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'foundry/simple-markdown','requestId':$string(inputs.refreshGeneration)}}"
                     },
                     "acceptanceCriteria": [
                       {
@@ -350,10 +350,10 @@
                 "compute": [
                   {
                     "id": "generated-portfolio-report",
-                    "expression": "sources.`portfolio-semantic-intelligence.source`",
+                    "expression": "fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) ? fetched_sources.`portfolio-semantic-intelligence.source`.report : null",
                     "assign": "generatedReport",
                     "dependencies": [
-                      "sources.portfolio-semantic-intelligence.source"
+                      "fetched_sources.portfolio-semantic-intelligence.source"
                     ]
                   }
                 ]
@@ -392,10 +392,10 @@
                   },
                   {
                     "id": "saved-portfolio-report-envelope",
-                    "expression": "sources.`portfolio-intelligence-context.saved-report`",
+                    "expression": "fetched_sources.`portfolio-intelligence-context.saved-report`",
                     "assign": "savedReportEnvelope",
                     "dependencies": [
-                      "sources.portfolio-intelligence-context.saved-report"
+                      "fetched_sources.portfolio-intelligence-context.saved-report"
                     ]
                   }
                 ]
@@ -409,25 +409,25 @@
                     "when": "false",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   },
                   {
                     "id": "portfolio-semantic-intelligence.source",
                     "service": "portfolio-semantic-intelligence",
                     "operation": "generateReport",
-                    "when": "inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0",
+                    "when": "(inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'simple-markdown','acceptedCapabilities':['primitive:markdown'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice'],'constraints':['one coherent Markdown experience'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':{'primary':{'capability':'primitive:markdown','bindings':{'value':{'from':'report.markdown'}}}}},'presentation':{'slots':['report'],'root':'report'}}],'fallback':'report'}],'presentation':{'slots':['report'],'root':'report','allowedCapabilities':['primitive:markdown']},'runtime':{'externals':{'projectionViews':{'primitive':{'from':'primitive','use':['markdown']}}},'state':{'report':{'markdown':'<compose the complete report>'}}},'cells':{'report':{'id':'report'}}}},'slotPolicy':'Replace only the markdown slot. DELIMITER-CHECK: close report state and runtime before the sibling cells member; in serialized JSON, emit three closing braces immediately before ,\"cells\" and four closing braces at the end. Preserve everything else.','behavior':'inert'}}}"
+                      "expr": "$merge([{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'simple-markdown','acceptedCapabilities':['primitive:markdown'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice'],'constraints':['one coherent Markdown experience'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':[{'id':'report','views':{'report':{'primary':{'capability':'primitive:markdown','bindings':{'value':{'from':'report.markdown'}}}}},'presentation':{'slots':['report'],'root':'report'}}],'fallback':'report'}],'presentation':{'slots':['report'],'root':'report','allowedCapabilities':['primitive:markdown']},'runtime':{'externals':{'projectionViews':{'primitive':{'from':'primitive','use':['markdown']}}},'state':{'report':{'markdown':'<compose the complete report>'}}},'cells':{'report':{'id':'report'}}}},'slotPolicy':'Replace only the markdown slot. DELIMITER-CHECK: close report state and runtime before the sibling cells member; in serialized JSON, emit three closing braces immediately before ,\"cells\" and four closing braces at the end. Preserve everything else.','behavior':'inert'}}},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'copilot/simple-markdown','requestId':$string(inputs.refreshGeneration)}"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'copilot/simple-markdown','requestId':$string(inputs.refreshGeneration)}}"
                     },
                     "acceptanceCriteria": [
                       {
@@ -447,10 +447,10 @@
                 "compute": [
                   {
                     "id": "generated-portfolio-report",
-                    "expression": "sources.`portfolio-semantic-intelligence.source`",
+                    "expression": "fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) ? fetched_sources.`portfolio-semantic-intelligence.source`.report : null",
                     "assign": "generatedReport",
                     "dependencies": [
-                      "sources.portfolio-semantic-intelligence.source"
+                      "fetched_sources.portfolio-semantic-intelligence.source"
                     ]
                   }
                 ]
@@ -467,7 +467,7 @@
                     "request": {
                       "transform": {
                         "kind": "jsonata",
-                        "expr": "({'message':'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
+                        "expr": "({'message':'Purpose and authority: ' & $string(input.purpose) & ' Evidence (historical observations are not current facts): ' & $string(input.evidence) & ' Apply the durable charter, preserve uncertainty and provenance, and never infer trading authority. ' & 'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
                       }
                     },
                     "response": {
@@ -938,10 +938,10 @@
                   },
                   {
                     "id": "saved-portfolio-report-envelope",
-                    "expression": "sources.`portfolio-intelligence-context.saved-report`",
+                    "expression": "fetched_sources.`portfolio-intelligence-context.saved-report`",
                     "assign": "savedReportEnvelope",
                     "dependencies": [
-                      "sources.portfolio-intelligence-context.saved-report"
+                      "fetched_sources.portfolio-intelligence-context.saved-report"
                     ]
                   }
                 ]
@@ -955,25 +955,25 @@
                     "when": "false",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   },
                   {
                     "id": "portfolio-semantic-intelligence.source",
                     "service": "portfolio-semantic-intelligence",
                     "operation": "generateReport",
-                    "when": "inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0",
+                    "when": "(inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'rich-components','acceptedCapabilities':['semantic:narrative','semantic:measure-set','semantic:argument','semantic:entity-set','semantic:relationship-set','semantic:decision','primitive:container','primitive:chart','fluent:text','fluent:list','fluent:table'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear','use complementary views only for distinct insights'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice','add visual variety without analytical value'],'constraints':['each section slot may contain one or more Cells'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':'<compose one representation with views and a presentation with slots/root>','fallback':'<representation id>'}],'presentation':'<compose slots/root and allowedCapabilities listing every capability used>','runtime':{'externals':{'projectionViews':'<matching imports>'},'state':'<analytical presentation data>'},'cells':'<semantic responsibility cells>'}},'slotPolicy':'Replace every angle-bracket slot with a valid artifact fragment; preserve the enclosing scaffold.','presentation':{'root':'portfolio-report','sectionSlots':['overview','composition','performance','risks','interpretation']},'behavior':'inert'}}}"
+                      "expr": "$merge([{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'rich-components','acceptedCapabilities':['semantic:narrative','semantic:measure-set','semantic:argument','semantic:entity-set','semantic:relationship-set','semantic:decision','primitive:container','primitive:chart','fluent:text','fluent:list','fluent:table'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear','use complementary views only for distinct insights'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice','add visual variety without analytical value'],'constraints':['each section slot may contain one or more Cells'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':'<compose one representation with views and a presentation with slots/root>','fallback':'<representation id>'}],'presentation':'<compose slots/root and allowedCapabilities listing every capability used>','runtime':{'externals':{'projectionViews':'<matching imports>'},'state':'<analytical presentation data>'},'cells':'<semantic responsibility cells>'}},'slotPolicy':'Replace every angle-bracket slot with a valid artifact fragment; preserve the enclosing scaffold.','presentation':{'root':'portfolio-report','sectionSlots':['overview','composition','performance','risks','interpretation']},'behavior':'inert'}}},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'foundry/rich-components','requestId':$string(inputs.refreshGeneration)}"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'foundry/rich-components','requestId':$string(inputs.refreshGeneration)}}"
                     },
                     "acceptanceCriteria": [
                       {
@@ -993,10 +993,10 @@
                 "compute": [
                   {
                     "id": "generated-portfolio-report",
-                    "expression": "sources.`portfolio-semantic-intelligence.source`",
+                    "expression": "fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) ? fetched_sources.`portfolio-semantic-intelligence.source`.report : null",
                     "assign": "generatedReport",
                     "dependencies": [
-                      "sources.portfolio-semantic-intelligence.source"
+                      "fetched_sources.portfolio-semantic-intelligence.source"
                     ]
                   }
                 ]
@@ -1035,10 +1035,10 @@
                   },
                   {
                     "id": "saved-portfolio-report-envelope",
-                    "expression": "sources.`portfolio-intelligence-context.saved-report`",
+                    "expression": "fetched_sources.`portfolio-intelligence-context.saved-report`",
                     "assign": "savedReportEnvelope",
                     "dependencies": [
-                      "sources.portfolio-intelligence-context.saved-report"
+                      "fetched_sources.portfolio-intelligence-context.saved-report"
                     ]
                   }
                 ]
@@ -1052,25 +1052,25 @@
                     "when": "false",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+                      "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "response"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
                     }
                   },
                   {
                     "id": "portfolio-semantic-intelligence.source",
                     "service": "portfolio-semantic-intelligence",
                     "operation": "generateReport",
-                    "when": "inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0",
+                    "when": "(inputs.`portfolio-value`.summary.marketValue > 0 and inputs.refreshGeneration > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
                     "input": {
                       "kind": "jsonata",
-                      "expr": "{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'rich-components','acceptedCapabilities':['semantic:narrative','semantic:measure-set','semantic:argument','semantic:entity-set','semantic:relationship-set','semantic:decision','primitive:container','primitive:chart','fluent:text','fluent:list','fluent:table'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear','use complementary views only for distinct insights'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice','add visual variety without analytical value'],'constraints':['each section slot may contain one or more Cells'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':'<compose one representation with views and a presentation with slots/root>','fallback':'<representation id>'}],'presentation':'<compose slots/root and allowedCapabilities listing every capability used>','runtime':{'externals':{'projectionViews':'<matching imports>'},'state':'<analytical presentation data>'},'cells':'<semantic responsibility cells>'}},'slotPolicy':'Replace every angle-bracket slot with a valid artifact fragment; preserve the enclosing scaffold.','presentation':{'root':'portfolio-report','sectionSlots':['overview','composition','performance','risks','interpretation']},'behavior':'inert'}}}"
+                      "expr": "$merge([{'refreshGeneration':inputs.refreshGeneration,'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'investorProfile':null,'presentationMode':'rich-components','acceptedCapabilities':['semantic:narrative','semantic:measure-set','semantic:argument','semantic:entity-set','semantic:relationship-set','semantic:decision','primitive:container','primitive:chart','fluent:text','fluent:list','fluent:table'],'authoringBrief':{'objective':'Help the investor understand this portfolio snapshot.','sectionMap':{'overview':'Orient the user quickly.','composition':'Explain value and exposure distribution.','performance':'Show supported gains, losses, and comparisons.','risks':'Surface concentration, downside, and uncertainty.','interpretation':'Separate defensible conclusions from facts.'},'positiveCurrency':['make material concentration and exposure immediately clear','use complementary views only for distinct insights'],'negativeCurrency':['infer historical performance from a current snapshot','give personalized fiduciary advice','add visual variety without analytical value'],'constraints':['each section slot may contain one or more Cells'],'blueprintProfile':{'artifactScaffold':{'gik':'0.1','type':'blueprint','payload':{'id':'generated-semantic-report','kind':'semantic-report','version':'1.0.0','structureMode':'fixed','serviceTiers':[{'id':'runtime-document','kind':'runtime-document'}],'serviceRecipes':[],'projectionTiers':[{'id':'report-semantic','kind':'semantic-report-model','capabilities':[]},{'id':'runtime-document','kind':'runtime-document','capabilities':[]}],'projectionRecipes':[{'id':'semantic-report-to-runtime','from':'report-semantic','to':'runtime-document','representations':'<compose one representation with views and a presentation with slots/root>','fallback':'<representation id>'}],'presentation':'<compose slots/root and allowedCapabilities listing every capability used>','runtime':{'externals':{'projectionViews':'<matching imports>'},'state':'<analytical presentation data>'},'cells':'<semantic responsibility cells>'}},'slotPolicy':'Replace every angle-bracket slot with a valid artifact fragment; preserve the enclosing scaffold.','presentation':{'root':'portfolio-report','sectionSlots':['overview','composition','performance','risks','interpretation']},'behavior':'inert'}}},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
                     },
                     "output": {
                       "kind": "jsonata",
-                      "expr": "{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'copilot/rich-components','requestId':$string(inputs.refreshGeneration)}"
+                      "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':{'found':true,'report':response,'asOf':$now(),'portfolioKey':inputs.analysisContext.portfolioKey,'analysisKey':'copilot/rich-components','requestId':$string(inputs.refreshGeneration)}}"
                     },
                     "acceptanceCriteria": [
                       {
@@ -1090,10 +1090,10 @@
                 "compute": [
                   {
                     "id": "generated-portfolio-report",
-                    "expression": "sources.`portfolio-semantic-intelligence.source`",
+                    "expression": "fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) ? fetched_sources.`portfolio-semantic-intelligence.source`.report : null",
                     "assign": "generatedReport",
                     "dependencies": [
-                      "sources.portfolio-semantic-intelligence.source"
+                      "fetched_sources.portfolio-semantic-intelligence.source"
                     ]
                   }
                 ]
@@ -1110,7 +1110,7 @@
                     "request": {
                       "transform": {
                         "kind": "jsonata",
-                        "expr": "({'message':'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
+                        "expr": "({'message':'Purpose and authority: ' & $string(input.purpose) & ' Evidence (historical observations are not current facts): ' & $string(input.evidence) & ' Apply the durable charter, preserve uncertainty and provenance, and never infer trading authority. ' & 'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
                       }
                     },
                     "response": {
@@ -2209,7 +2209,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "{'message':'Write a concise Markdown portfolio intelligence report using this supplied portfolio value as authoritative: ' & $string(input.portfolioValue),'instructions':'Return JSON with exactly one non-empty markdown property. Use only supplied portfolio facts. Distinguish facts from judgments and uncertainty. Do not invent prices, events, sources, constraints, or external research.','maxOutputTokens':1800}"
+                "expr": "{'message':'Purpose and authority: ' & $string(input.purpose) & ' Evidence (historical observations are not current facts): ' & $string(input.evidence) & ' Apply the durable charter, preserve uncertainty and provenance, and never infer trading authority. ' & 'Write a concise Markdown portfolio intelligence report using this supplied portfolio value as authoritative: ' & $string(input.portfolioValue),'instructions':'Return JSON with exactly one non-empty markdown property. Use only supplied portfolio facts. Distinguish facts from judgments and uncertainty. Do not invent prices, events, sources, constraints, or external research.','maxOutputTokens':1800}"
               }
             },
             "response": {
@@ -2259,7 +2259,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "{'message':'Write a concise Markdown portfolio intelligence report using this supplied portfolio value as authoritative: ' & $string(input.portfolioValue),'instructions':'Return JSON with exactly one non-empty markdown property. Use only supplied portfolio facts. Distinguish facts from judgments and uncertainty. Do not invent prices, events, sources, constraints, or external research.'}"
+                "expr": "{'message':'Purpose and authority: ' & $string(input.purpose) & ' Evidence (historical observations are not current facts): ' & $string(input.evidence) & ' Apply the durable charter, preserve uncertainty and provenance, and never infer trading authority. ' & 'Write a concise Markdown portfolio intelligence report using this supplied portfolio value as authoritative: ' & $string(input.portfolioValue),'instructions':'Return JSON with exactly one non-empty markdown property. Use only supplied portfolio facts. Distinguish facts from judgments and uncertainty. Do not invent prices, events, sources, constraints, or external research.'}"
               }
             },
             "response": {
@@ -2314,7 +2314,7 @@
             "request": {
               "transform": {
                 "kind": "jsonata",
-                "expr": "({'message':'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
+                "expr": "({'message':'Purpose and authority: ' & $string(input.purpose) & ' Evidence (historical observations are not current facts): ' & $string(input.evidence) & ' Apply the durable charter, preserve uncertainty and provenance, and never infer trading authority. ' & 'Assignment: ' & $string(input.authoringBrief) & (input.presentationMode = 'rich-components' ? ' RICH SHAPE: use at most seven Cells. A representation has only id, views, presentation. views maps Cell ids to {primary:{capability,bindings,props,region}}. Every binding value is an object such as {from:\"report.positions\"}, never a string. presentation owns slots, root, allowedCapabilities. Emit payload.cells before payload.runtime; cells is never nested inside runtime and maps ids to {id}. runtime.externals.projectionViews is an object keyed by namespace with {from,use}; each from value must be exactly semantic, primitive, or fluent. Never emit representation roots or composition, and never put capability directly under a view id. ' : ' ') & ' Data: ' & $string({'positions':input.positions,'summary':input.summary,'investorProfile':input.investorProfile}) & ' Allowed capabilities: ' & $string(input.acceptedCapabilities),'maxOutputTokens':input.presentationMode = 'rich-components' ? 8000 : 5000,'presentationMode':input.presentationMode,'acceptedCapabilities':input.acceptedCapabilities,'authoringBrief':input.authoringBrief})"
               }
             },
             "response": {
@@ -2790,6 +2790,23 @@
           }
         },
         "scope": "per-blueprint"
+      },
+      "portfolio-context": {
+        "kind": "context-store",
+        "version": "1",
+        "config": {
+          "storeRef": "portfolio-context"
+        },
+        "operations": {
+          "query": {
+            "operation": "query",
+            "contract": "context-store.query/v1"
+          },
+          "ingest": {
+            "operation": "ingest",
+            "contract": "context-store.ingest/v1"
+          }
+        }
       }
     },
     "runtime": {
@@ -2841,7 +2858,8 @@
           "intelligence": null,
           "intelligenceRefreshGeneration": 0,
           "analysisContext": null,
-          "resolvedIntelligenceEnvelope": null
+          "resolvedIntelligenceEnvelope": null,
+          "id": "portfolio-demo"
         },
         "purposeParticipant": {
           "schemaVersion": 1,
@@ -3835,10 +3853,10 @@
         "compute": [
           {
             "id": "settled-market-prices",
-            "expression": "sources.`market-prices.source`",
+            "expression": "fetched_sources.`market-prices.source`",
             "assign": "portfolio.stockQuotes",
             "dependencies": [
-              "sources.market-prices.source"
+              "fetched_sources.market-prices.source"
             ]
           }
         ],
@@ -3888,6 +3906,11 @@
         "id": "portfolio-intelligence",
         "inputs": [
           {
+            "token": "portfolio.id",
+            "as": "portfolioId",
+            "required": true
+          },
+          {
             "token": "portfolio-value"
           },
           {
@@ -3913,14 +3936,14 @@
             "id": "portfolio-intelligence.source",
             "service": "portfolio-intelligence",
             "operation": "requestIntelligence",
-            "when": "inputs.`portfolio-value`.summary.marketValue > 0",
+            "when": "(inputs.`portfolio-value`.summary.marketValue > 0) and (fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) and $not(fetched_sources.`portfolio-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
             "input": {
               "kind": "jsonata",
-              "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+              "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
             },
             "output": {
               "kind": "jsonata",
-              "expr": "response"
+              "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
             }
           },
           {
@@ -3930,22 +3953,22 @@
             "when": "false",
             "input": {
               "kind": "jsonata",
-              "expr": "{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null}"
+              "expr": "$merge([{'positions':inputs.`portfolio-value`.positions,'summary':inputs.`portfolio-value`.summary,'portfolioValue':inputs.`portfolio-value`,'investorProfile':null},{'purpose':dpp.manifest,'evidence':{'currentPortfolio':inputs.`portfolio-value`,'history':fetched_sources.`portfolio-context.query`.records,'savedReport':inputs.savedReportEnvelope}}])"
             },
             "output": {
               "kind": "jsonata",
-              "expr": "response"
+              "expr": "{'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'report':response}"
             }
           }
         ],
         "compute": [
           {
             "id": "settled-portfolio-intelligence",
-            "expression": "$exists(sources.`portfolio-semantic-intelligence.source`) ? sources.`portfolio-semantic-intelligence.source` : sources.`portfolio-intelligence.source`",
+            "expression": "$exists(fetched_sources.`portfolio-semantic-intelligence.source`.report) ? fetched_sources.`portfolio-semantic-intelligence.source`.report : fetched_sources.`portfolio-intelligence.source`.report",
             "assign": "portfolio.intelligence",
             "dependencies": [
-              "sources.portfolio-intelligence.source",
-              "sources.portfolio-semantic-intelligence.source"
+              "fetched_sources.portfolio-intelligence.source",
+              "fetched_sources.portfolio-semantic-intelligence.source"
             ]
           }
         ],
@@ -3953,7 +3976,7 @@
           {
             "token": "generated-portfolio-report-envelope",
             "from": "computed.generatedReport",
-            "when": "$exists(sources.`portfolio-semantic-intelligence.source`)"
+            "when": "fetched_sources.`portfolio-semantic-intelligence.source`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) and $exists(fetched_sources.`portfolio-semantic-intelligence.source`.report)"
           }
         ],
         "behavior": {
@@ -3980,6 +4003,181 @@
           "primary": {
             "capability": "portfolio:intelligence",
             "region": "intelligence"
+          }
+        },
+        "dpp": {
+          "manifest": {
+            "manifest-version": "0.1",
+            "participant": {
+              "stable-id": "portfolio-value",
+              "human-readable-name": "Portfolio reality and value participant"
+            },
+            "durable-charter": {
+              "identity-and-viability": {
+                "why-this-participant-exists": "Maintain a faithful, explainable understanding of a portfolio's composition and changing context so people can make better-informed financial decisions over time.\n",
+                "what-must-remain-true-for-it-to-remain-this-participant": "Preserve the distinction between observed portfolio facts, external claims, estimates, and recommendations; never present a forecast or proposal as a guaranteed outcome.\n"
+              },
+              "value-creation": {
+                "beneficial-change-it-exists-to-create": "Improve the quality and timeliness of portfolio understanding and decision-making, including awareness of risk, opportunity, liquidity, costs, and relevant external developments.\n",
+                "who-benefits-from-that-change": [
+                  "The portfolio owner",
+                  "Authorized advisors or auditors receiving a scoped portfolio view"
+                ]
+              },
+              "participation": {
+                "relationships": [
+                  {
+                    "larger-participant-this-one-serves": "Portfolio owner's wealth-advisory context",
+                    "what-it-serves-for-that-participant": "Explain portfolio state, relevant company/sector/market events, potential risks and opportunities, and the implications of alternative decisions.\n",
+                    "purpose-lens-or-expectation": "Support the owner's stated investment horizon, risk tolerance, liquidity needs, and other explicitly provided constraints.\n",
+                    "projection-or-contribution-that-participant-consumes": "A decision-oriented portfolio view with holdings, exposures, evidence-backed intelligence, uncertainty, and optional proposals.\n"
+                  },
+                  {
+                    "larger-participant-this-one-serves": "Authorized tax-preparation or audit context",
+                    "what-it-serves-for-that-participant": "Provide traceable tax-relevant facts such as transactions, lots, realized gains/losses, and relevant adjustments.\n",
+                    "purpose-lens-or-expectation": "Prioritize completeness, provenance, period boundaries, and auditability; do not optimize for investment growth in this view.\n",
+                    "projection-or-contribution-that-participant-consumes": "A scoped, source-linked tax projection that distinguishes recorded facts from calculations requiring professional review.\n"
+                  }
+                ]
+              },
+              "authority-and-boundaries": {
+                "what-it-may-adapt-within-this-charter": [
+                  "Its research plan, monitoring focus, and provisional value currencies.",
+                  "The presentation of different projections for explicitly authorized participants.",
+                  "Its proposal ranking, provided the owner's constraints remain binding."
+                ],
+                "what-it-may-do-without-asking": [
+                  "Read authorized portfolio, transaction, market, company, sector, and macroeconomic information.",
+                  "Calculate deterministic exposures, scenarios, and historical comparisons from identified inputs.",
+                  "Generate explanations and non-binding decision proposals with cited evidence."
+                ],
+                "what-requires-human-decision": [
+                  "Placing, modifying, or canceling trades, moving assets, or changing account settings.",
+                  "Changing the owner's objectives, constraints, risk tolerance, or data-sharing permissions.",
+                  "Treating uncertain or conflicting external information as a verified portfolio fact."
+                ],
+                "what-it-must-never-do": [
+                  "Execute a financial transaction without explicit authorization through an approved path.",
+                  "Describe a predicted return as certain or imply that a currency is a complete definition of financial value.",
+                  "Share portfolio data with a participant that lacks an explicit authorization."
+                ]
+              },
+              "steward": {
+                "responsibility": "Maintain an evidence-grounded portfolio understanding. It may investigate broadly across authorized sources, but must show provenance, uncertainty, time context, and the distinction between facts, analysis, and proposals.\n",
+                "implementation-reference": "Portfolio participant steward cell/service or hosted Blueprint",
+                "permitted-services-and-tools": [
+                  "Authorized portfolio positions, transactions, and account metadata, read-only by default.",
+                  "Approved market prices, company/sector intelligence, corporate events, and macroeconomic sources.",
+                  "Deterministic portfolio calculations and scenario simulation.",
+                  "Proposal presentation and human review channel; no implicit brokerage authority."
+                ],
+                "evidence-and-decision-recording": "Preserve source, timestamp, as-of date, calculation inputs, assumptions, uncertainty, and the human's decision for material intelligence and proposals. Keep external source records in their systems of record.\n"
+              }
+            },
+            "evolving-working-model": {
+              "currency-hypotheses": {
+                "revision": 0,
+                "positive-signals-of-value": [
+                  {
+                    "signal": "The portfolio view is timely, complete, and reconciles with authoritative account records.",
+                    "evidence-or-source": "Custodian/account records, holdings, transactions, and reconciliation results.",
+                    "known-limitations": "Reconciliation does not establish that a decision is financially beneficial."
+                  },
+                  {
+                    "signal": "The owner has better visibility into risk, liquidity, concentration, and relevant events.",
+                    "evidence-or-source": "Portfolio calculations, cited market/company/sector intelligence, owner feedback.",
+                    "known-limitations": "A comprehensive view cannot eliminate uncertainty or forecast error."
+                  },
+                  {
+                    "signal": "Decisions align with explicitly stated constraints and are understandable after the fact.",
+                    "evidence-or-source": "Recorded constraints, proposal rationale, and owner disposition.",
+                    "known-limitations": "Alignment with stated constraints does not guarantee a favorable outcome."
+                  }
+                ],
+                "negative-signals-of-cost-or-harm": [
+                  {
+                    "signal": "Data is stale, incomplete, misattributed, or inconsistent across sources.",
+                    "evidence-or-source": "Source timestamps, reconciliation, and data-quality checks.",
+                    "known-limitations": "Checks only cover known feeds and detectable error classes."
+                  },
+                  {
+                    "signal": "Unnecessary turnover, costs, tax burden, concentration, or liquidity risk is introduced.",
+                    "evidence-or-source": "Scenario calculations, transaction records, and authorized expert review.",
+                    "known-limitations": "Counterfactual costs and future risks are estimates."
+                  },
+                  {
+                    "signal": "The owner or advisor receives misleading confidence or material context is missed.",
+                    "evidence-or-source": "Corrections, decision review, and later-discovered relevant events.",
+                    "known-limitations": "Absence of corrections is not evidence that nothing was missed."
+                  }
+                ],
+                "signs-that-the-currency-may-have-drifted": "A growth or benchmark measure looks favorable while risk, liquidity, taxes, owner constraints, data fidelity, or decision quality materially deteriorate; or the system's apparent success depends on a narrow historical period or incomplete sources.\n"
+              },
+              "viability-tensions": [
+                "Long-term growth versus capital preservation and the owner's risk tolerance.",
+                "Tax efficiency versus investment objectives and portfolio flexibility.",
+                "Liquidity versus return-seeking allocation.",
+                "Broad research coverage versus source quality, freshness, and attention.",
+                "Actionability versus uncertainty and the risk of overconfident advice."
+              ],
+              "current-strategy-and-priorities": {
+                "current-emphasis": "Maintain distinct wealth-advisory and tax/audit projections over shared portfolio reality; prioritize provenance and explanation before optimizing any single performance currency.\n",
+                "open-questions": [
+                  "Which company, sector, macroeconomic, and event signals are material to this owner's stated horizon and constraints?",
+                  "Which observed portfolio costs or risks are controllable versus inherent in the owner's chosen strategy?"
+                ]
+              },
+              "operating-rhythm": {
+                "routine-reassessment": "Refresh market and portfolio facts on configured source cadence; summarize changes rather than waking on every raw tick.",
+                "strategy-review": "Revisit value hypotheses and owner constraints on an agreed schedule or when requested.",
+                "material-change-triggers": [
+                  "A material change in positions, liquidity needs, owner constraints, or source integrity.",
+                  "A significant company, sector, market, regulatory, or macroeconomic event relevant to the portfolio.",
+                  "A mismatch between the portfolio's observed trajectory and the owner's stated purpose."
+                ]
+              },
+              "learned-context-references": [
+                "Authorized portfolio/account system of record",
+                "Approved market and company intelligence sources",
+                "Decision and review history scoped by participating context"
+              ]
+            },
+            "context-store": {
+              "ingest": "portfolio-context.ingest",
+              "query": "portfolio-context.query"
+            }
+          },
+          "context": {
+            "sources": [
+              {
+                "id": "portfolio-context.query",
+                "service": "portfolio-context",
+                "operation": "query",
+                "when": "inputs.`portfolio-value`.summary.marketValue > 0 and $not(fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})))",
+                "input": {
+                  "kind": "jsonata",
+                  "expr": "{'scope':'portfolio:' & inputs.portfolioId,'requestKey':$string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}),'query':{'kinds':['portfolio-observation'],'order':'observedAt-desc'},'limit':10}"
+                },
+                "output": {
+                  "kind": "jsonata",
+                  "expr": "$merge([response, {'observedAt':$now()}])"
+                }
+              },
+              {
+                "id": "portfolio-context.ingest",
+                "service": "portfolio-context",
+                "operation": "ingest",
+                "when": "fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & inputs.portfolioId) and fetched_sources.`portfolio-context.query`.requestKey = ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})) and $not(('observation:' & ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration}))) in fetched_sources.`portfolio-context.ingest`.recordIds)",
+                "input": {
+                  "kind": "jsonata",
+                  "expr": "{'scope':'portfolio:' & inputs.portfolioId,'records':[{'id':'observation:' & ($string({'portfolioValue':inputs.`portfolio-value`,'refreshGeneration':inputs.refreshGeneration})),'kind':'portfolio-observation','observedAt':fetched_sources.`portfolio-context.query`.observedAt,'content':{'portfolioValue':inputs.`portfolio-value`,'manifestVersion':dpp.manifest.`manifest-version`,'participant':dpp.manifest.participant.`stable-id`},'references':inputs.savedReportEnvelope.found ? [inputs.savedReportEnvelope] : []}]}"
+                },
+                "output": {
+                  "kind": "jsonata",
+                  "expr": "response"
+                }
+              }
+            ]
           }
         }
       },
@@ -4012,7 +4210,7 @@
         "compute": [
           {
             "id": "portfolio-analysis-context",
-            "expression": "{'portfolioKey':$string(inputs.`portfolio-value`),'analysisKey':sources.`portfolio-intelligence-context.saved-report`.analysisKey}",
+            "expression": "{'portfolioKey':$string(inputs.`portfolio-value`),'analysisKey':fetched_sources.`portfolio-intelligence-context.saved-report`.analysisKey}",
             "assign": "portfolio.analysisContext",
             "dependencies": [
               "inputs.portfolio-value"
@@ -4020,10 +4218,10 @@
           },
           {
             "id": "saved-portfolio-report-envelope",
-            "expression": "sources.`portfolio-intelligence-context.saved-report`",
+            "expression": "fetched_sources.`portfolio-intelligence-context.saved-report`",
             "assign": "savedReportEnvelope",
             "dependencies": [
-              "sources.portfolio-intelligence-context.saved-report"
+              "fetched_sources.portfolio-intelligence-context.saved-report"
             ]
           }
         ],
@@ -4084,12 +4282,12 @@
         "compute": [
           {
             "id": "resolved-portfolio-report-envelope",
-            "expression": "$exists(sources.`portfolio-intelligence-resolution.save-report`) and sources.`portfolio-intelligence-resolution.save-report` != null ? sources.`portfolio-intelligence-resolution.save-report` : (inputs.generatedReport != null ? inputs.generatedReport : (inputs.savedReportEnvelope.found ? inputs.savedReportEnvelope : null))",
+            "expression": "$exists(fetched_sources.`portfolio-intelligence-resolution.save-report`) and fetched_sources.`portfolio-intelligence-resolution.save-report` != null ? fetched_sources.`portfolio-intelligence-resolution.save-report` : (inputs.generatedReport != null ? inputs.generatedReport : (inputs.savedReportEnvelope.found ? inputs.savedReportEnvelope : null))",
             "assign": "portfolio.resolvedIntelligenceEnvelope",
             "dependencies": [
               "inputs.savedReportEnvelope",
               "inputs.generatedReport",
-              "sources.portfolio-intelligence-resolution.save-report"
+              "fetched_sources.portfolio-intelligence-resolution.save-report"
             ]
           }
         ],
