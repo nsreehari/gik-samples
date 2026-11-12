@@ -11,7 +11,7 @@ const coreVersions = {
   "gik-evaluators": "0.4.0",
   "gik-durable-runtime": "0.9.0",
   "gik-blueprint": "0.5.0",
-  "gik-react": "0.4.2",
+  "gik-react": "0.5.0",
   "gik-controlface": "0.5.0",
   "gik-agentface": "0.2.2",
   "gik-transport-http-sse": "0.2.2",
