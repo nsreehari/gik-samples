@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Build a GIK sample application with Blueprints, Cells, explicit component providers, and a host-owned backend. Start from the Finbook reference app.">
+    <title>Build a sample app | GIK</title>
+    <style>
+      :root { color-scheme: light; font-family: "Segoe UI", system-ui, sans-serif; color: #242424; background: #fafafa; }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      header, main, footer { max-width: 1080px; margin: auto; padding: 32px clamp(20px, 5vw, 56px); }
+      header { padding-top: 56px; padding-bottom: 16px; }
+      nav { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+      h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; margin: 20px 0; }
+      h2 { font-size: 1.5rem; margin-top: 0; }
+      h3 { font-size: 1.1rem; }
+      p, li { line-height: 1.65; }
+      a { color: #0f548c; text-underline-offset: 3px; }
+      a:focus-visible { outline: 3px solid #0f6cbd; outline-offset: 4px; }
+      .eyebrow { color: #616161; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+      .intro { max-width: 72ch; font-size: 1.1rem; }
+      section { margin-bottom: 32px; }
+      .card { padding: 24px; border: 1px solid #d1d1d1; border-radius: 12px; background: #fff; }
+      .reference { border-top: 4px solid #0f6cbd; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
+      .step { border-left: 3px solid #b4d6fa; padding-left: 20px; margin-bottom: 28px; }
+      pre { padding: 20px; overflow-x: auto; border-radius: 8px; background: #f0f0f0; line-height: 1.7; }
+      code { font-family: Consolas, monospace; overflow-wrap: anywhere; }
+      pre code { overflow-wrap: normal; }
+      .note, footer { color: #525252; }
+      .skip { position: absolute; left: 20px; top: -60px; padding: 12px; background: #fff; }
+      .skip:focus { top: 12px; }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#walkthrough">Skip to the walkthrough</a>
+    <header>
+      <nav aria-label="GIK resources">
+        <a href="../">GIK Studio</a>
+        <a href="../storybook/">Components Storybook</a>
+        <a href="../vendor/">Package downloads</a>
+        <a href="https://github.com/nsreehari/gik-samples">Sample source repository</a>
+      </nav>
+      <p class="eyebrow">Developer guide</p>
+      <h1>Build a sample app</h1>
+      <p class="intro">Start with a working reference app, then replace its domain.
+        A Blueprint owns application composition and behavior; components render data and emit
+        intents; the host authorizes and executes external work.</p>
+    </header>
+    <main>
+      <section class="card reference" aria-labelledby="finbook">
+        <h2 id="finbook">Start with Finbook</h2>
+        <p>Finbook is a small finance report explorer with a Blueprint, app-owned components,
+          a React host, and a SQLite-backed MCP server. Its GIK libraries, including
+          <code>gik-components</code>, come from npm. It does not need Studio or a sibling
+          Components build.</p>
+        <p><a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook">Browse the complete reference app</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/apps/finbook/README.md">Setup and extraction guide</a></p>
+        <p>With Node.js 24 installed, run:</p>
+        <pre><code>git clone https://github.com/nsreehari/gik-samples.git
+cd gik-samples/apps/finbook
+npm install --no-audit --no-fund
+npm run dev</code></pre>
+        <p>Open <a href="http://127.0.0.1:5176/finbook/">http://127.0.0.1:5176/finbook/</a>.
+          The command starts the local browser host and the MCP server.</p>
+        <p class="note">This Pages site is static: it cannot run Finbook's Node/SQLite backend.
+          Keep the local server on loopback. Preserve the app-contained XYFlow archives when
+          extracting the directory; the app README explains the split.</p>
+      </section>
+
+      <section id="walkthrough" aria-labelledby="steps">
+        <h2 id="steps">From reference app to your own application</h2>
+        <div class="step">
+          <h3>1. Define responsibilities as Cells</h3>
+          <p>Start from the user outcome, not the page layout. Finbook separates selection from
+            report exploration into <code>finbook-selector</code> and <code>finbook-explorer</code>.
+            Declare the input/output ports that connect those responsibilities.</p>
+          <a href="https://github.com/nsreehari/gik-samples/blob/main/apps/finbook/blueprints/finbook/blueprint.json">Read the Finbook Blueprint</a>
+        </div>
+        <div class="step">
+          <h3>2. Declare data access and event behavior</h3>
+          <p>Declare service operations and bounded Cell sources, derive outputs with compute,
+            and handle declared events. Settled source results are read through
+            <code>fetched_sources</code>. Reduction produces state and effects; external work
+            is performed by the host, not inside a component.</p>
+          <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/packages/blueprint/README.md">Blueprint contracts and source semantics</a>
+        </div>
+        <div class="step">
+          <h3>3. Choose presentation without changing meaning</h3>
+          <p>Attach named Cell views to presentation slots. Register only the component
+            providers you use, including any app-owned finance or domain catalog.
+            Declare both service and projection lowering axes, even when an axis has no recipes.</p>
+          <a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook/gik-components">Inspect the app-owned components</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/packages/components/README.md">Component providers and authoring tools</a>
+        </div>
+        <div class="step">
+          <h3>4. Compose a small host</h3>
+          <p>Mount the Blueprint with <code>BlueprintHost</code>, explicit projection providers,
+            and a service host. Keep endpoint authorization, credential resolution, and
+            execution authority in this trusted boundary. Never put literal secrets in Blueprint JSON.</p>
+          <a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook/reference-app-host">Follow Finbook's host wiring</a>
+          &middot; <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/packages/react/README.md">React hosting API</a>
+        </div>
+        <div class="step">
+          <h3>5. Replace the domain behind stable contracts</h3>
+          <p>Implement your data access, calculations, and integrations behind declared
+            operations. Finbook keeps its tool schemas, finance calculations, and SQLite adapter
+            together. A hosted backend needs authentication and shared durable storage;
+            a function's local SQLite file is not a production database.</p>
+          <a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook/mcp-server">Read the server implementation</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/apps/finbook/mcp-server/storage-contract.md">Persistence obligations</a>
+        </div>
+        <div class="step">
+          <h3>6. Validate the complete app independently</h3>
+          <p>From the Finbook app directory, run <code>npm run check</code>. It typechecks,
+            validates the Blueprint, builds the browser, and runs app/domain/server tests.
+            Keep tests for your public port, event, and service-result shapes.</p>
+          <a href="https://github.com/nsreehari/gik-samples/tree/main/apps/finbook/test">Use the reference tests as a starting point</a>
+          &middot; <a href="https://github.com/nsreehari/gik-samples/blob/main/VALIDATION.md">Repository and CI validation</a>
+        </div>
+      </section>
+
+      <section aria-labelledby="next">
+        <h2 id="next">Add advanced behavior only when needed</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Ongoing observations</h3>
+            <p>A Sense keeps observation intent active and contributes discrete events.
+              The host reconciles bindings and journals Signals; an always-running agent is
+              not required.</p>
+            <a href="https://github.com/nsreehari/gik-samples/blob/main/src/headless/senses-clock-host.ts">Timer Sense host example</a>
+            &middot; <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/senses.md">Sense contract</a>
+          </article>
+          <article class="card">
+            <h3>Purpose and retained evidence</h3>
+            <p>A purpose-bearing Cell declares <code>dpp.manifest</code>, context query/ingest
+              sources, and optional Senses. The portfolio sample demonstrates scoped history
+              and stale-result guards. Purpose text never grants execution permission.</p>
+            <a href="https://github.com/nsreehari/gik-samples/tree/main/src/bootstrap/blueprints/portfolio-tracker-new">Portfolio sample and behavior cases</a>
+            &middot; <a href="https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md">DPP contract</a>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <p>This walkthrough explains composition. Package READMEs own the current APIs;
+        the linked reference source owns runnable examples.</p>
+      <a href="../">Return to GIK Studio</a>
+    </footer>
+  </body>
+</html>

@@ -71,6 +71,7 @@ and components consume through well-defined props and events.
 
 ## Live site
 
+- [Build a sample app](https://nsreehari.github.io/gik-samples/getting-started/) - walkthrough and reference source
 - [Root sample app](https://nsreehari.github.io/gik-samples/)
 - [Storybook](https://nsreehari.github.io/gik-samples/storybook/)
 - [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)

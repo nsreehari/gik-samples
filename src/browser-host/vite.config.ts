@@ -71,7 +71,7 @@ export default defineConfig({
   // For GitHub Pages the site is served under /<repo>/, so built asset URLs must be prefixed.
   // The Pages workflow sets a versioned /gik/v*/ base; local dev/build defaults to "/".
   base: process.env.VITE_BASE || "/",
-  publicDir: false,
+  publicDir: "public",
   plugins: [react(), hostedAssets()],
   server: { port: 5175 },
 });
