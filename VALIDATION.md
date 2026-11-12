@@ -7,6 +7,25 @@ CI uses public npm and does not change the local corporate registry mirror.
 
 Use Node.js 24.
 
+## Change-aware CI
+
+The required `validate` job always reports a result; the PR workflow has no
+path-level trigger filter. It checks patch hygiene and runs the dependency-free
+distribution/documentation/policy tests for every change.
+
+Root documentation-only PRs avoid dependency installs. MCP-only changes install
+and test that standalone package; Finbook-only changes run its complete check
+and isolated extraction check. Components, browser/bootstrap, Storybook, shared
+scripts, workflow, dependency/configuration, and unknown build-input changes
+take the full applicable path. Shared policy/configuration changes also test
+both standalone consumers. Manual dispatch selects all checks.
+
+The checked-in classifier is conservative for unknown build inputs. If a
+required step fails, the job fails; skipped unrelated steps do not turn a failed
+check into success. npm caches reuse downloads, not installed dependencies.
+Components release inputs also require the expected patch/minor/major version
+in the existing implementation PR; see [release automation](RELEASING.md#automatic-stable-releases).
+
 ## 1. Install dependencies
 
 ```sh

@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
   workflow_dispatch:
 
 concurrency:
@@ -19,6 +20,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect affected areas
+        id: changes
+        run: node scripts/workflow-policy.mjs
+
+      - name: Check patch hygiene
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git diff --check "$BASE_SHA...$HEAD_SHA"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -27,44 +42,64 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Use compatible npm resolver
+        if: steps.changes.outputs.full == 'true' || steps.changes.outputs.finbook == 'true' || steps.changes.outputs.mcp == 'true'
         run: npm install --global npm@11.19.0
 
+      - name: Cache npm downloads
+        if: steps.changes.outputs.full == 'true' || steps.changes.outputs.finbook == 'true' || steps.changes.outputs.mcp == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
       - name: Install dependencies
+        if: steps.changes.outputs.full == 'true'
         run: npm install --no-audit --no-fund
 
       - name: Install Finbook dependencies
+        if: steps.changes.outputs.finbook == 'true'
         run: npm install --prefix apps/finbook --no-audit --no-fund
 
       - name: Install MCP server dependencies
+        if: steps.changes.outputs.mcp == 'true'
         run: npm install --prefix packages/mcp-server --no-audit --no-fund
 
       - name: Inspect MCP dependency resolution
+        if: steps.changes.outputs.mcp == 'true'
         run: npm ls --prefix packages/mcp-server @modelcontextprotocol/sdk body-parser zod --all
 
       - name: Build
+        if: steps.changes.outputs.full == 'true'
         run: npm run build
 
       - name: Collect verified published GIK archives
+        if: steps.changes.outputs.full == 'true'
         run: npm run pages:collect-packages
         env:
           PAGES_COMPONENTS_VERSION: latest
 
       - name: Type-check
+        if: steps.changes.outputs.full == 'true'
         run: npm run typecheck
 
       - name: Test
+        if: steps.changes.outputs.full == 'true'
         run: npm test
 
       - name: Test package distribution
         run: npm run test:distribution
 
       - name: Demonstrate published Sense services
+        if: steps.changes.outputs.full == 'true'
         run: node --import tsx src/headless/senses-clock-demo.ts
 
       - name: Test standalone Finbook
-        run: npm test --prefix apps/finbook
+        if: steps.changes.outputs.finbook == 'true'
+        run: npm run check --prefix apps/finbook
 
       - name: Validate extracted Finbook against npm packages
+        if: steps.changes.outputs.finbook == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -74,9 +109,11 @@ jobs:
           npm run check --prefix "$app_dir"
 
       - name: Test MCP server
+        if: steps.changes.outputs.mcp == 'true'
         run: npm test --prefix packages/mcp-server
 
       - name: Smoke-test built browser host
+        if: steps.changes.outputs.full == 'true'
         run: npm run test:pages
         env:
           CHROME_PATH: /usr/bin/google-chrome
