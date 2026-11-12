@@ -96,7 +96,14 @@ jobs:
 
       - name: Test standalone Finbook
         if: steps.changes.outputs.finbook == 'true'
-        run: npm run check --prefix apps/finbook
+        env:
+          FULL_VALIDATION: ${{ steps.changes.outputs.full }}
+        run: |
+          if [ "$FULL_VALIDATION" = "true" ]; then
+            npm test --prefix apps/finbook
+          else
+            npm run check --prefix apps/finbook
+          fi
 
       - name: Validate extracted Finbook against npm packages
         if: steps.changes.outputs.finbook == 'true'
