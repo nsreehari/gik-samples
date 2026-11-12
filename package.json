@@ -11,6 +11,8 @@
     "dev": "node scripts/build.mjs --dev",
     "test": "vitest run --config vitest.config.ts",
     "test:app": "vitest run --config vitest.config.ts",
+    "test:distribution": "node --test scripts/test/*.test.mjs",
+    "pages:collect-packages": "node scripts/collect-pages-packages.mjs",
     "scenario:run": "node scripts/run-scenario.mjs",
     "agent:plan": "tsx scripts/generate-foundry-provisioning-plan.ts",
     "agent:plan:incident-analysis": "npm run agent:plan -- --manifest src/bootstrap/blueprints/incident-analysis-new-shell/agents/incident-report-fixed-presentation/provisioning.json --out .tmp/incident-report-fixed-presentation.foundry-plan.json",

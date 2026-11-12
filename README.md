@@ -73,6 +73,13 @@ and components consume through well-defined props and events.
 - [Root sample app](https://nsreehari.github.io/gik-samples/)
 - [Storybook](https://nsreehari.github.io/gik-samples/storybook/)
 - [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)
+- [Released GIK package downloads](https://nsreehari.github.io/gik-samples/vendor/)
+
+Pages includes versioned npm tarballs for the ten stable core GIK packages and
+the released `gik-components` version. The download index links a manifest with
+original npm URLs, npm integrity digests, and SHA-256 checksums. These archives
+are generated and verified in CI, never committed to Git. `/vendor/` is a
+download directory, not an npm registry; dependency resolution is unchanged.
 
 ## Development
 

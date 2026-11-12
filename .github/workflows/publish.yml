@@ -82,6 +82,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test package distribution
+        run: npm run test:distribution
+
       - name: Inspect Components package
         run: npm pack --workspace gik-components --dry-run
 
@@ -109,6 +112,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: write
     steps:
       - name: Checkout release commit
         uses: actions/checkout@v5
@@ -142,6 +146,13 @@ jobs:
 
       - name: Publish Components with trusted publishing
         run: npm publish --workspace gik-components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
+
+      - name: Refresh Pages with the published Components archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh workflow run publish.yml --ref "$RELEASE_TAG" -f "release_ref=$RELEASE_TAG"
 
       - name: Record release summary
         if: always()
@@ -190,11 +201,17 @@ jobs:
         env:
           VITE_BASE: /gik-samples/
 
+      - name: Collect verified published GIK archives
+        run: npm run pages:collect-packages
+        env:
+          PAGES_COMPONENTS_VERSION: ${{ github.event_name == 'release' && 'latest' || '' }}
+
       - name: Smoke-test release artifact
         run: npm run test:pages
         env:
           CHROME_PATH: /usr/bin/google-chrome
           VITE_BASE: /gik-samples/
+          CHECK_PACKAGE_DOWNLOADS: "true"
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
