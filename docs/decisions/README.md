@@ -6,7 +6,10 @@ across the GIK ecosystem: **Status · Context · Decision · Consequences · Alt
 
 | ADR | Title | Status |
 |---|---|---|
-| [0001](ADR-0001-reference-participant-and-agent-authoring.md) | Reference purpose-participant organisms and constrained agent authoring | Accepted |
+| [0001](ADR-0001-reference-participant-and-agent-authoring.md) | Purpose-bearing portfolio Cells and constrained agent authoring | Proposed |
 
-Related design material: `gik-maintainer` `TODO.md` (Durable Purpose Participants in GIK) and the
-`generative-interaction-kernel` decision log, in particular ADR-0049 and ADR-0050.
+Related public design material: the
+[core DPP contract](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md)
+and [core decision log](https://github.com/nsreehari/generative-interaction-kernel/tree/master/docs/decisions),
+in particular ADR-0049 and ADR-0050. Each sample ADR links its implementation
+evidence and distinguishes declared intent from enforced host policy.

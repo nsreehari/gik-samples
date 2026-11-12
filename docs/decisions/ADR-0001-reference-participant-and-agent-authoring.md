@@ -1,54 +1,126 @@
-# ADR-0001: Reference purpose-participant organisms and constrained agent authoring
+# ADR-0001: Purpose-bearing portfolio Cells and constrained agent authoring
 
-**Status:** Accepted - 2026-09-01
+**Status:** Proposed - 2026-09-01; updated 2026-11-12 for the released DPP contract.
+Acceptance is subject to maintainer review of this ADR.
 
 ## Context
 
-`gik-samples` hosts the reference material that exercises GIK's Durable Purpose Participant model (see the design note in `gik-maintainer` `TODO.md`, and `generative-interaction-kernel` ADR-0050). Two sample-host concerns needed a recorded decision:
-
-1. The first reference organism — a **portfolio purpose participant** (TODO.md section 20, "Reference A") — needs to demonstrate the participant model concretely: durable purpose/plan/outcome state, governed human requests, and settlement-driven continuation, all as a Blueprint rather than bespoke sample code.
-2. Some sample services (notably the Foundry-agent incident-analysis flow) let an agent *author* a presentation Blueprint. Allowing an agent to emit an arbitrary Blueprint would be an open authority and materialization risk. A bounded pattern was needed for constrained generative authoring.
+The portfolio sample demonstrates durable purpose participants (DPPs) within
+ordinary Blueprints. It must distinguish the released purpose-bearing Cell
+contract from application-owned purpose, plan, outcome, and human-review state.
+The Foundry adapter also supports request-scoped authoring of presentation
+Blueprints. That mode needs bounded composition and validation, rather than
+treating model output as execution authority.
 
 ## Decision
 
-### Portfolio participant as a Blueprint organism
+### Purpose-bearing Cells use the native DPP contract
 
-The portfolio sample is a Blueprint organism whose settlement handlers read the triggering context from the namespaced `$event.requestContext` (request type, correlation id, revision, effect id) and read response data from top-level fields, consistent with the kernel's request/settlement contract (ADR-0049, ADR-0050). Settlement handlers are guarded on request type, existence, `status = 'pending'`, and `revision = $event.requestContext.revision` (plus plan revision where relevant) so stale and duplicate settlements are rejected. Request-emitting handlers supply dynamic request data through an explicit `args.from` expression rather than relying on implicit event-payload forwarding.
+The existing `portfolio-intelligence` Cell declares `dpp.manifest` and
+`dpp.context.sources`; there is no separate `kind: dpp`, scheduler, or mandatory
+AI provider. The full manifest carries participant identity, durable charter,
+authority boundaries, evolving working model, and descriptive context-store
+query/ingest guidance. Expressions read it as `dpp.manifest`.
 
-### Constrained agent response authoring (host-owned scaffold, bounded slots)
+Context sources resolve the `context-store.query/v1` and
+`context-store.ingest/v1` contracts. They use the ordinary source
+effect/settlement path, alongside intelligence sources. Completed results share
+`fetched_sources.<id>`; the old `sources` expression namespace has no alias.
+Source configuration arrays remain named `sources`. Source and Sense IDs are
+unique across the entire Cell. Optional context Senses deliver events rather
+than fetched-source records.
 
-Agent authoring of a presentation Blueprint is confined to a request-scoped **response workspace**:
+The sample host explicitly binds `config.storeRef: portfolio-context` to the
+Blueprint instance's durable KV connection. Records are additionally scoped by
+stable portfolio identity. Query request keys identify the valuation and refresh
+generation; intelligence waits for matching evidence. Ingest retries use stable
+record IDs and retain the first stored observation. The backend supports bounded
+kind-filtered retrieval ordered by observation time, not arbitrary queries.
+This first-write behavior is not transactional across concurrent writers.
 
-- The **host owns a trusted scaffold** (the enclosing Blueprint). The agent authors only a small set of named **slots** targeted by JSON Pointers into that scaffold.
-- Pointer traversal blocks `__proto__`, `prototype`, and `constructor` segments and requires each pointer to reference a path the scaffold already defines (no arbitrary creation) — a prototype-pollution and structure-escape guard.
-- Capabilities used by authored views are **allow-listed**: composition rejects any capability outside the accepted set, and derived capability tiers/imports are written back into host-owned pointers.
-- The composed candidate is **validated and materialized by the host** before acceptance; a candidate that is not a valid or materializable Blueprint is rejected.
-- The workspace is request-scoped, opened at service-execution start and closed in a `finally` (no leak across requests), and the agent's tools return typed results/proposals only — the agent never emits kernel effects.
+Source output transforms use immutable launch inputs for correlation. Semantic
+report envelopes retain their saved-report shape inside the internal
+`{requestKey, report}` wrapper; stale snapshots cannot publish a new saved report.
+The context store is not the execution journal, and manifest text is not an
+authorization grant or automatic timer configuration.
+
+### Portfolio review state remains application-owned
+
+The Blueprint's separate `purposeParticipant` state records the sample's
+purpose, strategy, plan, pending human requests, and outcomes. It is not the
+native DPP manifest or a required kernel workflow.
+
+Human-request settlement handlers read correlation metadata from
+`$event.requestContext` and response data from top-level event fields. Guards
+check request type, pending-request existence/status, matching revision, and
+plan revision where applicable. Request-emitting handlers supply dynamic data
+through explicit `args.from` expressions. These application guards complement,
+but do not replace, host authorization.
+
+### Response workspaces constrain the requests that select them
+
+When a Foundry request supplies `authoringWorkspace`, its response authoring is
+confined to a request-scoped workspace:
+
+- The request's host/Blueprint-authored scaffold supplies the enclosing
+  document; the agent supplies exactly the declared fragment fields.
+- JSON-Pointer slots must address existing scaffold paths. Traversal rejects
+  `__proto__`, `prototype`, and `constructor` segments.
+- When `capabilityDerivation` is configured, composition rejects capabilities
+  outside its accepted set and derives tiers/imports into configured scaffold
+  pointers. This is not an unconditional guarantee for every workspace.
+- The composed candidate must pass authoring validation and host
+  materialization before it can become the stored response proposal.
+- The adapter opens the workspace by request ID and closes it in `finally`.
+  A workspace-mode request must set a validated proposal before completion.
+
+This decision does not remove other adapter modes: requests without
+`authoringWorkspace` may still return structured JSON or parsed JSON replies.
+Do not claim that every agent-authored response uses bounded slots.
+
+### Hosts retain execution authority
+
+Manifest boundaries and valid proposals do not authorize execution. Hosts own
+endpoint approval, secret resolution, invocation authority, and proposal
+application. The browser host applies trusted endpoint checks, and Blueprint
+authoring/use lifecycles have their own actor authorization and admission
+policies. This ADR does not characterize all samples as allow-by-default or
+claim that materialization establishes permission to execute a candidate.
 
 ## Consequences
 
-- The portfolio sample is a faithful, inspectable instance of the participant model, usable as a copyable reference rather than one-off host code.
-- Generative UI authoring is bounded: an agent can shape only the content of a host-owned scaffold, cannot inject arbitrary capabilities or escape the document structure, and cannot bypass validation/materialization.
-- Because the pattern returns a typed proposal (never an effect) and closes its workspace deterministically, it stays consistent with the kernel's "agents are bounded effect executors" rule (ADR-0050) even though it lives at the sample-host layer.
-- These are sample-host decisions; enforcement of participant *authority* still belongs to the host invocation-authorization model (ADR-0050), which the samples currently exercise in allow-by-default form.
+- The portfolio remains an inspectable Blueprint, with stable semantic Cells
+  and independently selected service/projection implementations.
+- Current facts, selected historical evidence, and human-review state have
+  distinct roles. Purpose-bearing intelligence does not grant trading authority.
+- Withdrawing intelligence leaves independent holdings, price retrieval, and
+  valuation responsibilities intact. External context retention and already
+  performed effects remain host/backend responsibilities.
+- Bounded response composition applies only to its declared mode and configured
+  controls. Host authorization remains necessary after candidate validation.
 
 ## Alternatives considered
 
-### Let the agent return a complete Blueprint directly
-
-Rejected. It grants open authoring authority, risks structure escape and prototype pollution, and defers all validation to materialization time. A host-owned scaffold with bounded slots and pre-acceptance validation keeps the trust boundary explicit.
-
-### Implement the portfolio participant as bespoke sample code
-
-Rejected. The point of the reference organism is to demonstrate the participant model *as a Blueprint*; bespoke code would not validate the model or serve as a copyable reference.
-
-### Allow any capability the authored views reference
-
-Rejected. Capabilities must be allow-listed so an authored view cannot pull in host capabilities outside the accepted set.
+- **A special DPP Cell kind or scheduler:** rejected; purpose and context
+  declarations extend the existing Cell and effect/settlement mechanisms.
+- **Bespoke imperative portfolio orchestration:** rejected; the sample should
+  exercise Blueprint composition, state, events, and effects.
+- **Unrestricted complete-Blueprint output in workspace mode:** rejected for
+  that mode; bounded fragments preserve the configured scaffold. Other adapter
+  response modes remain supported and are outside this bounded-mode guarantee.
+- **Accept every capability in a derived view:** rejected when capability
+  derivation is configured; its explicit accepted set is the boundary.
 
 ## References
 
-- `gik-maintainer` `TODO.md` - Durable Purpose Participants in GIK (section 20, reference organisms).
-- `generative-interaction-kernel` ADR-0049 - Stable event contracts and effect settlements.
-- `generative-interaction-kernel` ADR-0050 - Host-owned invocation authorization and governed participant requests.
-- `generative-interaction-kernel` issue #54 - deferred revocation epoch on authorization snapshots.
+- [Core purpose-bearing Cell contract](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/dpp.md).
+- [Core ADR-0049: Stable event contracts and effect settlements](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/decisions/ADR-0049-stable-event-contracts-and-effect-settlements.md).
+- [Core ADR-0050: Host-owned invocation authorization](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/decisions/ADR-0050-host-owned-invocation-authorization.md).
+- [Portfolio Blueprint](../../src/bootstrap/blueprints/portfolio-tracker-new/blueprint.json)
+  and [behavioral cases](../../src/bootstrap/blueprints/portfolio-tracker-new/TEST_CASES.md).
+- [Context backend](../../src/service-kinds/context-store/runtime.ts)
+  and [host storage binding](../../src/shared/blueprint-storage.ts).
+- [Response workspace composition](../../src/service-kinds/agent-response-workspace.ts)
+  and [Foundry adapter](../../src/service-kinds/foundry-agent/index.ts).
+- [Browser service host](../../src/browser-host/src/runtime/service-host.ts)
+  and [Blueprint lifecycle policies](../../src/browser-host/src/runtime/blueprint-agent-lifecycle.ts).
