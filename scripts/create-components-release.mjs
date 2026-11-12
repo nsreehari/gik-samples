@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { git } from "./workflow-policy.mjs";
+import { assertComponentsVersionIncrease, git } from "./workflow-policy.mjs";
 
 const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
 const path = "packages/components/package.json";
@@ -11,18 +11,7 @@ if (before.version === after.version) {
 } else if (before.version.includes("-") || after.version.includes("-")) {
   console.log("Prerelease authoring/promotion remains manual; no automatic release.");
 } else {
-  const parse = (value) => {
-    if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value)) {
-      throw new Error("Automatic releases accept stable versions only; prereleases remain manual");
-    }
-    return value.split(".").map(Number);
-  };
-  const previous = parse(before.version);
-  const current = parse(after.version);
-  const firstDifference = current.findIndex((part, index) => part !== previous[index]);
-  if (firstDifference < 0 || current[firstDifference] < previous[firstDifference]) {
-    throw new Error("Package version must increase");
-  }
+  assertComponentsVersionIncrease(before.version, after.version);
   const tag = `components-v${after.version}`;
   const repository = event.repository.full_name;
   const remote = JSON.parse(execFileSync("gh", ["api", `repos/${repository}/git/ref/heads/main`], { encoding: "utf8" }));

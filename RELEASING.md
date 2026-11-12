@@ -18,6 +18,10 @@ own commits do not repeatedly bump the version. Normal required CI checks the
 expected version and reruns on the App commit. Update a stale PR before merging;
 the version bot recomputes against its updated base.
 
+A manifest-only catch-up release may set the version manually in the reviewed PR.
+CI requires a valid, increasing stable version even when no published inputs changed.
+Prerelease changes still require the explicit label described below.
+
 The trusted `pull_request_target` workflow checks out the base only, reads the
 PR tree as data, and never installs dependencies or executes PR code with its
 write token. Forks must be adopted onto a maintainer branch or have their

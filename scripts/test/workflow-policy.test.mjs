@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion } from "../workflow-policy.mjs";
 
@@ -43,4 +48,54 @@ test("published files and dependency changes release; tests, unrelated apps and 
   assert.equal(needsComponentsRelease(["packages/components/package.json"], base, {
     ...base, dependencies: { "gik-kernel": ">=0.5.0" },
   }), true);
+});
+
+test("PR classification validates manifest-only catch-up versions in a detached checkout", () => {
+  const root = mkdtempSync(join(tmpdir(), "components-version-policy-"));
+  const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: "pipe" }).trim();
+  const manifest = join(root, "packages", "components", "package.json");
+  const writeVersion = (version) => writeFileSync(manifest, JSON.stringify({ name: "gik-components", version }));
+  try {
+    git("init", "--initial-branch=fixture");
+    git("config", "user.name", "Release fixture");
+    git("config", "user.email", "fixture@example.invalid");
+    mkdirSync(join(root, "packages", "components"), { recursive: true });
+    writeVersion("0.3.0");
+    git("add", "packages");
+    git("commit", "-m", "baseline");
+    const base = git("rev-parse", "HEAD");
+    git("checkout", "--detach", base);
+    for (const [version, labels, expectedError] of [
+      ["0.4.0", [], null],
+      ["0.2.9", [], /version must increase/],
+      ["not-semver", [], /stable semantic versions/],
+      ["0.04.0", [], /stable semantic versions/],
+      ["0.4.0-next.0", [], /release:prerelease/],
+      ["0.4.0-next.0", ["release:prerelease"], null],
+    ]) {
+      writeVersion(version);
+      git("add", "packages");
+      git("commit", "-m", `version ${version}`);
+      const eventPath = join(root, "event.json");
+      writeFileSync(eventPath, JSON.stringify({ pull_request: {
+        base: { sha: base }, head: { sha: git("rev-parse", "HEAD") },
+        labels: labels.map((name) => ({ name })),
+      } }));
+      const result = spawnSync(process.execPath, [
+        fileURLToPath(new URL("../workflow-policy.mjs", import.meta.url)),
+      ], {
+        cwd: root, encoding: "utf8",
+        env: { ...process.env, GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: join(root, "output") },
+      });
+      assert.ifError(result.error);
+      if (expectedError) {
+        assert.notEqual(result.status, 0, version);
+        assert.match(result.stderr, expectedError);
+      } else {
+        assert.equal(result.status, 0, result.stderr);
+      }
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

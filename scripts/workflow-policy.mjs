@@ -57,6 +57,21 @@ export function isManualPrerelease(baseVersion, headVersion, labels) {
   return true;
 }
 
+export function assertComponentsVersionIncrease(baseVersion, headVersion) {
+  const parse = (version) => {
+    if (typeof version !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+      throw new Error("Components release versions must be stable semantic versions");
+    }
+    return version.split(".").map(BigInt);
+  };
+  const before = parse(baseVersion);
+  const after = parse(headVersion);
+  const difference = after.findIndex((part, index) => part !== before[index]);
+  if (difference < 0 || after[difference] < before[difference]) {
+    throw new Error("Components package version must increase");
+  }
+}
+
 export function needsComponentsRelease(files, baseManifest, headManifest) {
   return files.some((file) => file.startsWith("packages/components/")
     && !/^packages\/components\/(test\/|.*\.test\.[^.]+$)/.test(file)
@@ -84,11 +99,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const path = "packages/components/package.json";
     const base = JSON.parse(git("show", `${event.pull_request.base.sha}:${path}`));
     const head = JSON.parse(git("show", `${event.pull_request.head.sha}:${path}`));
-    if (needsComponentsRelease(files, base, head)
+    const releaseRequired = needsComponentsRelease(files, base, head);
+    if ((releaseRequired || head.version !== base.version)
       && !isManualPrerelease(base.version, head.version, event.pull_request.labels.map(({ name }) => name))) {
-      const expected = nextComponentsVersion(base.version, event.pull_request.labels.map(({ name }) => name));
-      if (head.version !== expected) {
-        throw new Error(`Components must be ${expected}; wait for the version bot or update this PR's manifest`);
+      if (head.version !== base.version) assertComponentsVersionIncrease(base.version, head.version);
+      if (releaseRequired) {
+        const expected = nextComponentsVersion(base.version, event.pull_request.labels.map(({ name }) => name));
+        if (head.version !== expected) {
+          throw new Error(`Components must be ${expected}; wait for the version bot or update this PR's manifest`);
+        }
       }
     }
   }
