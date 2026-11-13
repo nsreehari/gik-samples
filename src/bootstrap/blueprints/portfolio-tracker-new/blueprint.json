@@ -5328,11 +5328,15 @@
         "fluent:button",
         "fluent:spinner",
         "fluent:table",
+        "fluent:text",
         "gik:blueprint",
+        "primitive:alert",
         "primitive:chart",
         "primitive:container",
         "primitive:datetime",
         "primitive:editable-table",
+        "primitive:file-input",
+        "primitive:form",
         "primitive:markdown"
       ]
     }
