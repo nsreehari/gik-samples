@@ -7,6 +7,7 @@ npm install gik-service-providers
 ```ts
 import { createSchedulerServiceKind } from "gik-service-providers/scheduler";
 import { createGmailServiceKind } from "gik-service-providers/gmail";
+import { createGitHubContextStoreServiceKind } from "gik-service-providers/github-context-store";
 ```
 
 There is deliberately **no package-root export or index barrel**. Applications
@@ -122,9 +123,47 @@ HTTP 408/5xx, or an unreadable success response produces
 Investigate Sent mail and require fresh host authority before a new attempt;
 Gmail does not provide a general idempotent-send guarantee.
 
+## GitHub context store
+
+Kind `github-context-store`, version `1`, implements the standard
+`context-store.query/v1` and `context-store.ingest/v1` contracts:
+
+```json
+{
+  "endpoint": "https://api.github.com",
+  "repository": "owner/private-backing-store",
+  "ref": "refs/heads/context-v1",
+  "prefix": ".gik-state/context/v1",
+  "credentialRef": "github/context-store",
+  "maxRecordsPerScope": 1000,
+  "maxWriteAttempts": 3
+}
+```
+
+The configured ref must already exist. The provider never creates repositories,
+refs, credentials or authorization. The host resolves `credentialRef` to a
+`GitHubContextStoreConnection` that adds authentication internally, and must
+authorize every concrete `https://api.github.com` URL before the provider asks
+for that connection. Query-only declarations require GitHub Contents read
+permission; a declaration containing ingest requires Contents write permission.
+
+Scopes and record identities are SHA-256 encoded into repository paths.
+Ingestion creates immutable record blobs and a bounded recent-record index in
+one Git commit, then advances the declared ref without force. Reusing an
+identity with different content fails. A non-fast-forward ref race is rebuilt
+from the new head up to `maxWriteAttempts`; exhaustion is explicit. Query reads
+one ref revision and returns at most the requested standard limit. The Git
+revision used or created is returned in `ServiceExecutionResult.detail`, while
+the standard context-store output shape remains unchanged.
+
+This provider stores only bounded, non-sensitive context. It is not a token
+vault, GitHub event archive, durable-runtime journal, or substitute for host
+authorization. Actions artifacts and Copilot Memory have different retention
+and consistency semantics and are not silently used as fallbacks.
+
 ## Distribution and release
 
-Both subpaths are independently built and smoke-tested from the actual npm
+All subpaths are independently built and smoke-tested from the actual npm
 tarball in a clean consumer, including TypeScript and the absent root export.
 GitHub Actions performs all installation, build, typecheck and tests for this
 repository. Publishing remains a protected maintainer-approved action; see the

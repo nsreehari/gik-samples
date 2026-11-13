@@ -1,7 +1,7 @@
 {
   "name": "gik-service-providers",
   "version": "0.1.0",
-  "description": "Individually imported host-managed scheduler and Gmail providers for GIK.",
+  "description": "Individually imported host-managed service providers for GIK.",
   "type": "module",
   "license": "MIT",
   "author": "nsreehari",
@@ -14,7 +14,11 @@
   "files": ["dist", "README.md", "examples"],
   "exports": {
     "./scheduler": { "types": "./dist/scheduler.d.ts", "import": "./dist/scheduler.js" },
-    "./gmail": { "types": "./dist/gmail.d.ts", "import": "./dist/gmail.js" }
+    "./gmail": { "types": "./dist/gmail.d.ts", "import": "./dist/gmail.js" },
+    "./github-context-store": {
+      "types": "./dist/github-context-store.d.ts",
+      "import": "./dist/github-context-store.js"
+    }
   },
   "dependencies": {
     "croner": "^9.1.0",
