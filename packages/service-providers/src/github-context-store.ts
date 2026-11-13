@@ -159,13 +159,15 @@ function normalizedPrefix(value: string): string {
 function config(declaration: NativeServiceDeclaration): GitHubContextStoreConfig {
   const value = serviceConfig(declaration);
   const endpoint = text(value.endpoint, "endpoint");
+  const ref = text(value.ref, "ref");
   if (endpoint !== "https://api.github.com") {
     throw new Error("GitHub context endpoint must be https://api.github.com");
   }
+  normalizedRef(ref);
   return {
     endpoint,
     repository: text(value.repository, "repository"),
-    ref: text(value.ref, "ref"),
+    ref,
     prefix: normalizedPrefix(text(value.prefix, "prefix")),
     credentialRef: text(value.credentialRef, "credentialRef"),
     maxRecordsPerScope: integer(
@@ -344,7 +346,11 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
         properties: {
           endpoint: { const: "https://api.github.com" },
           repository: { type: "string", pattern: "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
-          ref: { type: "string", pattern: "^refs/heads/[A-Za-z0-9._/-]+$" },
+          ref: {
+            type: "string",
+            pattern:
+              "^refs/heads/(?!\\.{1,2}(?:/|$))[A-Za-z0-9._-]+(?:/(?!\\.{1,2}(?:/|$))[A-Za-z0-9._-]+)*$",
+          },
           prefix: { type: "string", minLength: 1 },
           credentialRef: { type: "string", minLength: 1 },
           maxRecordsPerScope: { type: "integer", minimum: 1, maximum: 5000 },
