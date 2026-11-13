@@ -359,6 +359,7 @@ test("release DAG gates exact collection on publication; validation uses isolate
   assert.doesNotMatch(workflow, /workflow run publish|PAGES_COMPONENTS_VERSION:.*latest|npm publish --workspace/);
   assert.match(workflow, /group: components-publication[\s\S]*?cancel-in-progress: false/);
   assert.match(workflow, /group: pages-deployment/);
+  assert.match(workflow, /deploy-pages:\s+name: Deploy Pages\s+needs: collect-pages\s+if: always\(\) && needs\.collect-pages\.result == 'success'/);
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(ci, /name: validate\s+if: always\(\)/);
   assert.match(ci, /needs: \[plan, studio, finbook, mcp\]/);

@@ -260,6 +260,7 @@ jobs:
   deploy-pages:
     name: Deploy Pages
     needs: collect-pages
+    if: always() && needs.collect-pages.result == 'success'
     runs-on: ubuntu-latest
     concurrency:
       group: pages-deployment

@@ -178,6 +178,8 @@ than silently rebuilding. Candidate format 2 binds the site with a deterministic
 path/size/SHA-256 file-tree digest, including all hidden files.
 Promotion verifies the staged and restored site; validation verifies it again
 before upload, without requiring `node_modules`.
+Pages deployment explicitly tolerates intentionally skipped publication or site
+jobs, but runs only after successful archive collection and assembled-site smoke.
 
 Release artifact promotion is **off by default**. Before merging the workflow
 rollout, commit all three resolution lockfiles and pass
