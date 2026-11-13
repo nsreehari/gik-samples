@@ -1,0 +1,87 @@
+name: Propose verified GIK dependency update
+on:
+  repository_dispatch:
+    types: [gik-release-verified]
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        required: true
+      commit:
+        type: string
+        required: true
+      manifestSha256:
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: verified-gik-dependency-pr
+  cancel-in-progress: false
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      changed: ${{ steps.plan.outputs.changed }}
+      commit: ${{ steps.base.outputs.commit }}
+    steps:
+      - name: Checkout trusted default branch, never dispatched code
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+      - id: base
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Independently verify source, registry and plan dependency-only updates
+        id: plan
+        run: node scripts/verified-gik-update.mjs plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+          MANIFEST_SHA256: ${{ inputs.manifestSha256 }}
+          GIK_VERIFICATION_JOB: ${{ vars.GIK_VERIFICATION_JOB || 'Verify published stable packages / Consume published packages' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-dependency-plan
+          path: .artifacts/update-plan
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+  propose:
+    needs: plan
+    if: needs.plan.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment: dependency-updates
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-dependency-plan
+          path: .artifacts/update-plan
+      - name: Create maintainer token only after read-only verification/planning
+        uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.GIK_MAINTAINER_APP_ID }}
+          private-key: ${{ secrets.GIK_MAINTAINER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Update one deterministic PR, never main
+        run: node scripts/verified-gik-update.mjs apply
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          EXPECTED_APP_BOT: ${{ steps.app.outputs.app-slug }}[bot]

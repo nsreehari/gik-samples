@@ -4,18 +4,16 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const coreVersions = {
-  "gik-agent-lifecycle-exp": "0.3.0",
-  "gik-blueprint-agent-host": "0.2.1",
-  "gik-kernel": "0.4.1",
-  "gik-evaluators": "0.4.0",
-  "gik-durable-runtime": "0.9.0",
-  "gik-blueprint": "0.5.0",
-  "gik-react": "0.5.0",
-  "gik-controlface": "0.5.0",
-  "gik-agentface": "0.2.2",
-  "gik-transport-http-sse": "0.2.2",
-};
+export const coreVersions = JSON.parse(await readFile(new URL("./pages-core-versions.json", import.meta.url), "utf8"));
+export function validateCoreVersions(versions) {
+  if (!versions || typeof versions !== "object" || Array.isArray(versions)
+    || Object.keys(versions).sort().join("\n") !== Object.keys(coreVersions).sort().join("\n")
+    || Object.values(versions).some((version) => typeof version !== "string"
+      || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))) {
+    throw new Error("Pages requires the complete exact core package version set");
+  }
+  return versions;
+}
 
 async function fetchPublished(url, fetcher, pause) {
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -31,21 +29,23 @@ async function fetchPublished(url, fetcher, pause) {
 
 export async function collectPagesPackages({
   componentsVersion,
+  versions = coreVersions,
   outputDirectory,
   fetcher = fetch,
   pause = delay,
 }) {
   const isVersion = (value) => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value);
-  if (componentsVersion !== "latest" && !isVersion(componentsVersion)) {
+  if (!isVersion(componentsVersion)) {
     throw new Error("A valid Components release version is required");
   }
   const packages = [];
   const downloads = [];
-  for (const [name, requestedVersion] of Object.entries({ ...coreVersions, "gik-components": componentsVersion })) {
+  validateCoreVersions(versions);
+  for (const [name, requestedVersion] of Object.entries({ ...versions, "gik-components": componentsVersion })) {
     const metadataUrl = `https://registry.npmjs.org/${name}/${requestedVersion}`;
     const metadata = await (await fetchPublished(metadataUrl, fetcher, pause)).json();
     if (metadata.name !== name || !isVersion(metadata.version)
-      || (requestedVersion !== "latest" && metadata.version !== requestedVersion)) {
+      || metadata.version !== requestedVersion) {
       throw new Error(`Registry metadata does not match ${name}@${requestedVersion}`);
     }
     const version = metadata.version;
@@ -103,6 +103,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   ));
   await collectPagesPackages({
     componentsVersion: process.env.PAGES_COMPONENTS_VERSION || components.version,
+    versions: process.env.PAGES_CORE_VERSIONS_JSON ? JSON.parse(process.env.PAGES_CORE_VERSIONS_JSON) : coreVersions,
     outputDirectory: fileURLToPath(new URL("../src/browser-host/dist/vendor/", import.meta.url)),
   });
 }

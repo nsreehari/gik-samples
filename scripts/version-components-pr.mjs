@@ -33,10 +33,20 @@ if (isManualPrerelease(base.version, head.version, labels)) {
     if (api("git/ref/heads/main").object.sha !== pr.base.sha) {
       throw new Error("Base advanced; update the implementation PR before versioning");
     }
-    const blob = api("git/blobs", { content: `${JSON.stringify({ ...head, version }, null, 2)}\n`, encoding: "utf-8" });
+    const lockPath = "package-lock.json";
+    const lock = JSON.parse(git("show", `${pr.head.sha}:${lockPath}`));
+    if (lock.lockfileVersion !== 3 || lock.packages?.["packages/components"]?.name !== head.name) {
+      throw new Error("Expected locked Components workspace metadata");
+    }
+    lock.packages["packages/components"].version = version;
+    const updates = [[path, { ...head, version }], [lockPath, lock]];
+    const entries = updates.map(([file, value]) => {
+      const blob = api("git/blobs", { content: `${JSON.stringify(value, null, 2)}\n`, encoding: "utf-8" });
+      return { path: file, mode: "100644", type: "blob", sha: blob.sha };
+    });
     const tree = api("git/trees", {
       base_tree: git("rev-parse", `${pr.head.sha}^{tree}`),
-      tree: [{ path, mode: "100644", type: "blob", sha: blob.sha }],
+      tree: entries,
     });
     const commit = api("git/commits", {
       message: `chore: prepare gik-components ${version}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`,

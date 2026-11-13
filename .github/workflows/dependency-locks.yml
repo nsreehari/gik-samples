@@ -1,0 +1,57 @@
+name: Generate reproducible dependency locks
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-locks-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve and validate three isolated lock graphs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Generate locks without lifecycle scripts or dependency-range edits
+        run: |
+          npm exec --yes --package=npm@11.19.0 -- npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm exec --yes --package=npm@11.19.0 -- npm install --prefix packages/mcp-server --package-lock-only --ignore-scripts --no-audit --no-fund
+          git diff --exit-code -- . ':!package-lock.json' ':!apps/finbook/package-lock.json' ':!packages/mcp-server/package-lock.json'
+          node scripts/check-locks.mjs
+      - name: Upload only generated resolution locks
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-locks
+          path: |
+            package-lock.json
+            apps/finbook/package-lock.json
+            packages/mcp-server/package-lock.json
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+      - name: Record source and lock digests for reviewed retrieval
+        run: |
+          {
+            echo "## Dependency locks"
+            echo "Source commit: $(git rev-parse HEAD)"
+            echo "Node: $(node --version)"
+            echo "Resolver: npm 11.19.0"
+            echo '```'
+            sha256sum package-lock.json apps/finbook/package-lock.json packages/mcp-server/package-lock.json
+            echo '```'
+            echo "Download dependency-locks, verify these digests, and commit all three through the normal reviewed branch."
+            echo "This workflow does not publish, deploy, push or grant write authority. Required CI/release lock guards remain mandatory."
+          } >> "$GITHUB_STEP_SUMMARY"
