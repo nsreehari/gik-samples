@@ -39,6 +39,13 @@ interface OptionValue {
   label: string;
 }
 
+interface FormAction {
+  id: string;
+  label: string;
+  disabled?: boolean;
+  payload?: Record<string, Json>;
+}
+
 const useStyles = makeStyles({
   root: { display: "grid", gap: tokens.spacingVerticalL },
   grid: {
@@ -167,6 +174,8 @@ export const Form: ProjectionView = ({ node, emit }) => {
   const validationContext = props.obj<Record<string, Json>>("validationContext", {});
   const readOnly = props.bool("readOnly");
   const initiallyDirty = props.bool("initiallyDirty");
+  const allowPristineSave = props.bool("allowPristineSave");
+  const actions = props.arr<FormAction>("actions");
   // Whether the host Blueprint actually binds `saving`/`saveError` (as opposed to those props
   // simply being absent) -- present only when a Cell wires this Form to its own ordinary save
   // state (an author-declared `assign` set true at dispatch, cleared to false by the operation's
@@ -191,6 +200,9 @@ export const Form: ProjectionView = ({ node, emit }) => {
   // any further edit, discard, or a genuinely new incoming value (the same signal that already resets
   // jsonText/validationErrors below), never by a timer -- so it stays visible until the user acts again.
   const [justSaved, setJustSaved] = React.useState(false);
+  const actionVisible = (visibility: string) => visibility === "always" || (visibility === "dirty" && dirty);
+  const showSave = actionVisible(props.str("saveVisibility", "dirty"));
+  const showDiscard = actionVisible(props.str("discardVisibility", "dirty"));
 
   React.useEffect(() => {
     setJsonText(jsonTextFrom(incoming));
@@ -247,7 +259,7 @@ export const Form: ProjectionView = ({ node, emit }) => {
   };
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (readOnly || saving) return;
+    if (readOnly || saving || !showSave || (!dirty && !allowPristineSave)) return;
     if (Object.values(jsonErrors).some(Boolean)) return;
     const report = validateDeclarativeFormValues(
       schema,
@@ -274,7 +286,8 @@ export const Form: ProjectionView = ({ node, emit }) => {
   ].filter((group) => group.fields.length > 0);
 
   return (
-    <form {...componentRootProps(node, styles.root)} onSubmit={submit}>
+    <form {...componentRootProps(node, styles.root)} aria-label={props.str("title") || undefined} onSubmit={submit}>
+      {props.str("title") ? <h3>{props.str("title")}</h3> : null}
       {fieldGroups.map((group) => <div key={group.slot} className={mergeClasses(styles.grid, "gx-form-grid")} data-layout-slot={group.slot}>
         {group.fields.map(({ key, field }) => {
           const title = String(field.title ?? key);
@@ -331,21 +344,34 @@ export const Form: ProjectionView = ({ node, emit }) => {
               <CheckmarkCircleRegular aria-hidden="true" />
               <span>{props.str("successLabel", "Saved")}</span>
             </div>
-          ) : dirty ? (
-            <>
-              {saveError ? <span className={styles.footerError} role="alert" title={saveError}>{saveError}</span> : null}
+          ) : null}
+          {saveError ? <span className={styles.footerError} role="alert" title={saveError}>{saveError}</span> : null}
+          {showSave || showDiscard || actions.length > 0 ? (
               <div className={styles.actions}>
-                <Button type="button" onClick={discard} disabled={saving}>{props.str("discardLabel", "Discard")}</Button>
-                <Button
+                {actions.map((action) => (
+                  <Button
+                    key={action.id}
+                    type="button"
+                    disabled={saving || action.disabled}
+                    onClick={() => {
+                      if (saving || action.disabled) return;
+                      void emit("action-requested", {
+                        actionId: action.id,
+                        ...(action.payload !== undefined ? { payload: action.payload } : {}),
+                      });
+                    }}
+                  >{action.label}</Button>
+                ))}
+                {showDiscard ? <Button type="button" onClick={discard} disabled={saving || !dirty}>{props.str("discardLabel", "Discard")}</Button> : null}
+                {showSave ? <Button
                   type="submit"
                   appearance="primary"
-                  disabled={saving || Object.values(jsonErrors).some(Boolean)}
+                  disabled={saving || (!dirty && !allowPristineSave) || Object.values(jsonErrors).some(Boolean)}
                   icon={saving ? <Spinner size="tiny" /> : undefined}
                 >
                   {saving ? props.str("savingLabel", "Saving…") : props.str("saveLabel", "Save")}
-                </Button>
+                </Button> : null}
               </div>
-            </>
           ) : null}
         </div>
       )}
@@ -361,6 +387,22 @@ const schema = {
     saveLabel: { type: "string" }, discardLabel: { type: "string" }, successLabel: { type: "string" }, savingLabel: { type: "string" },
     saving: { type: "boolean" }, saveError: { type: "string" },
     initiallyDirty: { type: "boolean" }, readOnly: { type: "boolean" },
+    title: { type: "string" },
+    allowPristineSave: { type: "boolean" },
+    saveVisibility: { enum: ["dirty", "always", "never"] },
+    discardVisibility: { enum: ["dirty", "always", "never"] },
+    actions: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false, required: ["id", "label"],
+        properties: {
+          id: { type: "string", minLength: 1 },
+          label: { type: "string", minLength: 1 },
+          disabled: { type: "boolean" },
+          payload: { type: "object", additionalProperties: true },
+        },
+      },
+    },
     ...componentLayoutPropsSchema,
   },
 } as const;
@@ -369,8 +411,14 @@ const description: ComponentDescription = {
   capability: "primitive:form",
   summary: "Renders a schema-driven committed form using Fluent 2 controls and emits saved values.",
   dataProp: "value",
-  events: ["save"],
-  eventContracts: { save: eventContract("The user commits the edited form values.", { values: { type: "object", additionalProperties: true } }) },
+  events: ["save", "action-requested"],
+  eventContracts: {
+    save: eventContract("The user commits the edited form values.", { values: { type: "object", additionalProperties: true } }),
+    "action-requested": eventContract("The user requests a named action without committing the draft.", {
+      actionId: { type: "string", minLength: 1 },
+      payload: { type: "object", additionalProperties: true },
+    }, ["actionId"]),
+  },
   semanticTokens: [],
   variants: [],
   authoring: {
@@ -381,7 +429,12 @@ const description: ComponentDescription = {
   agentFacing: {
     catalog: { interaction: "committed-input" },
     detail: {
-      notes: ["Editing is draft-based; values are published only through save."],
+      notes: [
+        "Editing is draft-based; values are published only through save.",
+        "saveVisibility and discardVisibility independently accept dirty (default), always, or never. Visibility does not grant pristine-save permission.",
+        "Use saveVisibility: always with allowPristineSave: true for repeatable submissions that include inputs outside this form.",
+        "Named actions emit action-requested with actionId and optional payload, not the current draft. Read-only hides all actions; saving disables them.",
+      ],
     },
   },
 };
@@ -389,7 +442,10 @@ const description: ComponentDescription = {
 const publicSchema = withComponentStylePropsSchema(schema);
 
 export function validateForm(props: unknown): ComponentValidationReport {
-  return runDeclarativeValidators([{ kind: "ajv-schema", schema: publicSchema, message: "Invalid primitive:form props", code: "primitive-form-schema" }], props as Json);
+  return runDeclarativeValidators([
+    { kind: "ajv-schema", schema: publicSchema, message: "Invalid primitive:form props", code: "primitive-form-schema" },
+    { kind: "jsonata", expr: "$count($distinct(data.actions.id)) = $count(data.actions)", message: "Form action IDs must be unique", code: "primitive-form-actions" },
+  ], props as Json);
 }
 
 export function materializeFormTrial() {

@@ -142,7 +142,10 @@ test.each(["clarification", "invalid-output", "duplicate-ticker", "invalid-file"
   assert.equal(portfolio.intake.note, "Update my holding");
   assert.equal(portfolio.intake.saving, false);
   assert.ok(portfolio.intake.error);
-  if (["invalid-file", "oversized-file"].includes(failure)) assert.equal(f.calls.length, 0);
+  if (["invalid-file", "oversized-file"].includes(failure)) {
+    assert.equal(f.calls.length, 0);
+    assert.match(portfolio.intake.error, /Choose a CSV, JSON or text file of at most 100 KB/);
+  }
 });
 
 test.each(["file-only", "note-only"])("intake accepts a submission without the other input: %s", async (mode) => {

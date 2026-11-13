@@ -22,6 +22,8 @@ Blueprint event that merges only the returned positions. Unmentioned holdings
 remain unchanged. Ambiguous submissions and invalid responses show an error and
 leave the draft intact. Successful processing clears the draft and shows a short
 summary; a conflicting manual holdings edit requires resubmission.
+The form keeps submission available after success, including another file-only
+submission. Its note is read-only while the captured submission is processing.
 
 This reuses `primitive:file-input` and `primitive:form`, the existing Foundry or
 Copilot service adapters, and ordinary declarative events and settlements. The

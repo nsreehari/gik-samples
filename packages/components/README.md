@@ -349,6 +349,18 @@ Form renders a schema-driven committed object editor and emits `save` with `{ va
 table renders a committed row editor and emits `save` with `{ rows }`. Both keep draft state local;
 explicit event handlers own persistence and external effects.
 
+Form accepts an optional `title` and independent `saveVisibility` / `discardVisibility`
+(`"dirty"` by default, `"always"`, or `"never"`). An always-visible Save remains disabled for an
+unchanged draft unless `allowPristineSave: true`; use both options for repeatable submissions that
+also include inputs outside the form. Saved confirmation remains visible alongside configured
+actions. Discard requires a dirty draft.
+
+Optional `actions` contain unique `id` and `label` values, plus optional `disabled` and object
+`payload`. These buttons emit `action-requested` with `{ actionId, payload? }` without saving or
+validating the draft. Read-only hides all actions, and `saving` disables them. Existing
+`saveLabel`, `discardLabel`, `savingLabel`, `successLabel`, `validationContext`, layout, and
+`saving` / `saveError` bindings remain supported.
+
 Collection board arranges records in declared columns. Its optional interaction configuration enables
 single selection, ordering within a column, and movement between columns without assigning workflow
 meaning to those columns. It emits `select`, `activate`, `reorder`, and `move`; event handlers validate
