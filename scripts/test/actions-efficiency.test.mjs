@@ -244,7 +244,7 @@ test("resolution guard rejects absent, stale and mismatched workspace locks with
   const directory = fixture(t);
   assert.throws(() => checkLocks(directory), /Missing reproducible lock/);
   for (const [prefix, workspaces] of [
-    ["", ["packages/components"]], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
+    ["", ["packages/components", "packages/service-providers"]], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
     ["packages/mcp-server", []],
   ]) {
     const packages = {};

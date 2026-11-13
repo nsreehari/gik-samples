@@ -1,4 +1,7 @@
-export function provenanceSourceCommit(attestations, repository) {
+export function provenanceSourceCommit(attestations, repository, workflowPath = ".github/workflows/publish.yml") {
+  if (![".github/workflows/publish.yml", ".github/workflows/release-service-providers.yml"].includes(workflowPath)) {
+    throw new Error("Unsupported publishing workflow");
+  }
   const uri = `git+https://github.com/${repository}`;
   const fromRepository = (value) => typeof value === "string" && (value === uri || value.startsWith(`${uri}@`));
   const commits = new Set();
@@ -14,7 +17,7 @@ export function provenanceSourceCommit(attestations, repository) {
     if (entry.predicateType.endsWith("/v1")) {
       const definition = predicate?.buildDefinition;
       const workflow = definition?.externalParameters?.workflow;
-      if (workflow?.repository !== `https://github.com/${repository}` || workflow.path !== ".github/workflows/publish.yml") continue;
+      if (workflow?.repository !== `https://github.com/${repository}` || workflow.path !== workflowPath) continue;
       for (const dependency of definition.resolvedDependencies || []) {
         if (fromRepository(dependency.uri) && /^[a-f0-9]{40}$/.test(dependency.digest?.gitCommit || "")) {
           commits.add(dependency.digest.gitCommit);
@@ -23,14 +26,14 @@ export function provenanceSourceCommit(attestations, repository) {
     } else {
       const config = predicate?.invocation?.configSource;
       if (fromRepository(config?.uri) && /^[a-f0-9]{40}$/.test(config?.digest?.sha1 || "")
-        && config.entryPoint === ".github/workflows/publish.yml") commits.add(config.digest.sha1);
+        && config.entryPoint === workflowPath) commits.add(config.digest.sha1);
     }
   }
   if (commits.size !== 1) throw new Error("npm provenance does not identify one expected repository, source commit and publishing workflow");
   return [...commits][0];
 }
-export function assertProvenance(attestations, repository, commit) {
-  if (provenanceSourceCommit(attestations, repository) !== commit) {
+export function assertProvenance(attestations, repository, commit, workflowPath = ".github/workflows/publish.yml") {
+  if (provenanceSourceCommit(attestations, repository, workflowPath) !== commit) {
     throw new Error("npm provenance source commit differs from the expected newly published candidate");
   }
 }

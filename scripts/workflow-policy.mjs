@@ -72,12 +72,32 @@ export function assertComponentsVersionIncrease(baseVersion, headVersion) {
   }
 }
 
-export function needsComponentsRelease(files, baseManifest, headManifest) {
-  return files.some((file) => file.startsWith("packages/components/")
-    && !/^packages\/components\/(test\/|.*\.test\.[^.]+$)/.test(file)
-    && file !== "packages/components/package.json")
-    || files.includes("packages/components/package.json")
+export function needsPackageRelease(files, baseManifest, headManifest, directory) {
+  return files.some((file) => {
+    if (!file.startsWith(`${directory}/`)) return false;
+    const relative = file.slice(directory.length + 1);
+    return !relative.startsWith("test/") && !/\.test\.[^.]+$/.test(relative) && relative !== "package.json";
+  })
+    || files.includes(`${directory}/package.json`)
       && JSON.stringify({ ...baseManifest, version: null }) !== JSON.stringify({ ...headManifest, version: null });
+}
+
+export function needsComponentsRelease(files, baseManifest, headManifest) {
+  return needsPackageRelease(files, baseManifest, headManifest, "packages/components");
+}
+
+export function providersVersion(files, base, head, labels) {
+  if (head.name !== "gik-service-providers" || head.main || head.types
+    || JSON.stringify(Object.keys(head.exports ?? {}).sort()) !== JSON.stringify(["./gmail", "./scheduler"])) {
+    throw new Error("Service providers must retain individual Gmail/scheduler exports without a root entry");
+  }
+  if (!base) {
+    if (head.version !== "0.1.0") throw new Error("First service providers release must be 0.1.0");
+    return "0.1.0";
+  }
+  if (isManualPrerelease(base.version, head.version, labels)) return null;
+  if (head.version !== base.version) assertComponentsVersionIncrease(base.version, head.version);
+  return needsPackageRelease(files, base, head, "packages/service-providers") ? nextComponentsVersion(base.version, labels) : null;
 }
 
 export function git(...args) {
@@ -109,6 +129,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
           throw new Error(`Components must be ${expected}; wait for the version bot or update this PR's manifest`);
         }
       }
+    }
+    const providerPath = "packages/service-providers/package.json";
+    if (git("ls-tree", "--name-only", event.pull_request.head.sha, providerPath)) {
+      const baseProvider = git("ls-tree", "--name-only", event.pull_request.base.sha, providerPath)
+        ? JSON.parse(git("show", `${event.pull_request.base.sha}:${providerPath}`)) : null;
+      const headProvider = JSON.parse(git("show", `${event.pull_request.head.sha}:${providerPath}`));
+      const version = providersVersion(files, baseProvider, headProvider, event.pull_request.labels.map(({ name }) => name));
+      if (version && headProvider.version !== version) throw new Error(`Service providers must be ${version}; wait for the version App`);
     }
   }
   for (const [name, value] of Object.entries(result)) {
