@@ -1,6 +1,6 @@
 {
   "name": "gik-components",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Self-describing declarative Fluent components for the Generative Interaction Kernel.",
   "license": "MIT",
   "author": "nsreehari",
@@ -74,7 +74,7 @@
     "gik-kernel": ">=0.4.1",
     "gik-react": ">=0.5.0",
     "@xyflow/react": "^12.11.2",
-    "mermaid": "^11.16.0"
+    "mermaid": "^12.3.0"
   },
   "scripts": {
     "build": "tsup",
