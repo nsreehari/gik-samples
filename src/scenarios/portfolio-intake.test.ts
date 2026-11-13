@@ -144,6 +144,16 @@ test.each(["clarification", "invalid-output", "duplicate-ticker", "invalid-file"
   if (["invalid-file", "oversized-file"].includes(failure)) assert.equal(f.calls.length, 0);
 });
 
+test.each(["file-only", "note-only"])("intake accepts a submission without the other input: %s", async (mode) => {
+  const f = await fixture();
+  const effect = await f.submit(mode === "file-only" ? "" : "Set AAPL to 5 shares at 95", mode === "file-only" ? file : null);
+  await f.session.transition([await f.invoke(effect)]);
+  const portfolio = f.session.snapshot().portfolio as Portfolio;
+  assert.equal(portfolio.intake.error, "");
+  assert.deepEqual(portfolio.holdings.AAPL, updated.changes[0]);
+  assert.equal(f.calls.length, 1);
+});
+
 test("intake ignores duplicate/late results and refuses to overwrite an intervening holdings edit", async () => {
   const f = await fixture();
   const first = await f.submit();
