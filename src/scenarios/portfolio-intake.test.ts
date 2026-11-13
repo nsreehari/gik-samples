@@ -12,6 +12,7 @@ const source = JSON.parse(readFileSync(
 )).payload;
 const expression = new SyncJsonataExpressionProvider();
 const node = "portfolio-intelligence--intake--in-holdings";
+const fileNode = "portfolio-intelligence--intake-file--in-holdings";
 const updated = {
   status: "updated", changes: [{ ticker: "AAPL", quantity: 5, costBasis: 95 }],
   summary: "Updated AAPL to 5 shares at a per-share cost basis of 95.",
@@ -77,7 +78,7 @@ async function fixture(ai = "foundry") {
     return createBlueprintDurableEffectSettlementEvent(crypto.randomUUID(), result, effect);
   };
   const submit = async (note = "Update my AAPL holding", attachment: Json | null = file) => {
-    if (attachment) await session.transition([{ node, name: "select", payload: { file: attachment } }]);
+    if (attachment) await session.transition([{ node: fileNode, name: "select", payload: { file: attachment, files: [attachment] } }]);
     const portfolio = session.snapshot().portfolio as Portfolio;
     const transition = await session.transition([{
       node, name: "save", payload: { values: { note, revision: portfolio.intake.revision + 1 } },
@@ -189,7 +190,7 @@ test("intake remains available across desktop/mobile and every intelligence mode
         const b = materialized.payload.terminalBlueprint.payload;
         const intake = b.cells!["portfolio-intelligence"].potentialViews!.intake;
         assert.equal(intake.capability, "primitive:form");
-        assert.equal(intake.before![1].capability, "primitive:file-input");
+        assert.equal(b.cells!["portfolio-intelligence"].potentialViews!["intake-file"].capability, "primitive:file-input");
         const service = b.services!["portfolio-intake"];
         assert.ok("kind" in service);
         assert.equal(service.kind, ai === "copilot" ? "copilot-agent" : "foundry-agent");

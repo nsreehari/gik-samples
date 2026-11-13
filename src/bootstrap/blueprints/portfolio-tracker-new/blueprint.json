@@ -4867,6 +4867,56 @@
             "capability": "portfolio:intelligence",
             "region": "intelligence"
           },
+          "intake-file": {
+            "capability": "primitive:file-input",
+            "region": "holdings",
+            "props": {
+              "label": "Drop a portfolio file or click to upload",
+              "variant": "dropzone",
+              "readAs": "text",
+              "accept": ".csv,.json,.txt"
+            },
+            "bindings": {
+              "disabled": {
+                "from": "portfolio.intake.saving"
+              }
+            },
+            "before": [
+              {
+                "capability": "fluent:text",
+                "props": {
+                  "value": "Drop a CSV, JSON or text file (up to 100 KB), add an optional note, then update the sample holdings. Uses the configured AI connection; no trades are executed.",
+                  "block": true
+                }
+              }
+            ],
+            "after": [
+              {
+                "capability": "fluent:text",
+                "bindings": {
+                  "value": {
+                    "expression": "portfolio.intake.file != null ? 'Selected: ' & portfolio.intake.file.name : 'No file selected. You can also submit a note alone.'"
+                  }
+                },
+                "props": {
+                  "block": true
+                }
+              },
+              {
+                "capability": "primitive:alert",
+                "props": {
+                  "label": "Context retrieval failed",
+                  "level": "error"
+                },
+                "bindings": {
+                  "value": {
+                    "expression": "$string($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
+                  }
+                },
+                "visibility": "$exists($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
+              }
+            ]
+          },
           "intake": {
             "capability": "primitive:form",
             "region": "holdings",
@@ -4899,53 +4949,6 @@
                 "expression": "$not(fetched_sources.`portfolio-context.query`.scope = ('portfolio:' & portfolio.id))"
               }
             },
-            "before": [
-              {
-                "capability": "fluent:text",
-                "props": {
-                  "value": "Drop a CSV, JSON or text file (up to 100 KB), add an optional note, then update the sample holdings. Uses the configured AI connection; no trades are executed.",
-                  "block": true
-                }
-              },
-              {
-                "capability": "primitive:file-input",
-                "props": {
-                  "label": "Drop a portfolio file or click to upload",
-                  "variant": "dropzone",
-                  "readAs": "text",
-                  "accept": ".csv,.json,.txt"
-                },
-                "bindings": {
-                  "disabled": {
-                    "from": "portfolio.intake.saving"
-                  }
-                }
-              },
-              {
-                "capability": "fluent:text",
-                "bindings": {
-                  "value": {
-                    "expression": "portfolio.intake.file != null ? 'Selected: ' & portfolio.intake.file.name : 'No file selected. You can also submit a note alone.'"
-                  }
-                },
-                "props": {
-                  "block": true
-                }
-              },
-              {
-                "capability": "primitive:alert",
-                "props": {
-                  "label": "Context retrieval failed",
-                  "level": "error"
-                },
-                "bindings": {
-                  "value": {
-                    "expression": "$string($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
-                  }
-                },
-                "visibility": "$exists($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
-              }
-            ],
             "after": [
               {
                 "capability": "fluent:text",
