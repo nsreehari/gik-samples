@@ -4940,10 +4940,10 @@
                 },
                 "bindings": {
                   "value": {
-                    "expression": "$string(systemInputs.sourceErrors.`portfolio-context.query`)"
+                    "expression": "$string($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
                   }
                 },
-                "visibility": "$exists(systemInputs.sourceErrors.`portfolio-context.query`)"
+                "visibility": "$exists($lookup(systemInputs.sourceErrors,'portfolio-context.query'))"
               }
             ],
             "after": [
@@ -4967,10 +4967,10 @@
                 },
                 "bindings": {
                   "value": {
-                    "expression": "$string(systemInputs.sourceErrors.`portfolio-intake.ingest`)"
+                    "expression": "$string($lookup(systemInputs.sourceErrors,'portfolio-intake.ingest'))"
                   }
                 },
-                "visibility": "$exists(systemInputs.sourceErrors.`portfolio-intake.ingest`)"
+                "visibility": "$exists($lookup(systemInputs.sourceErrors,'portfolio-intake.ingest'))"
               }
             ]
           }
