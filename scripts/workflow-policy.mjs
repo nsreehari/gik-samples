@@ -104,6 +104,13 @@ export function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
+export function providerPublicationMode(packageExists, bootstrap, confirmation) {
+  if (bootstrap && confirmation !== "PUBLISH gik-service-providers") {
+    throw new Error("Bootstrap requires explicit PUBLISH gik-service-providers confirmation");
+  }
+  return bootstrap ? "bootstrap" : packageExists ? "publish" : "bootstrap-required";
+}
+
 export function changedFiles(base, head) {
   return execFileSync("git", ["diff", "--name-only", "-z", `${base}...${head}`], { encoding: "utf8" })
     .split("\0").filter(Boolean);

@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { git, inspectTarball, sha256 } from "./actions-evidence.mjs";
-import { assertProvenance, fetchProvenance } from "./npm-provenance.mjs";
-import { providersVersion } from "./workflow-policy.mjs";
+import { assertProvenance, assertPublicationSource, fetchProvenance } from "./npm-provenance.mjs";
+import { providerPublicationMode, providersVersion } from "./workflow-policy.mjs";
+import { shouldPublish } from "./publish-candidate.mjs";
 
 const directory = ".artifacts/service-providers";
 const archive = `${directory}/gik-service-providers.tgz`;
@@ -23,6 +24,7 @@ function stableTag() {
   const commit = git("rev-parse", `${tag}^{commit}`);
   if (commit !== git("rev-parse", "origin/main") || commit !== git("rev-parse", "HEAD")) throw new Error("Provider tag must resolve to the current main commit");
   if (tag !== `providers-v${source().version}`) throw new Error("Provider tag/version mismatch");
+  assertPublicationSource(commit, process.env.GITHUB_SHA);
   return commit;
 }
 function verifyCandidate(handoff) {
@@ -72,6 +74,15 @@ await assert.rejects(import("gik-service-providers"), { code: "ERR_PACKAGE_PATH_
 `], { cwd: temporary });
   } finally { rmSync(temporary, { recursive: true, force: true }); }
 }
+
+async function registryMetadata(name, version) {
+  const path = encodeURIComponent(name) + (version === undefined ? "" : `/${encodeURIComponent(version)}`);
+  const response = await fetch(`https://registry.npmjs.org/${path}`, { redirect: "error", signal: AbortSignal.timeout(60000) });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`npm registry metadata HTTP ${response.status}`);
+  return response.json();
+}
+
 const command = process.argv[2];
 if (command === "checkout") {
   const tag = process.env.PROVIDERS_TAG;
@@ -93,6 +104,16 @@ if (command === "checkout") {
   }, null, 2) + "\n");
   await consumer(resolve(archive));
   console.log("Provider tarball, independent subpaths, declarations and absent root import verified");
+} else if (command === "plan") {
+  stableTag();
+  const candidate = verifyCandidate(false);
+  const mode = providerPublicationMode(await registryMetadata(candidate.name) !== null, process.env.BOOTSTRAP === "true", process.env.CONFIRM);
+  appendFileSync(process.env.GITHUB_OUTPUT, `ready=${mode !== "bootstrap-required"}\n`);
+  const message = mode === "bootstrap-required"
+    ? `Package does not exist: bootstrap required. Dispatch this workflow from ${process.env.PROVIDERS_TAG} with bootstrap=true and explicit confirmation. No normal publishing approval will be requested.`
+    : `Publication mode: ${mode}. Exact candidate bytes and source will be rechecked after protected approval.`;
+  console.log(message);
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Service providers publication\n${message}\n`);
 } else if (command === "outputs") {
   const candidate = verifyCandidate(false);
   appendFileSync(process.env.GITHUB_OUTPUT, `sha=${candidate.sha256}\ncommit=${candidate.commit}\n`);
@@ -103,14 +124,15 @@ if (command === "checkout") {
     if (command === "bootstrap" && (process.env.BOOTSTRAP !== "true" || process.env.CONFIRM !== "PUBLISH gik-service-providers"
       || !process.env.NODE_AUTH_TOKEN)) throw new Error("First publication requires explicit confirmation and a protected npm token");
     if (command === "publish" && process.env.BOOTSTRAP === "true") throw new Error("Bootstrap cannot use recurring publication");
-    const lookup = spawnSync("npm", ["view", candidate.name, "--json"], { encoding: "utf8" });
-    if (lookup.error) throw lookup.error;
-    const metadata = JSON.parse(lookup.stdout);
-    if (lookup.status !== 0 && !(command === "bootstrap" && metadata.error?.code === "E404")) {
-      throw new Error("Cannot verify package existence in the npm registry", { cause: metadata });
+    const metadata = await registryMetadata(candidate.name, candidate.version);
+    if (shouldPublish(metadata, candidate)) {
+      const packageExists = await registryMetadata(candidate.name) !== null;
+      if (command === "bootstrap" && packageExists) throw new Error("Bootstrap cannot add new versions to an existing package");
+      if (command === "publish" && !packageExists) throw new Error("Package creation requires explicit protected bootstrap");
+      run("npm", ["publish", resolve(archive), "--access", "public", "--provenance", "--ignore-scripts"], { stdio: "inherit" });
+    } else {
+      console.log("Exact verified candidate already exists; proceeding to mandatory registry verification without uploading again");
     }
-    if (command === "bootstrap" && lookup.status === 0) throw new Error("Bootstrap is only for a package absent from npm");
-    run("npm", ["publish", resolve(archive), "--access", "public", "--provenance", "--ignore-scripts"], { stdio: "inherit" });
   }
 } else if (command === "registry") {
   const candidate = verifyCandidate(true);

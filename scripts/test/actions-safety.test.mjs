@@ -9,7 +9,7 @@ import {
 } from "../actions-evidence.mjs";
 import { checkLocks } from "../check-locks.mjs";
 import { previewErrorStatus } from "../static-preview.mjs";
-import { assertProvenance, provenanceSourceCommit } from "../npm-provenance.mjs";
+import { assertProvenance, assertPublicationSource, provenanceSourceCommit } from "../npm-provenance.mjs";
 import { assertReleasedProvenance, automationBranchState, proposeDependencyUpdate } from "../verified-gik-update.mjs";
 
 function fixture(t) {
@@ -298,6 +298,12 @@ function provenance(commit, repository = "nsreehari/generative-interaction-kerne
     } },
   })).toString("base64") } } }] };
 }
+test("publication rejects mismatched dispatch provenance before immutable upload", () => {
+  const source = "a".repeat(40);
+  assert.doesNotThrow(() => assertPublicationSource(source, source));
+  assert.throws(() => assertPublicationSource(source, "b".repeat(40)), /exact candidate source SHA/);
+  assert.throws(() => assertPublicationSource(source, undefined), /immutable release tag/);
+});
 test("providers provenance needs its explicit publishing workflow without weakening existing verification", () => {
   const commit = "a".repeat(40), repository = "nsreehari/gik-samples";
   const workflow = ".github/workflows/release-service-providers.yml";

@@ -53,6 +53,7 @@ jobs:
     outputs:
       sha: ${{ steps.candidate.outputs.sha }}
       commit: ${{ steps.candidate.outputs.commit }}
+      ready: ${{ steps.publication.outputs.ready }}
     env:
       PROVIDERS_TAG: ${{ inputs.tag || github.event.release.tag_name }}
     steps:
@@ -73,6 +74,12 @@ jobs:
           npm run typecheck --workspace gik-service-providers
           npm test -- --run packages/service-providers/test/providers.test.ts
           node scripts/service-providers-distribution.mjs pack
+      - name: Plan normal publication or report bootstrap requirement before approval
+        id: publication
+        run: node scripts/service-providers-distribution.mjs plan
+        env:
+          BOOTSTRAP: ${{ inputs.bootstrap || false }}
+          CONFIRM: ${{ inputs.confirm }}
       - uses: actions/upload-artifact@v4
         with:
           name: service-providers-candidate
@@ -83,6 +90,7 @@ jobs:
         run: node scripts/service-providers-distribution.mjs outputs
   publish:
     needs: validate
+    if: needs.validate.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: npm-publish

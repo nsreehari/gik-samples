@@ -46,3 +46,9 @@ export async function fetchProvenance(dist) {
   if (!response.ok) throw new Error(`npm attestation HTTP ${response.status}`);
   return response.json();
 }
+
+export function assertPublicationSource(commit, eventSha) {
+  if (!/^[a-f0-9]{40}$/.test(commit ?? "") || commit !== eventSha) {
+    throw new Error("Publication must run from the exact candidate source SHA; dispatch from its immutable release tag");
+  }
+}

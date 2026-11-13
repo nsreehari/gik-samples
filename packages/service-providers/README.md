@@ -132,14 +132,31 @@ provider release workflow and its first-package bootstrap instructions.
 
 The first release cannot use npm trusted publishing until the package exists.
 A maintainer must provision a narrowly scoped `NPM_TOKEN` in the protected
-`npm-publish` environment, dispatch `release-service-providers.yml` with the exact
-`providers-v0.1.0` tag, `bootstrap: true` and
+`npm-publish` environment, dispatch `release-service-providers.yml` **from the
+immutable `providers-v0.1.0` workflow ref**, with the same tag input, `bootstrap: true` and
 `confirm: PUBLISH gik-service-providers`, then approve the environment. Validation
 and tarball creation run without that token; publication consumes the inspected
 bytes with lifecycle scripts disabled. Signature/provenance and clean-consumer
 verification remain mandatory. Afterward configure npm's trusted publisher for
 this repository's `release-service-providers.yml` workflow and `npm-publish`
 environment, and revoke the bootstrap token. Normal releases use OIDC only.
+
+The workflow event SHA must equal the release candidate commit: checking out the
+tag from an unrelated dispatch branch does not change npm's provenance source.
+For example:
+
+```sh
+gh workflow run release-service-providers.yml --ref providers-v0.1.0 \
+  -f tag=providers-v0.1.0 -F bootstrap=true \
+  -f 'confirm=PUBLISH gik-service-providers'
+```
+
+An ordinary release of an absent package reports `bootstrap-required` before
+requesting protected publication approval and completes without uploading. This
+frees the shared concurrency slot for the explicit bootstrap run. Recovery skips
+an already-published version only when its integrity matches the reviewed
+candidate; differing bytes fail closed. Skipping upload never skips independent
+registry signature/provenance and clean-consumer verification.
 
 Future production/package changes are versioned in the same PR by a trusted-base
 App workflow (patch by default, explicit `release:minor`/`release:major` labels).
