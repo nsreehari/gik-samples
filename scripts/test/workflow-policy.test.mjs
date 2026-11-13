@@ -55,18 +55,26 @@ test("providers have a guarded first version, independent future bumps and no ag
     name: "gik-service-providers",
     version: "0.1.0",
     exports: {
-      "./github-context-store": "./dist/github-context-store.js",
       "./gmail": "./dist/gmail.js",
       "./scheduler": "./dist/scheduler.js",
+    },
+  };
+  const expanded = {
+    ...manifest,
+    exports: {
+      "./github-context-store": "./dist/github-context-store.js",
+      ...manifest.exports,
     },
   };
   assert.equal(providersVersion([], null, manifest, []), "0.1.0");
   assert.throws(() => providersVersion([], null, { ...manifest, version: "1.0.0" }, []), /First/);
   assert.throws(() => providersVersion([], null, { ...manifest, exports: { ...manifest.exports, ".": "./dist/index.js" } }, []), /individual/);
-  assert.throws(() => providersVersion([], null, {
+  assert.throws(() => providersVersion([], expanded, manifest, []), /every published/);
+  assert.throws(() => providersVersion([], manifest, {
     ...manifest,
-    exports: { "./gmail": "./dist/gmail.js", "./scheduler": "./dist/scheduler.js" },
-  }, []), /every individual/);
+    exports: { ...manifest.exports, "./unknown": "./dist/unknown.js" },
+  }, []), /known individual/);
+  assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, expanded, ["release:minor"]), "0.2.0");
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, []), "0.1.1");
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, ["release:minor"]), "0.2.0");
   assert.equal(providersVersion(["packages/service-providers/test/providers.test.ts"], manifest, manifest, []), null);
