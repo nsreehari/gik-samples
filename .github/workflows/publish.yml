@@ -1,5 +1,4 @@
 name: Release
-
 on:
   push:
     branches: [main]
@@ -10,256 +9,269 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/**"
-      - ".github/workflows/publish.yml"
+      - ".github/workflows/**"
   release:
-    types:
-      - published
+    types: [published]
   workflow_dispatch:
     inputs:
       release_ref:
-        description: Published release tag or commit to redeploy or roll back Pages to
+        description: Immutable components-v tag or full commit SHA for Pages rollback (never main)
         required: true
         type: string
-
-concurrency:
-  group: release
-  cancel-in-progress: false
-
 permissions:
   contents: read
-
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.plan.outputs.commit }}
+      version: ${{ steps.plan.outputs.version }}
+      channel: ${{ steps.plan.outputs.channel }}
+      pages: ${{ steps.plan.outputs.pages }}
+      publish: ${{ steps.plan.outputs.publish }}
+      core_versions: ${{ steps.plan.outputs.core_versions }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - id: plan
+        env:
+          RELEASE_REF: ${{ inputs.release_ref }}
+        run: |
+          node scripts/check-locks.mjs
+          node scripts/plan-release.mjs
   validate:
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'components-v')
     name: Validate Components release
+    needs: plan
+    if: needs.plan.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      channel: ${{ steps.release.outputs.channel }}
-      commit: ${{ steps.release.outputs.commit }}
-    steps:
-      - name: Checkout release commit
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.release.tag_name }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Verify release
-        id: release
-        shell: bash
-        env:
-          IS_DRAFT: ${{ github.event.release.draft }}
-          IS_PRERELEASE: ${{ github.event.release.prerelease }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          set -euo pipefail
-          test "$IS_DRAFT" = "false"
-          version="$(node -p "require('./packages/components/package.json').version")"
-          test "$TAG" = "components-v$version"
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            [[ "$version" == *-* ]]
-            echo "channel=next" >> "$GITHUB_OUTPUT"
-          else
-            [[ "$version" != *-* ]]
-            echo "channel=latest" >> "$GITHUB_OUTPUT"
-          fi
-          git fetch origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          registry-url: https://registry.npmjs.org
-
-      - name: Use compatible npm resolver
-        run: npm install --global npm@11.19.0
-
-      - name: Cache npm downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Install Finbook dependencies
-        run: npm install --prefix apps/finbook --no-audit --no-fund
-
-      - name: Build
-        run: npm run build
-
-      - name: Type-check
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Test package distribution
-        run: npm run test:distribution
-
-      - name: Inspect Components package
-        run: npm pack --workspace gik-components --dry-run
-
-      - name: Verify published GIK dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE' |
-          const pkg = require("./packages/components/package.json");
-          for (const [name, version] of Object.entries(pkg.dependencies ?? {})) {
-            if (name.startsWith("gik-")) console.log(`${name}@${version}`);
-          }
-          NODE
-          while IFS= read -r dependency; do
-            npm view "$dependency" version >/dev/null
-          done
-
-  publish:
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'components-v')
-    name: Publish Components
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: npm-publish
+      tarball_sha256: ${{ steps.attest.outputs.tarball_sha256 }}
+      manifest_sha256: ${{ steps.attest.outputs.manifest_sha256 }}
     permissions:
       contents: read
-      id-token: write
-      actions: write
+      actions: read
+      pull-requests: read
+    env:
+      VITE_BASE: /gik-samples/
     steps:
-      - name: Checkout release commit
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.validate.outputs.commit }}
+          ref: ${{ needs.plan.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Reverify release ref
-        shell: bash
-        env:
-          EXPECTED_SHA: ${{ needs.validate.outputs.commit }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          set -euo pipefail
-          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG" main
-          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_SHA"
-          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          registry-url: https://registry.npmjs.org
-
-      - name: Use compatible npm resolver
-        run: npm install --global npm@11.19.0
-
-      - name: Cache npm downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Publish Components with trusted publishing
-        run: npm publish --workspace gik-components --tag "${{ needs.validate.outputs.channel }}" --access public --provenance
-
-      - name: Refresh Pages with the published Components archive
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: gh workflow run publish.yml --ref main -f release_ref=main
-
-      - name: Record release summary
-        if: always()
-        env:
-          RELEASE: ${{ github.event.release.html_url }}
-          TAG: ${{ github.event.release.tag_name }}
-          CHANNEL: ${{ needs.validate.outputs.channel }}
-        run: |
-          {
-            echo "## npm publication"
-            echo
-            echo "- Release: [$TAG]($RELEASE)"
-            echo "- Package: \`gik-components\`"
-            echo "- Channel: \`$CHANNEL\`"
-            echo "- Authentication: npm trusted publishing"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  build-pages:
-    name: Build and smoke-test Pages
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout release
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event_name == 'release' && 'main' || inputs.release_ref || github.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-
-      - name: Use compatible npm resolver
-        run: npm install --global npm@11.19.0
-
-      - name: Cache npm downloads
-        uses: actions/cache@v4
+      - name: Opt-in promotion of reviewed same-input PR evidence
+        id: reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REUSE_ENABLED: ${{ vars.GIK_SAMPLES_REUSE_PR_ARTIFACTS }}
+          REVIEWED_POLICY: ${{ vars.GIK_SAMPLES_POLICY_SHA256 }}
+        run: node scripts/actions-evidence.mjs reuse release
+      - uses: actions/cache@v4
+        if: steps.reuse.outputs.reused != 'true'
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Build site
-        run: npm run build -- --site-only
+          key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-release-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-release-
+      - name: Validate and pack once without privileged credentials
+        if: steps.reuse.outputs.reused != 'true'
+        run: |
+          npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
+          npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --no-audit --no-fund
+          git diff --exit-code -- package-lock.json apps/finbook/package-lock.json
+          npm run build -- --site-only
+          npm run typecheck
+          npm test
+          npm run test:distribution
+          npm exec --yes --package=npm@11.19.0 -- npm exec -- node scripts/actions-evidence.mjs pack
+      - name: Re-attest promoted candidate to the release source
+        if: steps.reuse.outputs.reused == 'true'
+        run: node scripts/plan-release.mjs promote
+      - name: Verify actual archive and complete source identity
+        id: attest
+        run: node scripts/actions-evidence.mjs hashes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate
+          path: |
+            .artifacts/candidate/candidate.json
+            .artifacts/candidate/gik-components.tgz
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: src/browser-host/dist
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+  publish:
+    name: Publish and verify exact Components archive
+    needs: [plan, validate]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm-publish
+    concurrency:
+      group: components-publication
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VITE_BASE: /gik-samples/
+      EXPECTED_TARBALL_SHA256: ${{ needs.validate.outputs.tarball_sha256 }}
+      EXPECTED_MANIFEST_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
+      REQUIRE_DIGEST_HANDOFF: "true"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-candidate
+          path: .artifacts/candidate
+      - name: Reverify tag and main immediately before publish
         env:
-          VITE_BASE: /gik-samples/
-
-      - name: Collect verified published GIK archives
-        run: npm run pages:collect-packages
+          EXPECTED_SHA: ${{ needs.plan.outputs.commit }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG" main
+          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
+          node scripts/actions-evidence.mjs verify
+      - name: Publish verified bytes without build, repack or lifecycle scripts
         env:
-          PAGES_COMPONENTS_VERSION: ${{ (github.event_name != 'workflow_dispatch' || inputs.release_ref == 'main') && 'latest' || '' }}
-
-      - name: Smoke-test release artifact
-        run: npm run test:pages
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: node scripts/publish-candidate.mjs
+  verify-registry:
+    name: Clean npm consumer verification
+    needs: [plan, validate, publish]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      EXPECTED_TARBALL_SHA256: ${{ needs.validate.outputs.tarball_sha256 }}
+      EXPECTED_MANIFEST_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
+      REQUIRE_DIGEST_HANDOFF: "true"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-candidate
+          path: .artifacts/candidate
+      - run: node scripts/actions-evidence.mjs verify
+      - name: Clean registry consumer and signature/provenance verification without publication authority
+        env:
+          COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
+        run: node scripts/verify-components-registry.mjs
+  site:
+    name: Build site only when no validated release site exists
+    needs: plan
+    if: needs.plan.outputs.pages == 'true' && needs.plan.outputs.publish != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_BASE: /gik-samples/
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-
+      - run: |
+          npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
+          git diff --exit-code -- package-lock.json
+          npm run build -- --site-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: src/browser-host/dist
+          if-no-files-found: error
+          include-hidden-files: true
+  collect-pages:
+    name: Collect exact registry archives after successful publication
+    needs: [plan, validate, publish, verify-registry, site]
+    if: >-
+      always() && needs.plan.result == 'success' && needs.plan.outputs.pages == 'true' &&
+      ((needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' &&
+      needs.publish.result == 'success' && needs.verify-registry.result == 'success') ||
+      (needs.plan.outputs.publish != 'true' && needs.site.result == 'success'))
+    runs-on: ubuntu-latest
+    env:
+      VITE_BASE: /gik-samples/
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: src/browser-host/dist
+      - name: Collect exact published versions (no mutable latest)
+        run: node scripts/collect-pages-packages.mjs
+        env:
+          PAGES_COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
+          PAGES_CORE_VERSIONS_JSON: ${{ needs.plan.outputs.core_versions }}
+      - name: Smoke-test assembled artifact
+        run: node scripts/smoke-pages.mjs
         env:
           CHROME_PATH: /usr/bin/google-chrome
-          VITE_BASE: /gik-samples/
           CHECK_PACKAGE_DOWNLOADS: "true"
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: src/browser-host/dist
-
   deploy-pages:
     name: Deploy Pages
+    needs: collect-pages
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-deployment
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build-pages
     permissions:
       contents: read
       pages: write
       id-token: write
     steps:
-      - name: Deploy Pages
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4

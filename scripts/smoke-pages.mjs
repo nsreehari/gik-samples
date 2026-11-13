@@ -7,22 +7,13 @@ const chrome = process.env.CHROME_PATH;
 const port = 4175;
 const baseUrl = process.env.VITE_BASE || "/";
 const pageUrl = new URL(baseUrl, `http://127.0.0.1:${port}`).href;
-const viteCli = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
+const previewCli = fileURLToPath(new URL("./static-preview.mjs", import.meta.url));
 
 if (!chrome) throw new Error("CHROME_PATH is required for the Pages smoke test.");
 
 const preview = spawn(
   process.execPath,
-  [
-    viteCli,
-    "preview",
-    "src/browser-host",
-    "--host",
-    "127.0.0.1",
-    "--port",
-    String(port),
-    "--strictPort",
-  ],
+  [previewCli],
   { stdio: ["ignore", "pipe", "pipe"], env: process.env },
 );
 
@@ -37,7 +28,7 @@ preview.stderr.on("data", (chunk) => {
 async function waitForPreview() {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     if (preview.exitCode !== null) {
-      throw new Error(`Vite preview exited before startup:\n${previewOutput}`);
+      throw new Error(`Static preview exited before startup:\n${previewOutput}`);
     }
     try {
       const response = await fetch(pageUrl);

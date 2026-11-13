@@ -24,7 +24,8 @@
     "finbook:build": "npm run build --prefix apps/finbook",
     "finbook:dev": "npm run dev --prefix apps/finbook",
     "finbook:server": "npm run dev:server --prefix apps/finbook",
-    "typecheck": "tsc -p packages/components/tsconfig.json --noEmit && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit && npm run typecheck --prefix apps/finbook"
+    "typecheck:studio": "tsc -p packages/components/tsconfig.json --noEmit && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit",
+    "typecheck": "npm run typecheck:studio && npm run typecheck --prefix apps/finbook"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",

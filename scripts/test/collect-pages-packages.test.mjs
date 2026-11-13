@@ -4,7 +4,7 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { collectPagesPackages } from "../collect-pages-packages.mjs";
+import { collectPagesPackages, coreVersions } from "../collect-pages-packages.mjs";
 
 async function fixture(t) {
   const outputDirectory = await mkdtemp(join(tmpdir(), "gik-pages-packages-"));
@@ -51,15 +51,20 @@ test("rejects tampered archives without producing a success manifest", async (t)
   assert.deepEqual(await readdir(options.outputDirectory), []);
 });
 
-test("resolves the initial Pages latest selector to an exact published Components version", async (t) => {
+test("rejects mutable selectors instead of silently publishing a different release", async (t) => {
   const options = await fixture(t);
-  const manifest = await collectPagesPackages({
+  await assert.rejects(collectPagesPackages({
     ...options, componentsVersion: "latest",
-    fetcher: (url) => options.fetcher(url.replace("/gik-components/latest", "/gik-components/0.2.1")),
-  });
-  const components = manifest.packages.find(({ name }) => name === "gik-components");
-  assert.equal(components.version, "0.2.1");
-  assert.equal(components.file, "gik-components-0.2.1.tgz");
+  }), /valid Components release version/);
+});
+test("pinned rollback core versions override current tooling defaults and reject incomplete or mutable maps", async (t) => {
+  const options = await fixture(t);
+  const versions = { ...coreVersions, "gik-kernel": "0.99.0" };
+  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions });
+  assert.equal(manifest.packages.find(({ name }) => name === "gik-kernel").version, "0.99.0");
+  for (const invalid of [{}, { ...versions, "gik-kernel": "latest" }, { ...versions, "gik-unexpected": "1.0.0" }]) {
+    await assert.rejects(collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions: invalid }), /complete exact core/);
+  }
 });
 
 test("retries npm visibility errors but fails immediately for other HTTP errors", async (t) => {

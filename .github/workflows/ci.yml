@@ -1,127 +1,103 @@
 name: CI
-
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
   workflow_dispatch:
-
+    inputs:
+      generate_locks:
+        description: Generate dependency locks only; does not validate the application
+        type: boolean
+        default: false
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
-  validate:
+  generate-locks:
+    if: github.event_name == 'workflow_dispatch' && inputs.generate_locks == true
+    uses: ./.github/workflows/dependency-locks.yml
+  plan:
+    if: github.event_name != 'workflow_dispatch' || inputs.generate_locks != true
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      full: ${{ steps.changes.outputs.full }}
+      finbook: ${{ steps.changes.outputs.finbook }}
+      mcp: ${{ steps.changes.outputs.mcp }}
+      reused: ${{ steps.reuse.outputs.reused }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Detect affected areas
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Detect affected areas and validate release policy
         id: changes
-        run: node scripts/workflow-policy.mjs
-
-      - name: Check patch hygiene
+        run: |
+          node scripts/check-locks.mjs
+          node scripts/workflow-policy.mjs
+      - name: Patch hygiene
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: git diff --check "$BASE_SHA...$HEAD_SHA"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Reuse identical successful metadata validation
+        id: reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION_SCOPE: ${{ toJSON(steps.changes.outputs) }}
+        run: node scripts/actions-evidence.mjs reuse metadata
+      - name: Dependency-free distribution, documentation and policy regressions
+        if: steps.reuse.outputs.reused != 'true'
+        run: npm run test:distribution
+  studio:
+    needs: plan
+    if: (github.event_name != 'workflow_dispatch' || inputs.generate_locks != true) && needs.plan.outputs.full == 'true' && needs.plan.outputs.reused != 'true'
+    uses: ./.github/workflows/validation-lane.yml
+    with:
+      lane: studio
+  finbook:
+    needs: plan
+    if: (github.event_name != 'workflow_dispatch' || inputs.generate_locks != true) && needs.plan.outputs.finbook == 'true' && needs.plan.outputs.reused != 'true'
+    uses: ./.github/workflows/validation-lane.yml
+    with:
+      lane: finbook
+  mcp:
+    needs: plan
+    if: (github.event_name != 'workflow_dispatch' || inputs.generate_locks != true) && needs.plan.outputs.mcp == 'true' && needs.plan.outputs.reused != 'true'
+    uses: ./.github/workflows/validation-lane.yml
+    with:
+      lane: mcp
+  validate:
+    name: validate
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.generate_locks != true)
+    needs: [plan, studio, finbook, mcp]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
-
-      - name: Use compatible npm resolver
-        if: steps.changes.outputs.full == 'true' || steps.changes.outputs.finbook == 'true' || steps.changes.outputs.mcp == 'true'
-        run: npm install --global npm@11.19.0
-
-      - name: Cache npm downloads
-        if: steps.changes.outputs.full == 'true' || steps.changes.outputs.finbook == 'true' || steps.changes.outputs.mcp == 'true'
-        uses: actions/cache@v4
+      - name: Require every selected lane
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/validate-lanes.mjs
+      - name: Record complete evidence
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/actions-evidence.mjs record
+      - uses: actions/upload-artifact@v4
         with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.changes.outputs.full == 'true'
-        run: npm install --no-audit --no-fund
-
-      - name: Install Finbook dependencies
-        if: steps.changes.outputs.finbook == 'true'
-        run: npm install --prefix apps/finbook --no-audit --no-fund
-
-      - name: Install MCP server dependencies
-        if: steps.changes.outputs.mcp == 'true'
-        run: npm install --prefix packages/mcp-server --no-audit --no-fund
-
-      - name: Inspect MCP dependency resolution
-        if: steps.changes.outputs.mcp == 'true'
-        run: npm ls --prefix packages/mcp-server @modelcontextprotocol/sdk body-parser zod --all
-
-      - name: Build
-        if: steps.changes.outputs.full == 'true'
-        run: npm run build
-
-      - name: Collect verified published GIK archives
-        if: steps.changes.outputs.full == 'true'
-        run: npm run pages:collect-packages
-        env:
-          PAGES_COMPONENTS_VERSION: latest
-
-      - name: Type-check
-        if: steps.changes.outputs.full == 'true'
-        run: npm run typecheck
-
-      - name: Test
-        if: steps.changes.outputs.full == 'true'
-        run: npm test
-
-      - name: Test package distribution
-        run: npm run test:distribution
-
-      - name: Demonstrate published Sense services
-        if: steps.changes.outputs.full == 'true'
-        run: node --import tsx src/headless/senses-clock-demo.ts
-
-      - name: Test standalone Finbook
-        if: steps.changes.outputs.finbook == 'true'
-        env:
-          FULL_VALIDATION: ${{ steps.changes.outputs.full }}
-        run: |
-          if [ "$FULL_VALIDATION" = "true" ]; then
-            npm test --prefix apps/finbook
-          else
-            npm run check --prefix apps/finbook
-          fi
-
-      - name: Validate extracted Finbook against npm packages
-        if: steps.changes.outputs.finbook == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          app_dir="$(mktemp -d "${RUNNER_TEMP}/finbook-reference.XXXXXX")"
-          git archive HEAD:apps/finbook | tar -x -C "$app_dir"
-          npm install --prefix "$app_dir" --no-audit --no-fund
-          npm run check --prefix "$app_dir"
-
-      - name: Test MCP server
-        if: steps.changes.outputs.mcp == 'true'
-        run: npm test --prefix packages/mcp-server
-
-      - name: Smoke-test built browser host
-        if: steps.changes.outputs.full == 'true'
-        run: npm run test:pages
-        env:
-          CHROME_PATH: /usr/bin/google-chrome
-          CHECK_PACKAGE_DOWNLOADS: "true"
+          name: validation-evidence
+          path: .artifacts/validation
+          retention-days: 14
+          if-no-files-found: error
+          include-hidden-files: true

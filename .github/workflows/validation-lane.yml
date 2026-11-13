@@ -1,0 +1,76 @@
+name: Isolated validation lane
+on:
+  workflow_call:
+    inputs:
+      lane:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  lane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_BASE: /gik-samples/
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-${{ inputs.lane }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-${{ inputs.lane }}-
+      - name: Studio and Components
+        if: inputs.lane == 'studio'
+        run: |
+          npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
+          git diff --exit-code -- package-lock.json
+          npm run build -- --site-only
+          npm run typecheck:studio
+          npm test -- --exclude 'apps/finbook/**'
+          node --import tsx src/headless/senses-clock-demo.ts
+          npm exec --yes --package=npm@11.19.0 -- npm exec -- node scripts/actions-evidence.mjs pack
+          npm run test:pages
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - name: Upload inspected package candidate
+        if: inputs.lane == 'studio'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate
+          path: |
+            .artifacts/candidate/gik-components.tgz
+            .artifacts/candidate/candidate.json
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+      - name: Upload site without registry downloads
+        if: inputs.lane == 'studio'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: src/browser-host/dist
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+      - name: Extract and validate standalone Finbook
+        if: inputs.lane == 'finbook'
+        run: |
+          mkdir -p .artifacts/finbook
+          git archive HEAD:apps/finbook | tar -x -C .artifacts/finbook
+          npm exec --yes --package=npm@11.19.0 -- npm install --prefix .artifacts/finbook --no-audit --no-fund
+          diff apps/finbook/package-lock.json .artifacts/finbook/package-lock.json
+          npm run check --prefix .artifacts/finbook
+      - name: Standalone MCP
+        if: inputs.lane == 'mcp'
+        run: |
+          npm exec --yes --package=npm@11.19.0 -- npm install --prefix packages/mcp-server --no-audit --no-fund
+          git diff --exit-code -- packages/mcp-server/package-lock.json
+          npm ls --prefix packages/mcp-server @modelcontextprotocol/sdk body-parser zod --all
+          npm test --prefix packages/mcp-server

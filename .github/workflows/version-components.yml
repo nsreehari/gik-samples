@@ -14,7 +14,11 @@ concurrency:
 
 jobs:
   version:
-    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft &&
+      ((github.event.action != 'labeled' && github.event.action != 'unlabeled' && github.event.action != 'edited') ||
+      startsWith(github.event.label.name, 'release:') ||
+      (github.event.action == 'edited' && github.event.changes.base != null))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -40,7 +44,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-      - name: Update only the Components manifest in the existing PR
+      - name: Update Components version and matching workspace lock metadata
         run: node scripts/version-components-pr.mjs
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
