@@ -24,20 +24,21 @@ const identity = {
   blueprintRevision: "1",
   serviceId: "maintainer-context",
 };
+const configuredStore = {
+  endpoint: "https://api.github.com",
+  repository: "owner/backing",
+  ref: "refs/heads/context-v1",
+  prefix: ".gik-state/context/v1",
+  credentialRef: "github/context",
+  maxWriteAttempts: 3,
+  maxRecordsPerScope: 100,
+};
 
 function declaration(operations = ["query", "ingest"]): NativeServiceDeclaration {
   return {
     kind: "github-context-store",
     version: "1",
-    config: {
-      endpoint: "https://api.github.com",
-      repository: "owner/backing",
-      ref: "refs/heads/context-v1",
-      prefix: ".gik-state/context/v1",
-      credentialRef: "github/context",
-      maxWriteAttempts: 3,
-      maxRecordsPerScope: 100,
-    },
+    config: configuredStore,
     operations: Object.fromEntries(operations.map((operation) => [
       operation,
       {
@@ -195,11 +196,11 @@ test("setup derives least GitHub contents permission and validates concrete conf
   );
   assert.equal((await context.registry.validate({
     ...declaration(),
-    config: { ...declaration().config, endpoint: "https://example.invalid" },
+    config: { ...configuredStore, endpoint: "https://example.invalid" },
   })).ok, false);
   assert.equal((await context.registry.validate({
     ...declaration(),
-    config: { ...declaration().config, ref: "refs/heads/../main" },
+    config: { ...configuredStore, ref: "refs/heads/../main" },
   })).ok, false);
 
   const adapter = await context.registry.materialize(identity, declaration());
@@ -262,7 +263,7 @@ test("ingest is immutable and idempotent while query is bounded and revisioned",
   }), {});
   assert.equal(remote.refUpdates, updates);
   await assert.rejects(
-    adapter.execute(request("ingest", {
+    async () => adapter.execute(request("ingest", {
       scope: "strategy-group:gik",
       records: [{ ...records[1], content: { result: "changed" } }],
     }), {}),
@@ -291,7 +292,7 @@ test("endpoint denial precedes credential resolution and HTTP 401 clears the con
   const denied = fixture(remote, () => false);
   const deniedAdapter = await denied.registry.materialize(identity, declaration(["query"]));
   await assert.rejects(
-    deniedAdapter.execute(request("query", {
+    async () => deniedAdapter.execute(request("query", {
       scope: "scope",
       requestKey: "request",
       query: {},
@@ -306,13 +307,13 @@ test("endpoint denial precedes credential resolution and HTTP 401 clears the con
   });
   const expiredAdapter = await expired.registry.materialize(identity, declaration(["query"]));
   await assert.rejects(
-    expiredAdapter.execute(request("query", {
+    async () => expiredAdapter.execute(request("query", {
       scope: "scope",
       requestKey: "request",
       query: {},
       limit: 1,
     }), {}),
-    (error) => {
+    (error: unknown) => {
       assert.ok(error instanceof UnsatisfiedServiceDependencyError);
       assert.equal(error.dependencyStatus?.state, "authorization-required");
       return true;
