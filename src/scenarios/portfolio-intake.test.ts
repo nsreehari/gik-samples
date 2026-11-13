@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { test } from "vitest";
 import { createBlueprintDurableBootstrapEvent, createBlueprintDurableEffectSettlementEvent } from "gik-blueprint";
 import { DefaultServiceHost, ServiceKindRegistry, type ServiceRequest } from "gik-controlface/services";
@@ -11,6 +12,9 @@ import { createFoundryAgentKind } from "../service-kinds/foundry-agent";
 const source = JSON.parse(readFileSync(
   new URL("../bootstrap/blueprints/portfolio-tracker-new/blueprint.json", import.meta.url), "utf8",
 )).payload;
+const intakeAgent = JSON.parse(readFileSync(
+  new URL("../bootstrap/blueprints/portfolio-tracker-new/foundry-intake-agent.json", import.meta.url), "utf8",
+)).agents[0];
 const expression = new SyncJsonataExpressionProvider();
 const node = "portfolio-intelligence--intake--in-holdings";
 const fileNode = "portfolio-intelligence--intake-file--in-holdings";
@@ -94,7 +98,7 @@ async function fixture(ai = "foundry", serviceRegistry?: ServiceKindRegistry) {
   };
 }
 
-test("Foundry intake executes the declared agent through the real adapter and correlated settlement", async () => {
+test.each(["matching", "mismatched"])("Foundry intake respects named-agent schema admission through the real adapter: %s", async (contract) => {
   const requests: Record<string, Json>[] = [];
   const registry = new ServiceKindRegistry({
     hostCapabilities: ["foundry-executor", "credential-resolver"],
@@ -108,7 +112,17 @@ test("Foundry intake executes the declared agent through the real adapter and co
   registry.register(createFoundryAgentKind(async (url, init) => {
     assert.equal(String(url), "https://sz-foundry-proxy.azurewebsites.net/api/agent/chat");
     assert.equal(init?.method, "POST");
-    requests.push(JSON.parse(String(init?.body)) as Record<string, Json>);
+    const request = JSON.parse(String(init?.body)) as Record<string, Json>;
+    requests.push(request);
+    const format = request.responseSchema as Record<string, Json>;
+    const configuredSchema = contract === "matching"
+      ? intakeAgent.definition.text.format.schema
+      : { ...intakeAgent.definition.text.format.schema, required: ["different-contract"] };
+    if (request.agentName !== intakeAgent.id || !isDeepStrictEqual(format.schema, configuredSchema)) {
+      return new Response(JSON.stringify({
+        error: "Requested response schema does not match the named agent configuration",
+      }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
     return new Response(JSON.stringify({
       conversationId: "intake-conversation", responseId: "intake-response",
       reply: JSON.stringify(updated), toolCalls: [],
@@ -118,13 +132,20 @@ test("Foundry intake executes the declared agent through the real adapter and co
   const effect = await f.submit();
   await f.session.transition([await f.invoke(effect)]);
   const portfolio = f.session.snapshot().portfolio as Portfolio;
-  assert.equal(portfolio.intake.error, "");
-  assert.deepEqual(portfolio.holdings.AAPL, updated.changes[0]);
   assert.equal(portfolio.intake.saving, false);
-  assert.equal(portfolio.intake.file, null);
   assert.equal(requests.length, 1);
-  assert.equal(requests[0].agentName, "Portfolio-Intelligence-Agent");
+  assert.equal(requests[0].agentName, intakeAgent.id);
   assert.deepEqual(requests[0].allowedTools, []);
+  if (contract === "matching") {
+    assert.equal(portfolio.intake.error, "");
+    assert.deepEqual(portfolio.holdings.AAPL, updated.changes[0]);
+    assert.equal(portfolio.intake.file, null);
+  } else {
+    assert.match(portfolio.intake.error, /Requested response schema does not match/);
+    assert.deepEqual(portfolio.holdings, source.runtime.state.portfolio.holdings);
+    assert.deepEqual(portfolio.intake.file, file);
+    assert.equal(portfolio.intake.note, "Update my AAPL holding");
+  }
 });
 
 test.each(["foundry", "copilot"])("portfolio DPP processes a file/note, preserves other holdings, clears inputs and records context: %s", async (ai) => {

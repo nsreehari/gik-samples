@@ -6,8 +6,32 @@ alone works too. Select the AI provider in the sample launch settings, then use
 **Update portfolio** in the holdings area.
 Intake requires a configured AI connection even when intelligence reports use
 the mock model. Notes are limited to 4,000 characters.
-Foundry intake explicitly selects `Portfolio-Intelligence-Agent`, matching the
-existing report service configuration.
+Foundry intake selects the dedicated `Portfolio-Intake-Agent`. The existing
+`Portfolio-Intelligence-Agent` remains responsible for reports; its response
+schema is not compatible with holdings reconciliation.
+
+## Foundry setup
+
+The product-owned [intake agent plan](./foundry-intake-agent.json) configures the
+named prompt agent, its closed JSON response schema and no tools. Provision it
+with the existing `azure-function-proxy` tooling after `az login`:
+
+```powershell
+npm run agent:provision -- --plan <absolute-path-to-foundry-intake-agent.json>
+```
+
+Run that command from the proxy repository with Node.js 24 and the intended
+`FOUNDRY_ENDPOINT` configured. The sample deployment uses the `gpt-5.4` model
+deployment. Agent provisioning requires project permissions; normal browser
+use still requires the host-managed Foundry access credential.
+
+The proxy deliberately admits a requested response schema only when it
+matches the named agent's configured schema. Keep the plan and the native
+intake request schema aligned; the real-adapter regression exercises that
+admission boundary. Do not relax the proxy check or replace the report agent's
+schema to enable intake.
+
+## Trying intake
 
 For example, upload:
 
