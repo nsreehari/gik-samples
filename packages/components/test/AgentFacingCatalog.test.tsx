@@ -43,6 +43,9 @@ test("agent-facing catalog derives compact form authoring facts", () => {
   assert.equal("layout" in (detail?.props ?? {}), false);
   assert.deepEqual(detail?.notes, [
     "Editing is draft-based; values are published only through save.",
+    "saveVisibility and discardVisibility independently accept dirty (default), always, or never. Visibility does not grant pristine-save permission.",
+    "Use saveVisibility: always with allowPristineSave: true for repeatable submissions that include inputs outside this form.",
+    "Named actions emit action-requested with actionId and optional payload, not the current draft. Read-only hides all actions; saving disables them.",
   ]);
   assert.deepEqual(detail?.example?.bindings, {
     value: { from: "<state-path>" },
