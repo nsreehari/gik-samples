@@ -175,7 +175,7 @@ export const Form: ProjectionView = ({ node, emit }) => {
   const readOnly = props.bool("readOnly");
   const initiallyDirty = props.bool("initiallyDirty");
   const allowPristineSave = props.bool("allowPristineSave");
-  const actions = props.arr<FormAction>("actions");
+  const actions = props.list<FormAction>("actions");
   // Whether the host Blueprint actually binds `saving`/`saveError` (as opposed to those props
   // simply being absent) -- present only when a Cell wires this Form to its own ordinary save
   // state (an author-declared `assign` set true at dispatch, cleared to false by the operation's
