@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion } from "../workflow-policy.mjs";
+import { classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion, providerPublicationMode, providersVersion } from "../workflow-policy.mjs";
 
 test("documentation avoids installs, while runtime, shared policy and unknown inputs fail closed", () => {
   assert.deepEqual(classifyChanges(["README.md", "docs/samples.md"]), {
@@ -48,6 +48,28 @@ test("published files and dependency changes release; tests, unrelated apps and 
   assert.equal(needsComponentsRelease(["packages/components/package.json"], base, {
     ...base, dependencies: { "gik-kernel": ">=0.5.0" },
   }), true);
+});
+
+test("providers have a guarded first version, independent future bumps and no aggregate exports", () => {
+  const manifest = { name: "gik-service-providers", version: "0.1.0", exports: { "./gmail": "./dist/gmail.js", "./scheduler": "./dist/scheduler.js" } };
+  assert.equal(providersVersion([], null, manifest, []), "0.1.0");
+  assert.throws(() => providersVersion([], null, { ...manifest, version: "1.0.0" }, []), /First/);
+  assert.throws(() => providersVersion([], null, { ...manifest, exports: { ...manifest.exports, ".": "./dist/index.js" } }, []), /individual/);
+  assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, []), "0.1.1");
+  assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, ["release:minor"]), "0.2.0");
+  assert.equal(providersVersion(["packages/service-providers/test/providers.test.ts"], manifest, manifest, []), null);
+  assert.equal(providersVersion(["packages/components/src/index.ts"], manifest, manifest, []), null);
+  assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, { ...manifest, version: "0.1.1" }, []), null);
+});
+
+test("first publication releases the ordinary concurrency slot and requires explicit protected bootstrap", () => {
+  assert.equal(providerPublicationMode(false, false), "bootstrap-required");
+  assert.equal(providerPublicationMode(true, false), "publish");
+  assert.throws(() => providerPublicationMode(false, true, ""), /explicit/);
+  assert.equal(providerPublicationMode(false, true, "PUBLISH gik-service-providers"), "bootstrap");
+  const workflow = readFileSync(new URL("../../.github/workflows/release-service-providers.yml", import.meta.url), "utf8");
+  assert.match(workflow, /ready: \$\{\{ steps\.publication\.outputs\.ready \}\}/);
+  assert.match(workflow, /publish:\s+needs: validate\s+if: needs\.validate\.outputs\.ready == 'true'/);
 });
 
 test("PR classification validates manifest-only catch-up versions in a detached checkout", () => {

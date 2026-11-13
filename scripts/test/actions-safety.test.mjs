@@ -9,7 +9,7 @@ import {
 } from "../actions-evidence.mjs";
 import { checkLocks } from "../check-locks.mjs";
 import { previewErrorStatus } from "../static-preview.mjs";
-import { assertProvenance, provenanceSourceCommit } from "../npm-provenance.mjs";
+import { assertProvenance, assertPublicationSource, provenanceSourceCommit } from "../npm-provenance.mjs";
 import { assertReleasedProvenance, automationBranchState, proposeDependencyUpdate } from "../verified-gik-update.mjs";
 
 function fixture(t) {
@@ -298,6 +298,21 @@ function provenance(commit, repository = "nsreehari/generative-interaction-kerne
     } },
   })).toString("base64") } } }] };
 }
+test("publication rejects mismatched dispatch provenance before immutable upload", () => {
+  const source = "a".repeat(40);
+  assert.doesNotThrow(() => assertPublicationSource(source, source));
+  assert.throws(() => assertPublicationSource(source, "b".repeat(40)), /exact candidate source SHA/);
+  assert.throws(() => assertPublicationSource(source, undefined), /immutable release tag/);
+});
+test("providers provenance needs its explicit publishing workflow without weakening existing verification", () => {
+  const commit = "a".repeat(40), repository = "nsreehari/gik-samples";
+  const workflow = ".github/workflows/release-service-providers.yml";
+  const attestation = provenance(commit, repository, workflow);
+  assert.throws(() => assertProvenance(attestation, repository, commit), /expected repository/);
+  assert.doesNotThrow(() => assertProvenance(attestation, repository, commit, workflow));
+  assert.throws(() => assertProvenance(provenance(commit, repository), repository, commit, workflow), /expected repository/);
+  assert.throws(() => assertProvenance(attestation, repository, commit, ".github/workflows/untrusted.yml"), /Unsupported/);
+});
 test("verified unchanged GIK package provenance may come from an older ancestor, with cached source comparisons", () => {
   const old = "a".repeat(40), release = "b".repeat(40), comparisons = new Map();
   let calls = 0;

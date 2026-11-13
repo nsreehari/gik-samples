@@ -244,7 +244,7 @@ test("resolution guard rejects absent, stale and mismatched workspace locks with
   const directory = fixture(t);
   assert.throws(() => checkLocks(directory), /Missing reproducible lock/);
   for (const [prefix, workspaces] of [
-    ["", ["packages/components"]], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
+    ["", ["packages/components", "packages/service-providers"]], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
     ["packages/mcp-server", []],
   ]) {
     const packages = {};
@@ -280,12 +280,14 @@ test("signature validation is supplemented by expected npm provenance source and
   assert.throws(() => assertProvenance({ attestations: [] }, source, manifest.commit));
 });
 test("publication retries skip only an exact already-published candidate and reject version collisions", () => {
-  const candidate = { name: "gik-components", version: "1.0.0", integrity: "sha512-test" };
-  assert.equal(shouldPublish(null, candidate), true);
-  const existing = { name: candidate.name, version: candidate.version, dist: { integrity: candidate.integrity } };
-  assert.equal(shouldPublish(existing, candidate), false);
-  assert.throws(() => shouldPublish({ ...existing, version: "1.0.1" }, candidate));
-  assert.throws(() => shouldPublish({ ...existing, dist: { integrity: "sha512-other" } }, candidate));
+  for (const name of ["gik-components", "gik-service-providers"]) {
+    const candidate = { name, version: "1.0.0", integrity: "sha512-test" };
+    assert.equal(shouldPublish(null, candidate), true);
+    const existing = { name: candidate.name, version: candidate.version, dist: { integrity: candidate.integrity } };
+    assert.equal(shouldPublish(existing, candidate), false);
+    assert.throws(() => shouldPublish({ ...existing, version: "1.0.1" }, candidate));
+    assert.throws(() => shouldPublish({ ...existing, dist: { integrity: "sha512-other" } }, candidate));
+  }
 });
 test("one canonical release owns version-changing pushes, pins rollback and checks tag/main/channel", () => {
   const sha = "a".repeat(40);

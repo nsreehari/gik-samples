@@ -14,6 +14,7 @@ Community-facing components, Blueprint samples, and the browser App Host for the
 | [Documentation](docs/README.md) | Learning paths, documentation ownership, and navigation |
 | [Samples](docs/samples.md) | Example selection, prerequisites, host boundaries, and continuous-awareness demo |
 | [gik-components](packages/components/README.md) | Public projection catalogs, React adapters, explicit providers, and component authoring tools |
+| [gik-service-providers](packages/service-providers/README.md) | Individually imported cron/Gmail providers with host-owned setup and execution authority |
 | [MCP companion](packages/mcp-server/README.md) | Standalone local tooling, pairing, credentials, provisioning, and MCP transports |
 | [Finbook](apps/finbook/README.md) | Reference application setup, composition, and extraction constraints |
 | [Validation](VALIDATION.md) | The repository-wide install/build/test sequence and CI-only option |
