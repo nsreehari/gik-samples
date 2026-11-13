@@ -1,6 +1,6 @@
 {
   "name": "gik-service-providers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Individually imported host-managed service providers for GIK.",
   "type": "module",
   "license": "MIT",
@@ -11,10 +11,20 @@
     "directory": "packages/service-providers"
   },
   "sideEffects": false,
-  "files": ["dist", "README.md", "examples"],
+  "files": [
+    "dist",
+    "README.md",
+    "examples"
+  ],
   "exports": {
-    "./scheduler": { "types": "./dist/scheduler.d.ts", "import": "./dist/scheduler.js" },
-    "./gmail": { "types": "./dist/gmail.d.ts", "import": "./dist/gmail.js" },
+    "./scheduler": {
+      "types": "./dist/scheduler.d.ts",
+      "import": "./dist/scheduler.js"
+    },
+    "./gmail": {
+      "types": "./dist/gmail.d.ts",
+      "import": "./dist/gmail.js"
+    },
     "./github-context-store": {
       "types": "./dist/github-context-store.d.ts",
       "import": "./dist/github-context-store.js"
@@ -30,5 +40,8 @@
     "prepack": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" }
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }
