@@ -88,8 +88,12 @@ export function needsComponentsRelease(files, baseManifest, headManifest) {
 
 export function providersVersion(files, base, head, labels) {
   if (head.name !== "gik-service-providers" || head.main || head.types
-    || JSON.stringify(Object.keys(head.exports ?? {}).sort()) !== JSON.stringify(["./gmail", "./scheduler"])) {
-    throw new Error("Service providers must retain individual Gmail/scheduler exports without a root entry");
+    || JSON.stringify(Object.keys(head.exports ?? {}).sort()) !== JSON.stringify([
+      "./github-context-store",
+      "./gmail",
+      "./scheduler",
+    ])) {
+    throw new Error("Service providers must retain every individual provider export without a root entry");
   }
   if (!base) {
     if (head.version !== "0.1.0") throw new Error("First service providers release must be 0.1.0");
