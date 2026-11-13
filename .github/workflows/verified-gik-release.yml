@@ -84,3 +84,4 @@ jobs:
         run: node scripts/verified-gik-update.mjs apply
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
+          EXPECTED_APP_BOT: ${{ steps.app.outputs.app-slug }}[bot]

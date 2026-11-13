@@ -88,7 +88,7 @@ jobs:
           npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
           npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --no-audit --no-fund
           git diff --exit-code -- package-lock.json apps/finbook/package-lock.json
-          npm run build -- --site-only
+          npm run build
           npm run typecheck
           npm test
           npm run test:distribution

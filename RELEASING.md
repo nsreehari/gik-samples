@@ -171,6 +171,13 @@ successful same-tree CI aggregate with exactly the same selected lane scope.
 Release-intent label changes recheck version
 policy and run validation normally. Missing/expired evidence falls back to fresh
 validation. Policy and patch checks always run before considering reuse.
+Artifact availability is queried first: absent/expired proof is a logged cache
+miss, and valid input/scope drift is a logged fallback. API/download/filesystem
+errors, malformed matching evidence, and checksum corruption fail the run rather
+than silently rebuilding. Candidate format 2 binds the site with a deterministic
+path/size/SHA-256 file-tree digest, including all hidden files.
+Promotion verifies the staged and restored site; validation verifies it again
+before upload, without requiring `node_modules`.
 
 Release artifact promotion is **off by default**. Before merging the workflow
 rollout, commit all three resolution lockfiles and pass
@@ -239,8 +246,12 @@ success; timeout or a failed final announce requires a later retry.
 The planner independently checks npm metadata/integrity/provenance, installs
 registry packages with scripts disabled, and runs `npm audit signatures`.
 Upstream manifest hashes **do not substitute for** signature/provenance checks.
-Provenance must identify the expected repository, release commit and publishing
-workflow; incompatible or missing attestations fail closed.
+Provenance must identify the expected repository and publishing workflow with
+one exact source commit. Independently versioned unchanged GIK packages may
+identify older publishing commits: cached source compare API results must prove
+each is an ancestor of (or equal to) the manifest release commit. Newly published
+Components still require the exact candidate commit. Incompatible, unrelated or
+missing attestations fail closed.
 No upstream build outputs replace registry packages.
 
 The resulting job summary exposes every proposed package/version and changed
@@ -258,6 +269,11 @@ idempotent; stale signals older than the newest published manifest are ignored,
 and newer verified releases coalesce into the same PR. No dependency PR dispatches
 another upstream event, preventing self-trigger loops. If `main` advances during
 planning, rerun to replan; never force through a stale plan.
+Coalescing appends history with the existing automation head and current main
+base as parents and updates the ref with `force:false`. It checks exact branch/PR
+identity, expected App bot author and source-base/digest message markers first.
+Human edits, closed-unmerged PRs, identity drift or concurrent branch movement
+require explicit human action; they are never overwritten.
 
 ## Operational checks
 

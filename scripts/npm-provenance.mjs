@@ -1,25 +1,38 @@
-export function assertProvenance(attestations, repository, commit) {
+export function provenanceSourceCommit(attestations, repository) {
   const uri = `git+https://github.com/${repository}`;
   const fromRepository = (value) => typeof value === "string" && (value === uri || value.startsWith(`${uri}@`));
-  const valid = attestations.attestations?.some((entry) => {
-    if (!["https://slsa.dev/provenance/v1", "https://slsa.dev/provenance/v0.2"].includes(entry.predicateType)) return false;
-    try {
-      const statement = JSON.parse(Buffer.from(entry.bundle.dsseEnvelope.payload, "base64").toString("utf8"));
-      if (statement.predicateType !== entry.predicateType) return false;
-      const predicate = statement.predicate;
-      if (entry.predicateType.endsWith("/v1")) {
-        const workflow = predicate.buildDefinition.externalParameters.workflow;
-        return workflow.repository === `https://github.com/${repository}`
-          && workflow.path === ".github/workflows/publish.yml"
-          && predicate.buildDefinition.resolvedDependencies.some((dependency) =>
-            fromRepository(dependency.uri) && dependency.digest?.gitCommit === commit);
+  const commits = new Set();
+  for (const entry of attestations.attestations || []) {
+    if (!["https://slsa.dev/provenance/v1", "https://slsa.dev/provenance/v0.2"].includes(entry.predicateType)) continue;
+    const payload = entry.bundle?.dsseEnvelope?.payload;
+    if (typeof payload !== "string") throw new Error("Malformed npm provenance payload");
+    let statement;
+    try { statement = JSON.parse(Buffer.from(payload, "base64").toString("utf8")); }
+    catch (cause) { throw new Error("Malformed npm provenance statement", { cause }); }
+    if (statement.predicateType !== entry.predicateType) continue;
+    const predicate = statement.predicate;
+    if (entry.predicateType.endsWith("/v1")) {
+      const definition = predicate?.buildDefinition;
+      const workflow = definition?.externalParameters?.workflow;
+      if (workflow?.repository !== `https://github.com/${repository}` || workflow.path !== ".github/workflows/publish.yml") continue;
+      for (const dependency of definition.resolvedDependencies || []) {
+        if (fromRepository(dependency.uri) && /^[a-f0-9]{40}$/.test(dependency.digest?.gitCommit || "")) {
+          commits.add(dependency.digest.gitCommit);
+        }
       }
-      const config = predicate.invocation.configSource;
-      return fromRepository(config.uri) && config.digest?.sha1 === commit
-        && config.entryPoint === ".github/workflows/publish.yml";
-    } catch { return false; }
-  });
-  if (!valid) throw new Error("npm provenance does not identify the expected repository, source commit and publishing workflow");
+    } else {
+      const config = predicate?.invocation?.configSource;
+      if (fromRepository(config?.uri) && /^[a-f0-9]{40}$/.test(config?.digest?.sha1 || "")
+        && config.entryPoint === ".github/workflows/publish.yml") commits.add(config.digest.sha1);
+    }
+  }
+  if (commits.size !== 1) throw new Error("npm provenance does not identify one expected repository, source commit and publishing workflow");
+  return [...commits][0];
+}
+export function assertProvenance(attestations, repository, commit) {
+  if (provenanceSourceCommit(attestations, repository) !== commit) {
+    throw new Error("npm provenance source commit differs from the expected newly published candidate");
+  }
 }
 
 export async function fetchProvenance(dist) {

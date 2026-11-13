@@ -11,7 +11,12 @@ export function checkLocks(root = ".") {
   ]) {
     let lock;
     try { lock = JSON.parse(readFileSync(join(root, directory, "package-lock.json"), "utf8")); }
-    catch { throw new Error(`Missing reproducible lock: ${directory}/package-lock.json; generate with npm 11.19.0 before rollout`); }
+    catch (cause) {
+      if (cause.code === "ENOENT") {
+        throw new Error(`Missing reproducible lock: ${directory}/package-lock.json; generate with npm 11.19.0 before rollout`, { cause });
+      }
+      throw new Error(`Unable to read or parse reproducible lock: ${directory}/package-lock.json`, { cause });
+    }
     if (lock.lockfileVersion !== 3 || !lock.packages) throw new Error(`Expected npm v3 lock: ${directory}`);
     for (const workspace of ["", ...workspaces]) {
       const pkg = JSON.parse(readFileSync(join(root, directory, workspace, "package.json"), "utf8"));

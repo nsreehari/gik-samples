@@ -4,11 +4,23 @@ import { pathToFileURL } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import { api, git, sha256 } from "./actions-evidence.mjs";
 import { coreVersions } from "./collect-pages-packages.mjs";
-import { assertProvenance, fetchProvenance } from "./npm-provenance.mjs";
+import { provenanceSourceCommit, fetchProvenance } from "./npm-provenance.mjs";
 import { checkLocks } from "./check-locks.mjs";
 
 const source = "nsreehari/generative-interaction-kernel";
 export const DEFAULT_GIK_VERIFICATION_JOB = "Verify published stable packages / Consume published packages";
+export function assertReleasedProvenance(attestation, releaseCommit, readApi = api, comparisons = new Map()) {
+  if (!/^[a-f0-9]{40}$/.test(releaseCommit || "")) throw new Error("Expected exact GIK release commit");
+  const publishedCommit = provenanceSourceCommit(attestation, source);
+  if (publishedCommit === releaseCommit) return publishedCommit;
+  const key = `${publishedCommit}...${releaseCommit}`;
+  if (!comparisons.has(key)) comparisons.set(key, readApi(`repos/${source}/compare/${key}`));
+  const comparison = comparisons.get(key);
+  if (!["ahead", "identical"].includes(comparison.status) || comparison.merge_base_commit?.sha !== publishedCommit) {
+    throw new Error("Verified package provenance source is not an ancestor of the declared GIK release");
+  }
+  return publishedCommit;
+}
 const versionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 export function newer(a, b) {
   if (!versionPattern.test(a) || !versionPattern.test(b)) throw new Error("Stable exact versions required");
@@ -92,6 +104,78 @@ function npm(...args) {
   execFileSync("npm", ["exec", "--yes", "--package=npm@11.19.0", "--", "npm", ...args],
     { stdio: "inherit", shell: process.platform === "win32" });
 }
+const dependencyBranch = "automation/verified-gik-release";
+function humanAction(reason) {
+  throw new Error(`Dependency automation requires human action: ${reason}. Inspect the existing branch/PR; do not overwrite or force-update it.`);
+}
+export function automationBranchState({ ref, head, pulls, repository, bot, base, digest }) {
+  if (!/^[a-z0-9-]+\[bot\]$/.test(bot || "")) humanAction("expected maintainer App identity is missing");
+  const open = pulls.filter((pull) => pull.state === "open");
+  if (open.length > 1) humanAction("multiple open dependency PRs");
+  if (!ref) {
+    if (open.length) humanAction("an open dependency PR has no matching branch");
+    return { parents: [base], pull: undefined, noOp: false };
+  }
+  if (ref.ref !== `refs/heads/${dependencyBranch}` || ref.object.type !== "commit"
+    || head.sha !== ref.object.sha || head.author?.login !== bot) humanAction("branch head is not the expected App-authored commit");
+  const message = head.commit.message;
+  const sources = [...message.matchAll(/^Source base: ([a-f0-9]{40})$/gm)];
+  const digests = [...message.matchAll(/^Manifest SHA-256: ([a-f0-9]{64})$/gm)];
+  if (message.split("\n")[0] !== "chore: update verified GIK dependencies"
+    || sources.length !== 1 || digests.length !== 1
+    || !head.parents.some((parent) => parent.sha === sources[0][1])) humanAction("branch head lacks valid automation/source-base markers");
+  const pull = open[0] || [...pulls].sort((a, b) => b.number - a.number)[0];
+  if (!pull || pull.user?.login !== bot || pull.head?.repo?.full_name !== repository
+    || pull.head.ref !== dependencyBranch || pull.head.sha !== ref.object.sha
+    || pull.base?.repo?.full_name !== repository || pull.base.ref !== "main"
+    || (pull.state !== "open" && !(pull.state === "closed" && pull.merged_at))) {
+    humanAction("PR state, author, branch or source identity changed");
+  }
+  return {
+    parents: [...new Set([ref.object.sha, base])],
+    pull: pull.state === "open" ? pull : undefined, sourceBase: sources[0][1],
+    noOp: digests[0][1] === digest,
+  };
+}
+export function proposeDependencyUpdate({ plan, repository, bot, baseTree }, { readApi = api, writeApi } = {}) {
+  const post = writeApi || ((resource, body, method = "POST") => JSON.parse(execFileSync("gh",
+    ["api", `repos/${repository}/${resource}`, "--method", method, "--input", "-"],
+    { input: JSON.stringify(body), encoding: "utf8" })));
+  const lookup = () => {
+    const matches = readApi(`repos/${repository}/git/matching-refs/heads/${dependencyBranch}`)
+      .filter((ref) => ref.ref === `refs/heads/${dependencyBranch}`);
+    if (matches.length > 1) humanAction("ambiguous dependency branch refs");
+    return matches[0];
+  };
+  const ref = lookup();
+  const pulls = readApi(`repos/${repository}/pulls?state=all&head=${repository.split("/")[0]}:${dependencyBranch}&per_page=100`);
+  const head = ref ? readApi(`repos/${repository}/commits/${ref.object.sha}`) : undefined;
+  const state = automationBranchState({ ref, head, pulls, repository, bot, base: plan.base, digest: plan.digest });
+  if (state.sourceBase && state.sourceBase !== plan.base) {
+    const comparison = readApi(`repos/${repository}/compare/${state.sourceBase}...${plan.base}`);
+    if (!["ahead", "identical"].includes(comparison.status)) humanAction("previous source base is not an ancestor of current main");
+  }
+  if (state.noOp) {
+    console.log("This exact manifest is already proposed.");
+    return;
+  }
+  const tree = post("git/trees", { base_tree: baseTree, tree: plan.files.map((file) => ({
+    path: file.path, mode: "100644", type: "blob", content: file.content,
+  })) });
+  const commit = post("git/commits", { tree: tree.sha, parents: state.parents,
+    message: `chore: update verified GIK dependencies\n\nSource base: ${plan.base}\nManifest SHA-256: ${plan.digest}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` });
+  if (readApi(`repos/${repository}/git/ref/heads/main`).object.sha !== plan.base) humanAction("main advanced; replan the dependency update");
+  if (ref) {
+    if (lookup()?.object.sha !== ref.object.sha) humanAction("branch advanced after planning");
+    post(`git/refs/heads/${dependencyBranch}`, { sha: commit.sha, force: false }, "PATCH");
+  } else post("git/refs", { ref: `refs/heads/${dependencyBranch}`, sha: commit.sha });
+  const body = `Verified upstream release: https://github.com/${source}/releases/tag/${plan.manifest.tag}\n\n`
+    + `Manifest SHA-256: ${plan.digest}\n\nVerification run: https://github.com/${source}/actions/runs/${plan.manifest.verificationRunId}\n\n`
+    + `Packages:\n${plan.manifest.packages.map((pkg) => `- ${pkg.name}@${pkg.version}`).join("\n")}\n\n`
+    + "Registry integrity, signatures and provenance were independently checked. Normal CI and review are required. No build outputs were consumed.";
+  if (state.pull) post(`pulls/${state.pull.number}`, { title: "chore: update verified GIK dependencies", body }, "PATCH");
+  else post("pulls", { title: "chore: update verified GIK dependencies", body, head: dependencyBranch, base: "main" });
+}
 async function plan() {
   checkLocks();
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
@@ -126,7 +210,8 @@ async function plan() {
   npm("install", "--prefix", ".artifacts/gik-consumer", "--ignore-scripts", "--no-audit", "--no-fund",
     ...manifest.packages.map((pkg) => `${pkg.name}@${pkg.version}`));
   npm("audit", "signatures", "--prefix", ".artifacts/gik-consumer");
-  for (const attestation of attestations) assertProvenance(attestation, source, manifest.commit);
+  const provenanceComparisons = new Map();
+  for (const attestation of attestations) assertReleasedProvenance(attestation, manifest.commit, api, provenanceComparisons);
   const paths = git("ls-files", "*package.json").split("\n").filter((path) => path.endsWith("package.json"));
   const updates = [];
   for (const path of paths) {
@@ -190,31 +275,9 @@ function openPullRequest() {
     } else if (after.lockfileVersion !== 3) throw new Error("Expected npm v3 lockfile");
   }
   if (!plan.files.length) return;
-  const branch = "automation/verified-gik-release";
-  const post = (resource, body, method = "POST") => JSON.parse(execFileSync("gh",
-    ["api", `repos/${repository}/${resource}`, "--method", method, "--input", "-"],
-    { input: JSON.stringify(body), encoding: "utf8" }));
-  const pulls = api(`repos/${repository}/pulls?state=open&head=${repository.split("/")[0]}:${branch}`);
-  if (pulls.length > 1) throw new Error("Ambiguous dependency update PRs");
-  if (pulls[0]?.body?.includes(`Manifest SHA-256: ${plan.digest}`)) {
-    console.log("This exact manifest is already proposed.");
-    return;
-  }
-  const tree = post("git/trees", { base_tree: git("rev-parse", "HEAD^{tree}"), tree: plan.files.map((file) => ({
-    path: file.path, mode: "100644", type: "blob", content: file.content,
-  })) });
-  const commit = post("git/commits", { tree: tree.sha, parents: [plan.base],
-    message: `chore: update verified GIK dependencies\n\nManifest SHA-256: ${plan.digest}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` });
-  let exists = false;
-  try { api(`repos/${repository}/git/ref/heads/${branch}`); exists = true; } catch {}
-  if (exists) post(`git/refs/heads/${branch}`, { sha: commit.sha, force: true }, "PATCH");
-  else post("git/refs", { ref: `refs/heads/${branch}`, sha: commit.sha });
-  const body = `Verified upstream release: https://github.com/${source}/releases/tag/${plan.manifest.tag}\n\n`
-    + `Manifest SHA-256: ${plan.digest}\n\nVerification run: https://github.com/${source}/actions/runs/${plan.manifest.verificationRunId}\n\n`
-    + `Packages:\n${plan.manifest.packages.map((pkg) => `- ${pkg.name}@${pkg.version}`).join("\n")}\n\n`
-    + "Registry integrity, signatures and provenance were independently checked. Normal CI and review are required. No build outputs were consumed.";
-  if (pulls[0]) post(`pulls/${pulls[0].number}`, { title: "chore: update verified GIK dependencies", body }, "PATCH");
-  else post("pulls", { title: "chore: update verified GIK dependencies", body, head: branch, base: "main" });
+  proposeDependencyUpdate({
+    plan, repository, bot: process.env.EXPECTED_APP_BOT, baseTree: git("rev-parse", "HEAD^{tree}"),
+  });
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv[2] === "plan") await plan();

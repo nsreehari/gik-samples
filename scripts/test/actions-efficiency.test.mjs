@@ -182,9 +182,10 @@ test("candidate verification rejects source, byte and independently handed-off d
   execFileSync("tar", ["-czf", path, "-C", directory, "package"]);
   const bytes = readFileSync(path);
   const candidate = {
-    format: "gik-samples-candidate/1", commit: git("rev-parse", "HEAD"), tree: git("rev-parse", "HEAD^{tree}"),
+    format: "gik-samples-candidate/2", commit: git("rev-parse", "HEAD"), tree: git("rev-parse", "HEAD^{tree}"),
     fingerprint: fingerprint(), name: pkg.name, version: pkg.version, sha256: sha256(bytes),
     integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    siteSha256: "a".repeat(64),
   };
   const save = (value) => writeFileSync(`${directory}/candidate.json`, JSON.stringify(value));
   save(candidate);

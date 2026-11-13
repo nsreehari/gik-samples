@@ -37,6 +37,7 @@ jobs:
           node --import tsx src/headless/senses-clock-demo.ts
           npm exec --yes --package=npm@11.19.0 -- npm exec -- node scripts/actions-evidence.mjs pack
           npm run test:pages
+          node scripts/actions-evidence.mjs verify-site
         env:
           CHROME_PATH: /usr/bin/google-chrome
       - name: Upload inspected package candidate
