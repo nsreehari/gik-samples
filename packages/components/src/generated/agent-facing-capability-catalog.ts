@@ -2607,6 +2607,54 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
                 "readOnly": {
                   "type": "boolean"
                 },
+                "title": {
+                  "type": "string"
+                },
+                "allowPristineSave": {
+                  "type": "boolean"
+                },
+                "saveVisibility": {
+                  "enum": [
+                    "dirty",
+                    "always",
+                    "never"
+                  ]
+                },
+                "discardVisibility": {
+                  "enum": [
+                    "dirty",
+                    "always",
+                    "never"
+                  ]
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "disabled": {
+                        "type": "boolean"
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                },
                 "layout": {
                   "type": "object",
                   "additionalProperties": false,
