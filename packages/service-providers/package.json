@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "croner": "^9.1.0",
-    "gik-controlface": ">=0.6.0",
+    "gik-controlface": ">=0.7.0",
     "gik-kernel": ">=0.4.1"
   },
   "scripts": {

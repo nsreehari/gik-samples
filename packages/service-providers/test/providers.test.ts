@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test, vi } from "vitest";
-import { ServiceKindRegistry, UnsatisfiedServiceDependencyError, type ServiceDependencyStatus, type ServiceKindContext, type ServiceRequest } from "gik-controlface/services";
-import type { NativeServiceDeclaration } from "gik-kernel";
+import { DefaultServiceHost, ServiceKindRegistry, UnsatisfiedServiceDependencyError, type ServiceDependencyStatus, type ServiceKindContext, type ServiceRequest } from "gik-controlface/services";
+import { InMemoryStateModel, JsonataExpressionProvider, type NativeServiceDeclaration } from "gik-kernel";
 import { createGmailServiceKind, gmailScopes, GmailSendUncertainError, type GmailConnection } from "../src/gmail";
 import { createSchedulerServiceKind } from "../src/scheduler";
 
@@ -120,6 +120,45 @@ test.each(["network", "server", "malformed"])("uncertain send completion is expl
   const adapter = await fixture.registry.materialize(identity, declaration(["send"]));
   await assert.rejects(async () => adapter.execute(request("send", { raw: "ZGF0YQ" }), {}), GmailSendUncertainError);
   assert.equal(send.mock.calls.length, 1);
+});
+
+test.each([undefined, "immediate"] as const)("public host rejects explicit send enqueue and cannot retry uncertain completion with mode %s", async (mode) => {
+  const send = vi.fn(async () => { throw new Error("Connection lost after POST"); });
+  const fixture = gmail({ request: async () => assert.fail("Reads must not send mail"), send });
+  const mail = declaration(["send"]);
+  const host = new DefaultServiceHost({
+    ...identity, registry: fixture.registry, maxAttempts: 3,
+    declarations: { mail: { ...mail, operations: {
+      deliver: { ...mail.operations.send, ...(mode ? { mode } : {}) },
+    } } },
+    state: new InMemoryStateModel(["work"]), expression: new JsonataExpressionProvider(),
+  });
+  const effect = { kind: "invoke" as const, node: "mail", control: { tool: "deliver", serviceRef: "mail" }, data: { raw: "ZGF0YQ" } };
+  await assert.rejects(() => host.enqueue(effect), /cannot be queued/);
+  assert.equal(fixture.resolve.mock.calls.length, 0);
+  assert.equal(fixture.endpoint.mock.calls.length, 0);
+  assert.equal(send.mock.calls.length, 0);
+  assert.deepEqual(await host.listRequests(), []);
+  assert.equal(await host.runNext(), undefined);
+  await assert.rejects(() => host.invoke(effect), /Gmail send completion is uncertain/);
+  const [record] = await host.listRequests();
+  assert.equal(record.status, "failed");
+  assert.equal(record.attempts, 1);
+  assert.equal(await host.runNext(), undefined);
+  assert.equal(send.mock.calls.length, 1);
+});
+
+test("public host still queues Gmail read operations", async () => {
+  const read = vi.fn(async () => json({ messages: [{ id: "message" }] }));
+  const fixture = gmail({ request: read });
+  const host = new DefaultServiceHost({
+    ...identity, registry: fixture.registry, declarations: { mail: declaration(["search"]) },
+    state: new InMemoryStateModel(["work"]), expression: new JsonataExpressionProvider(),
+  });
+  const effect = { kind: "invoke" as const, node: "mail", control: { tool: "search", serviceRef: "mail" }, data: {} };
+  assert.equal((await host.enqueue(effect)).status, "accepted");
+  assert.equal((await host.runNext())?.status, "completed");
+  assert.equal(read.mock.calls.length, 1);
 });
 
 test("send hands the host the complete invocation and returns the Gmail message identity", async () => {
