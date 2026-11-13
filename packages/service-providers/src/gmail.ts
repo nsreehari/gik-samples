@@ -89,6 +89,7 @@ export function createGmailServiceKind(): ServiceKindFactory {
       },
       subjects: ["cell", "substrate-agent", "chat", "task"],
       executionModes: ["immediate", "queued"], supports: { observe: true },
+      operationConstraints: { send: { queueable: false, retryable: false } },
     },
     describeDependencies: (declaration) => [
       requirement(declaration),

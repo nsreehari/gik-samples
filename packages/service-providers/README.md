@@ -117,7 +117,11 @@ The host must inspect recipients/content in the decoded raw message when decidin
 authority. Possessing Gmail OAuth send scope alone is not permission to send.
 
 Send declarations must be immediate and must not request transport/guardrail
-retries or correction attempts. The provider never retries POST. Network failure,
+retries or correction attempts. The provider requires ControlFace 0.7.0 or newer
+and declares `send` non-queueable and non-retryable. The host rejects explicit
+enqueue calls before credential acquisition, including when a Blueprint uses a
+different invocation alias, and suppresses automatic transport/guardrail retries.
+Read operations remain queueable. The provider never retries POST. Network failure,
 HTTP 408/5xx, or an unreadable success response produces
 `GmailSendUncertainError` (`gmail-send-uncertain`), not a safe-to-retry result.
 Investigate Sent mail and require fresh host authority before a new attempt;
