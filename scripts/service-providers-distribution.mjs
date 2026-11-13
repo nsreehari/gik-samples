@@ -58,7 +58,13 @@ console.log(kinds.length, connection);
     run(process.execPath, [join(temporary, "node_modules", "typescript", "bin", "tsc"), "--noEmit", "--strict", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "check.ts"], { cwd: temporary });
     run(process.execPath, ["--input-type=module", "-e", `
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+const isolation = registerHooks({ resolve(specifier, context, next) {
+  if (specifier === "croner" || specifier.endsWith("/scheduler.js")) throw new Error("Gmail eagerly loaded scheduler code");
+  return next(specifier, context);
+} });
 const gmail = await import("gik-service-providers/gmail");
+isolation.deregister();
 const scheduler = await import("gik-service-providers/scheduler");
 assert.equal(gmail.createGmailServiceKind().manifest.id, "gmail");
 assert.equal(scheduler.createSchedulerServiceKind().manifest.id, "cron-scheduler");

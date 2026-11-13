@@ -298,6 +298,15 @@ function provenance(commit, repository = "nsreehari/generative-interaction-kerne
     } },
   })).toString("base64") } } }] };
 }
+test("providers provenance needs its explicit publishing workflow without weakening existing verification", () => {
+  const commit = "a".repeat(40), repository = "nsreehari/gik-samples";
+  const workflow = ".github/workflows/release-service-providers.yml";
+  const attestation = provenance(commit, repository, workflow);
+  assert.throws(() => assertProvenance(attestation, repository, commit), /expected repository/);
+  assert.doesNotThrow(() => assertProvenance(attestation, repository, commit, workflow));
+  assert.throws(() => assertProvenance(provenance(commit, repository), repository, commit, workflow), /expected repository/);
+  assert.throws(() => assertProvenance(attestation, repository, commit, ".github/workflows/untrusted.yml"), /Unsupported/);
+});
 test("verified unchanged GIK package provenance may come from an older ancestor, with cached source comparisons", () => {
   const old = "a".repeat(40), release = "b".repeat(40), comparisons = new Map();
   let calls = 0;

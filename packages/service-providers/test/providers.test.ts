@@ -238,7 +238,7 @@ test("cron does not overlap an outstanding delivery and close waits for it", asy
   await vi.advanceTimersByTimeAsync(180000);
   assert.equal(emit.mock.calls.length, 1);
   let closed = false;
-  const closing = handle.close("cancel").then(() => { closed = true; });
+  const closing = Promise.resolve(handle.close("cancel")).then(() => { closed = true; });
   await Promise.resolve();
   assert.equal(closed, false);
   assert.ok(complete);
