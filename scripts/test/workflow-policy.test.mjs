@@ -51,7 +51,14 @@ test("published files and dependency changes release; tests, unrelated apps and 
 });
 
 test("providers have a guarded first version, independent future bumps and no aggregate exports", () => {
-  const manifest = { name: "gik-service-providers", version: "0.1.0", exports: { "./gmail": "./dist/gmail.js", "./scheduler": "./dist/scheduler.js" } };
+  const manifest = {
+    name: "gik-service-providers",
+    version: "0.1.0",
+    exports: {
+      "./gmail": "./dist/gmail.js",
+      "./scheduler": "./dist/scheduler.js",
+    },
+  };
   const expanded = {
     ...manifest,
     exports: {
