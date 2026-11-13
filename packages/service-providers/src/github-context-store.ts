@@ -118,6 +118,11 @@ function serialize(value: unknown): string {
   return `${JSON.stringify(canonical(value))}\n`;
 }
 
+function jsonValue(value: unknown, label: string): Json {
+  if (!isJson(value)) throw new Error(`${label} must be JSON data`);
+  return value;
+}
+
 function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -720,7 +725,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
           if (request.operation === "query") {
             const result = await query(queryInput(request.input), adapterContext.signal);
             return {
-              output: result.output,
+              output: jsonValue(result.output, "GitHub context query output"),
               detail: {
                 repository: configured.repository,
                 ref: configured.ref,
@@ -731,7 +736,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
           if (request.operation === "ingest") {
             const result = await ingest(ingestInput(request.input), adapterContext.signal);
             return {
-              output: result.output,
+              output: jsonValue(result.output, "GitHub context ingestion output"),
               detail: {
                 repository: configured.repository,
                 ref: configured.ref,
