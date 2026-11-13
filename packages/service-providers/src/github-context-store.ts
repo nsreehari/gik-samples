@@ -196,8 +196,8 @@ function credentialRequirement(declaration: NativeServiceDeclaration): ServiceDe
 function validatedRecord(value: unknown): ContextRecord {
   if (!isJson(value)) throw new Error("GitHub context record must be JSON data");
   const record = object(value, "GitHub context record");
-  text(record.id, "record id");
-  text(record.kind, "record kind");
+  const id = text(record.id, "record id");
+  const kind = text(record.kind, "record kind");
   const observedAt = text(record.observedAt, "record observedAt");
   if (Number.isNaN(Date.parse(observedAt))) {
     throw new Error("GitHub context record observedAt must be an ISO timestamp");
@@ -205,18 +205,31 @@ function validatedRecord(value: unknown): ContextRecord {
   if (record.references !== undefined && !Array.isArray(record.references)) {
     throw new Error("GitHub context record references must be an array");
   }
-  return record as ContextRecord;
+  const result: ContextRecord = { id, kind, observedAt };
+  for (const [key, entry] of Object.entries(record)) {
+    if (!isJson(entry)) throw new Error(`GitHub context record field '${key}' is not JSON data`);
+    result[key] = entry;
+  }
+  return result;
+}
+
+function jsonObject(value: unknown, label: string): Record<string, Json> {
+  const source = object(value, label);
+  const result: Record<string, Json> = {};
+  for (const [key, entry] of Object.entries(source)) {
+    if (!isJson(entry)) throw new Error(`${label} field '${key}' is not JSON data`);
+    result[key] = entry;
+  }
+  return result;
 }
 
 function queryInput(value: unknown): ContextStoreQueryInput {
   const input = object(value, "GitHub context query");
   keys(input, ["scope", "requestKey", "query", "limit"]);
-  const query = object(input.query, "query");
-  if (!isJson(query)) throw new Error("GitHub context query must be JSON data");
   return {
     scope: text(input.scope, "scope"),
     requestKey: text(input.requestKey, "requestKey"),
-    query: query as Record<string, Json>,
+    query: jsonObject(input.query, "query"),
     limit: integer(input.limit, "limit", 1, CONTEXT_STORE_MAX_QUERY_LIMIT),
   };
 }
@@ -259,6 +272,57 @@ function scopePaths(configured: GitHubContextStoreConfig, scope: string) {
 function jsonResponse(value: unknown, label: string): Record<string, unknown> {
   if (!isJson(value)) throw new Error(`${label} is not JSON data`);
   return object(value, label);
+}
+
+function apiObject(value: unknown, label: string): GitHubApiObject {
+  const response = jsonResponse(value, label);
+  return { sha: text(response.sha, `${label} SHA`) };
+}
+
+function refResponse(value: unknown): GitHubRefResponse {
+  const response = jsonResponse(value, "GitHub ref response");
+  const target = object(response.object, "GitHub ref object");
+  return { object: { sha: text(target.sha, "GitHub ref object SHA") } };
+}
+
+function commitResponse(value: unknown): GitHubCommitResponse {
+  const response = jsonResponse(value, "GitHub commit response");
+  const tree = object(response.tree, "GitHub commit tree");
+  return {
+    sha: text(response.sha, "GitHub commit SHA"),
+    tree: { sha: text(tree.sha, "GitHub commit tree SHA") },
+  };
+}
+
+function contentResponse(value: unknown): GitHubContentResponse {
+  const response = jsonResponse(value, "GitHub content response");
+  if (response.type !== "file" || response.encoding !== "base64") {
+    throw new Error("GitHub content response is not a base64 file");
+  }
+  return {
+    type: "file",
+    encoding: "base64",
+    content: text(response.content, "GitHub content"),
+  };
+}
+
+function scopeIndex(value: unknown, scope: string): ScopeIndex {
+  const source = jsonResponse(value, "GitHub context scope index");
+  if (source.format !== "gik-github-context-recent/1"
+    || source.scope !== scope || !Array.isArray(source.records)) {
+    throw new Error("GitHub context scope index is corrupt or belongs to another scope");
+  }
+  return {
+    format: "gik-github-context-recent/1",
+    scope,
+    records: source.records.map((entry) => {
+      const record = object(entry, "GitHub context scope index record");
+      return {
+        id: text(record.id, "indexed record id"),
+        observedAt: text(record.observedAt, "indexed record observedAt"),
+      };
+    }),
+  };
 }
 
 export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
@@ -398,19 +462,18 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
       }
 
       async function head(signal?: AbortSignal): Promise<GitHubCommitResponse> {
-        const reference = jsonResponse(
+        const reference = refResponse(
           (await call(`git/ref/${apiPath(ref.split("/"))}`, "GET", undefined, signal)).value,
-          "GitHub ref response",
-        ) as unknown as GitHubRefResponse;
-        const sha = text(reference.object?.sha, "GitHub ref object SHA");
-        const commit = jsonResponse(
-          (await call(`git/commits/${encodeURIComponent(sha)}`, "GET", undefined, signal)).value,
-          "GitHub commit response",
-        ) as unknown as GitHubCommitResponse;
-        return {
-          sha: text(commit.sha, "GitHub commit SHA"),
-          tree: { sha: text(commit.tree?.sha, "GitHub commit tree SHA") },
-        };
+        );
+        const commit = commitResponse(
+          (await call(
+            `git/commits/${encodeURIComponent(reference.object.sha)}`,
+            "GET",
+            undefined,
+            signal,
+          )).value,
+        );
+        return commit;
       }
 
       async function readPath(
@@ -421,12 +484,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
         const url = `contents/${apiPath(path.split("/"))}?ref=${encodeURIComponent(revision)}`;
         const result = await call(url, "GET", undefined, signal, [404]);
         if (result.response.status === 404) return undefined;
-        const content = jsonResponse(result.value, "GitHub content response")
-          as unknown as GitHubContentResponse;
-        if (content.type !== "file" || content.encoding !== "base64"
-          || typeof content.content !== "string") {
-          throw new Error(`GitHub context path '${path}' is not a base64 file`);
-        }
+        const content = contentResponse(result.value);
         try {
           const value: unknown = JSON.parse(
             Buffer.from(content.content.replace(/\s+/g, ""), "base64").toString("utf8"),
@@ -439,11 +497,11 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
       }
 
       async function createBlob(content: string, signal?: AbortSignal): Promise<string> {
-        const response = jsonResponse(
+        const response = apiObject(
           (await call("git/blobs", "POST", { content, encoding: "utf-8" }, signal)).value,
           "GitHub blob response",
-        ) as unknown as GitHubApiObject;
-        return text(response.sha, "GitHub blob SHA");
+        );
+        return response.sha;
       }
 
       async function commit(
@@ -458,22 +516,22 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
           type: recordType,
           sha: await createBlob(content, signal),
         })));
-        const tree = jsonResponse(
+        const tree = apiObject(
           (await call("git/trees", "POST", {
             base_tree: base.tree.sha,
             tree: treeEntries,
           }, signal)).value,
           "GitHub tree response",
-        ) as unknown as GitHubApiObject;
-        const created = jsonResponse(
+        );
+        const created = apiObject(
           (await call("git/commits", "POST", {
             message,
-            tree: text(tree.sha, "GitHub tree SHA"),
+            tree: tree.sha,
             parents: [base.sha],
           }, signal)).value,
           "GitHub commit response",
-        ) as unknown as GitHubApiObject;
-        const revision = text(created.sha, "GitHub commit SHA");
+        );
+        const revision = created.sha;
         const update = await call(
           `git/refs/${apiPath(ref.split("/"))}`,
           "PATCH",
@@ -497,11 +555,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
             revision: current.sha,
           };
         }
-        const index = object(storedIndex, "GitHub context scope index") as unknown as ScopeIndex;
-        if (index.format !== "gik-github-context-recent/1"
-          || index.scope !== input.scope || !Array.isArray(index.records)) {
-          throw new Error("GitHub context scope index is corrupt or belongs to another scope");
-        }
+        const index = scopeIndex(storedIndex, input.scope);
         const records = await Promise.all(index.records.slice(0, input.limit).map(async (entry) => {
           const id = text(entry?.id, "indexed record id");
           const value = await readPath(paths.record(id), current.sha, signal);
@@ -546,12 +600,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
             records: [],
           };
           if (storedIndex !== undefined) {
-            const value = object(storedIndex, "GitHub context scope index") as unknown as ScopeIndex;
-            if (value.format !== index.format || value.scope !== input.scope
-              || !Array.isArray(value.records)) {
-              throw new Error("GitHub context scope index is corrupt or belongs to another scope");
-            }
-            index = value;
+            index = scopeIndex(storedIndex, input.scope);
           }
 
           const changes: Array<{ path: string; content: string }> = [];
@@ -650,7 +699,7 @@ export function createGitHubContextStoreServiceKind(): ServiceKindFactory {
             outputSchema: operation === "query"
               ? contextStoreQueryOutputSchema
               : contextStoreIngestOutputSchema,
-            assurance: "declared-and-provider-validated",
+            assurance: "declared-and-locally-validated",
           })),
         }),
         async probe(adapterContext) {
