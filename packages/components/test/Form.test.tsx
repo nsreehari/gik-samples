@@ -278,7 +278,7 @@ test("a tracked save that fails keeps the draft editable and shows the host's er
 });
 
 test("always-visible Save requires pristine permission and remains usable alongside asynchronous success feedback", async () => {
-  const saved: Json[] = [];
+  const saved: (Record<string, unknown> | null)[] = [];
   const emit: React.ComponentProps<typeof Form>["emit"] = (_name, payload) => { saved.push(payload ?? null); };
   const baseProps = {
     fields: { properties: { note: { type: "string" } } }, value: { note: "" },
@@ -311,7 +311,7 @@ test("always-visible Save requires pristine permission and remains usable alongs
 });
 
 test("named actions do not commit a draft and respect disabled, saving and read-only state", async () => {
-  const events: { name: string; payload?: Json }[] = [];
+  const events: { name: string; payload?: Record<string, unknown> }[] = [];
   const emit: React.ComponentProps<typeof Form>["emit"] = (name, payload) => { events.push({ name, payload }); };
   const baseProps = {
     title: "Review inputs",
