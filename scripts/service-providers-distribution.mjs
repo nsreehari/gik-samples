@@ -52,10 +52,12 @@ async function consumer(packageSpec, signatureAudit = false) {
     writeFileSync(join(temporary, "check.ts"), `
 import { createGmailServiceKind, type GmailConnection } from "gik-service-providers/gmail";
 import { createSchedulerServiceKind } from "gik-service-providers/scheduler";
+import { createGitHubContextStoreServiceKind, type GitHubContextStoreConnection } from "gik-service-providers/github-context-store";
 import type { ServiceKindFactory } from "gik-controlface/services";
-const kinds: ServiceKindFactory[] = [createGmailServiceKind(), createSchedulerServiceKind()];
+const kinds: ServiceKindFactory[] = [createGmailServiceKind(), createSchedulerServiceKind(), createGitHubContextStoreServiceKind()];
 const connection: GmailConnection = { request: async () => new Response("{}") };
-console.log(kinds.length, connection);
+const github: GitHubContextStoreConnection = { request: async () => new Response("{}") };
+console.log(kinds.length, connection, github);
 `);
     run(process.execPath, [join(temporary, "node_modules", "typescript", "bin", "tsc"), "--noEmit", "--strict", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "check.ts"], { cwd: temporary });
     run(process.execPath, ["--input-type=module", "-e", `
@@ -68,8 +70,10 @@ const isolation = registerHooks({ resolve(specifier, context, next) {
 const gmail = await import("gik-service-providers/gmail");
 isolation.deregister();
 const scheduler = await import("gik-service-providers/scheduler");
+const github = await import("gik-service-providers/github-context-store");
 assert.equal(gmail.createGmailServiceKind().manifest.id, "gmail");
 assert.equal(scheduler.createSchedulerServiceKind().manifest.id, "cron-scheduler");
+assert.equal(github.createGitHubContextStoreServiceKind().manifest.id, "github-context-store");
 await assert.rejects(import("gik-service-providers"), { code: "ERR_PACKAGE_PATH_NOT_EXPORTED" });
 `], { cwd: temporary });
   } finally { rmSync(temporary, { recursive: true, force: true }); }
