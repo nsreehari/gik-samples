@@ -6,6 +6,7 @@ import { DefaultServiceHost, ServiceKindRegistry, type ServiceRequest } from "gi
 import { InMemoryStateModel, JsonataExpressionProvider, SyncJsonataExpressionProvider, type Json, type OrchestratorEffect } from "gik-kernel";
 import { materializeSampleBlueprint } from "../bootstrap/catalog/blueprint-catalog";
 import { createSourceSettlementEvent, openHeadlessDurableBlueprint } from "../headless/blueprint-harness";
+import { createFoundryAgentKind } from "../service-kinds/foundry-agent";
 
 const source = JSON.parse(readFileSync(
   new URL("../bootstrap/blueprints/portfolio-tracker-new/blueprint.json", import.meta.url), "utf8",
@@ -33,7 +34,7 @@ function sourceEffect(effects: readonly OrchestratorEffect[], id: string) {
   return effect;
 }
 
-async function fixture(ai = "foundry") {
+async function fixture(ai = "foundry", serviceRegistry?: ServiceKindRegistry) {
   const context = { "intelligence-model": "mock", "market-prices": "mock", ai, view: "desktop" };
   const session = openHeadlessDurableBlueprint("portfolio-tracker-new", context);
   const initial = await session.transition([createBlueprintDurableBootstrapEvent()]);
@@ -48,8 +49,8 @@ async function fixture(ai = "foundry") {
   const calls: ServiceRequest[] = [];
   let response: Json = updated;
   let transportError: Error | undefined;
-  const registry = new ServiceKindRegistry();
-  registry.register({
+  const registry = serviceRegistry ?? new ServiceKindRegistry();
+  if (!serviceRegistry) registry.register({
     manifest: {
       id: declaration.kind, version: "1", configSchema: { type: "object" },
       subjects: ["cell"], executionModes: ["immediate"],
@@ -92,6 +93,39 @@ async function fixture(ai = "foundry") {
     fail: (error: Error) => { transportError = error; }, kind: declaration.kind,
   };
 }
+
+test("Foundry intake executes the declared agent through the real adapter and correlated settlement", async () => {
+  const requests: Record<string, Json>[] = [];
+  const registry = new ServiceKindRegistry({
+    hostCapabilities: ["foundry-executor", "credential-resolver"],
+    resolveCredential: async (reference) => {
+      assert.equal(reference, "foundry-agent/access-key");
+      return "test-credential";
+    },
+    authorizeEndpoint: (kind, endpoint) =>
+      kind === "foundry-agent" && endpoint.origin === "https://sz-foundry-proxy.azurewebsites.net",
+  });
+  registry.register(createFoundryAgentKind(async (url, init) => {
+    assert.equal(String(url), "https://sz-foundry-proxy.azurewebsites.net/api/agent/chat");
+    assert.equal(init?.method, "POST");
+    requests.push(JSON.parse(String(init?.body)) as Record<string, Json>);
+    return new Response(JSON.stringify({
+      conversationId: "intake-conversation", responseId: "intake-response",
+      reply: JSON.stringify(updated), toolCalls: [],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  }));
+  const f = await fixture("foundry", registry);
+  const effect = await f.submit();
+  await f.session.transition([await f.invoke(effect)]);
+  const portfolio = f.session.snapshot().portfolio as Portfolio;
+  assert.equal(portfolio.intake.error, "");
+  assert.deepEqual(portfolio.holdings.AAPL, updated.changes[0]);
+  assert.equal(portfolio.intake.saving, false);
+  assert.equal(portfolio.intake.file, null);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].agentName, "Portfolio-Intelligence-Agent");
+  assert.deepEqual(requests[0].allowedTools, []);
+});
 
 test.each(["foundry", "copilot"])("portfolio DPP processes a file/note, preserves other holdings, clears inputs and records context: %s", async (ai) => {
   const f = await fixture(ai);

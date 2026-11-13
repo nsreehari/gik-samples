@@ -353,7 +353,7 @@ Form accepts an optional `title` and independent `saveVisibility` / `discardVisi
 (`"dirty"` by default, `"always"`, or `"never"`). An always-visible Save remains disabled for an
 unchanged draft unless `allowPristineSave: true`; use both options for repeatable submissions that
 also include inputs outside the form. Saved confirmation remains visible alongside configured
-actions. Discard requires a dirty draft.
+actions until the next accepted submission or edit. Discard requires a dirty draft.
 
 Optional `actions` contain unique `id` and `label` values, plus optional `disabled` and object
 `payload`. These buttons emit `action-requested` with `{ actionId, payload? }` without saving or

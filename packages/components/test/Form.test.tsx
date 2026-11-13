@@ -307,6 +307,14 @@ test("always-visible Save requires pristine permission and remains usable alongs
   assert.equal(renderer.root.findByProps({ children: "Save" }).props.disabled, false);
   await act(async () => renderer.root.findByType("form").props.onSubmit({ preventDefault() {} }));
   assert.deepEqual(saved, [{ values: { note: "" } }, { values: { note: "" } }]);
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  await update({ ...repeatable, saving: true });
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  assert.equal(renderer.root.findByProps({ children: "Saving…" }).props.disabled, true);
+  await update({ ...repeatable, saveError: "Server unavailable" });
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  assert.ok(renderer.root.findByProps({ children: "Server unavailable" }));
+  assert.equal(renderer.root.findByProps({ children: "Save" }).props.disabled, false);
   await act(async () => renderer.unmount());
 });
 

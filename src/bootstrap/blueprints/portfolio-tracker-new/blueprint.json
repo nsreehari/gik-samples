@@ -3511,6 +3511,7 @@
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "credentialRef": "foundry-agent/access-key",
           "responseMode": "json",
+          "agent": "Portfolio-Intelligence-Agent",
           "agentTools": [],
           "maxOutputTokens": 3000
         },

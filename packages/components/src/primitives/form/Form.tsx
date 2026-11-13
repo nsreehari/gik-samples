@@ -268,6 +268,7 @@ export const Form: ProjectionView = ({ node, emit }) => {
     );
     setValidationErrors(report.errors.map((issue) => issue.detail));
     if (!report.ok) return;
+    setJustSaved(false);
     void emit("save", { values });
     if (!savingTracked) {
       setDirty(false);

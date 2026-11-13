@@ -6,6 +6,8 @@ alone works too. Select the AI provider in the sample launch settings, then use
 **Update portfolio** in the holdings area.
 Intake requires a configured AI connection even when intelligence reports use
 the mock model. Notes are limited to 4,000 characters.
+Foundry intake explicitly selects `Portfolio-Intelligence-Agent`, matching the
+existing report service configuration.
 
 For example, upload:
 
