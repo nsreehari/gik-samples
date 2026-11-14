@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { resolve } from "node:path";
 import test from "node:test";
 import {
-  componentsPackage, eligibleValidationRun, fingerprint, git, hasHeadApproval, inspectTarball, policyIdentity, reuse, sha256, verifyCandidate,
+  componentsPackage, eligibleValidationRun, fingerprint, git, inspectTarball, policyIdentity, reuse, sha256, verifyCandidate,
 } from "../actions-evidence.mjs";
 import { assertLanes } from "../validate-lanes.mjs";
 import {
@@ -49,7 +49,7 @@ test("required aggregate rejects failed, cancelled and inappropriately skipped s
     studio: { result: "skipped" }, finbook: { result: "skipped" },
   }));
 });
-test("release promotion is off by default, rejects unreviewed policy and does not reuse release-intent metadata", async (t) => {
+test("retired release promotion is rejected and release-intent metadata is not reused", async (t) => {
   const directory = fixture(t);
   const keys = ["GITHUB_EVENT_PATH", "REUSE_ENABLED", "REVIEWED_POLICY"];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -58,10 +58,10 @@ test("release promotion is off by default, rejects unreviewed policy and does no
     writeFileSync(process.env.GITHUB_EVENT_PATH, "{}");
     process.env.REUSE_ENABLED = "false";
     process.env.REVIEWED_POLICY = policyIdentity();
-    assert.equal(await reuse("release"), false);
+    await assert.rejects(reuse("release"), /promotion was retired/);
     process.env.REUSE_ENABLED = "true";
     process.env.REVIEWED_POLICY = "not-the-reviewed-policy";
-    assert.equal(await reuse("release"), false);
+    await assert.rejects(reuse("release"), /promotion was retired/);
     writeFileSync(process.env.GITHUB_EVENT_PATH, JSON.stringify({ action: "labeled", label: { name: "release:minor" } }));
     assert.equal(await reuse("metadata"), false);
   } finally {
@@ -85,19 +85,6 @@ test("PR evidence requires the same internal successful workflow run and associa
     { pull_requests: [{ number: 43 }] },
   ]) assert.equal(eligibleValidationRun({ ...run, ...patch }, pr, repository, "456"), false);
   assert.equal(eligibleValidationRun(run, pr, repository, "123"), false);
-});
-test("release promotion needs a current trusted human approval, not a stale, dismissed or bot review", () => {
-  const head = "b".repeat(40);
-  const approved = { user: { id: 1, type: "User" }, author_association: "OWNER", state: "APPROVED", commit_id: head };
-  assert.equal(hasHeadApproval([approved], head), true);
-  assert.equal(hasHeadApproval([{ ...approved, commit_id: "c".repeat(40) }], head), false);
-  assert.equal(hasHeadApproval([{ ...approved, user: { id: 1, type: "Bot" } }], head), false);
-  assert.equal(hasHeadApproval([{ ...approved, author_association: "NONE" }], head), false);
-  for (const state of ["DISMISSED", "CHANGES_REQUESTED"]) {
-    assert.equal(hasHeadApproval([approved, { ...approved, state }], head), false);
-  }
-  assert.equal(hasHeadApproval([approved, { ...approved, user: { id: 2, type: "User" }, state: "CHANGES_REQUESTED" }], head), false);
-  assert.equal(hasHeadApproval(Array(100).fill(approved), head), false);
 });
 test("upstream manifest rejects shell data, mutable versions, duplicate packages and non-registry archives", () => {
   assert.doesNotThrow(() => validateManifest(manifest));

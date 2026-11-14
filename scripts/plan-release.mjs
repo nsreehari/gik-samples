@@ -1,7 +1,7 @@
-import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { readFileSync, appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { git, verifyCandidate } from "./actions-evidence.mjs";
+import { git } from "./actions-evidence.mjs";
 import { validateCoreVersions } from "./collect-pages-packages.mjs";
 
 function librariesAt(commit, runGit) {
@@ -68,19 +68,13 @@ export function planRelease({ event, kind, releaseRef, sha }, runGit = git) {
   return { commit, version: pkg.version, providers_version: libraries["gik-service-providers"].version, channel, pages, publish };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  if (process.argv[2] === "promote") {
-    const candidate = verifyCandidate(".artifacts/candidate", { allowSameTree: true });
-    candidate.promotedFromCommit = candidate.commit;
-    candidate.commit = git("rev-parse", "HEAD");
-    writeFileSync(".artifacts/candidate/candidate.json", JSON.stringify(candidate, null, 2) + "\n");
-  } else {
-    const result = planRelease({
-      event: JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8")),
-      kind: process.env.GITHUB_EVENT_NAME, releaseRef: process.env.RELEASE_REF, sha: process.env.GITHUB_SHA,
-    });
-    result.core_versions = JSON.stringify(releaseInputsAt(result.commit));
-    for (const [name, value] of Object.entries(result)) {
-      appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
-    }
+  if (process.argv[2]) throw new Error("Unsupported Pages planner command; package release promotion was retired");
+  const result = planRelease({
+    event: JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8")),
+    kind: process.env.GITHUB_EVENT_NAME, releaseRef: process.env.RELEASE_REF, sha: process.env.GITHUB_SHA,
+  });
+  result.core_versions = JSON.stringify(releaseInputsAt(result.commit));
+  for (const [name, value] of Object.entries(result)) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
   }
 }

@@ -50,7 +50,7 @@ function candidateFixture(t) {
   writeFileSync(`${directory}/candidate.json`, JSON.stringify(candidate));
   return { directory, site, candidate };
 }
-function reuseFixture(t, release = false) {
+function reuseFixture(t) {
   const root = fixture(t), repository = "nsreehari/gik-samples";
   const pr = { number: 42, head: { sha: "b".repeat(40), repo: { full_name: repository } },
     merged_at: "2026-11-13T00:00:00Z", merge_commit_sha: git("rev-parse", "HEAD") };
@@ -61,15 +61,14 @@ function reuseFixture(t, release = false) {
     GITHUB_STEP_SUMMARY: `${root}/summary`, VALIDATION_SCOPE: JSON.stringify(scope),
     REUSE_ENABLED: "true", REVIEWED_POLICY: policyIdentity(),
   });
-  const built = release ? candidateFixture(t) : undefined;
   const state = {
-    artifacts: (release ? ["release-candidate", "site-build"] : ["validation-evidence"])
+    artifacts: ["validation-evidence"]
       .map((name, i) => ({ id: i + 1, name, expired: false })),
     evidence: { format: "gik-samples-validation/1", fingerprint: fingerprint(), scope: selectedScope(scope), validated: true },
     logs: [], downloads: 0,
   };
   const services = {
-    reuseRoot: `${root}/cache`, candidateDirectory: `${root}/promoted`, siteDirectory: `${root}/promoted-site`,
+    reuseRoot: `${root}/cache`,
     log: (message) => state.logs.push(message),
     readApi(resource) {
       if (state.apiError) throw state.apiError;
@@ -95,17 +94,12 @@ function reuseFixture(t, release = false) {
       mkdirSync(directory, { recursive: true });
       if (name === "validation-evidence") {
         writeFileSync(`${directory}/validation.json`, state.rawEvidence || JSON.stringify(state.evidence));
-      } else if (name === "release-candidate") {
-        for (const file of ["candidate.json", "gik-components.tgz"]) {
-          writeFileSync(`${directory}/${file}`, readFileSync(`${built.directory}/${file}`));
-        }
       } else {
-        cpSync(built.site, directory, { recursive: true });
-        if (state.corruptSite) writeFileSync(`${directory}/assets/main.js`, "corrupted");
+        throw new Error(`Unexpected mocked artifact: ${name}`);
       }
     },
   };
-  return { root, state, services, built };
+  return { root, state, services };
 }
 
 test("site proof is deterministic, includes hidden/nested files and rejects added, removed or altered bytes", (t) => {
@@ -160,21 +154,15 @@ test("API, download, missing advertised files and malformed/matching-incomplete 
   state.evidence.validated = false;
   await assert.rejects(reuse("metadata", services), /incomplete/);
 });
-test("matching candidate corruption is fatal and promotion verifies both staged and restored site bytes", async (t) => {
-  const { state, services, built } = reuseFixture(t, true);
+test("candidate corruption remains fatal after retiring package release promotion", (t) => {
+  const built = candidateFixture(t);
   const path = `${built.directory}/gik-components.tgz`, original = readFileSync(path);
   writeFileSync(path, Buffer.concat([original, Buffer.from("corrupt")]));
-  await assert.rejects(reuse("release", services), /tarball hash mismatch/);
-  assert.equal(existsSync(services.siteDirectory), false);
+  assert.throws(() => verifyCandidate(built.directory), /tarball hash mismatch/);
   writeFileSync(path, original);
-  state.corruptSite = true;
-  await assert.rejects(reuse("release", services), /Site artifact digest mismatch/);
-  assert.equal(existsSync(services.siteDirectory), false);
-  state.corruptSite = false;
-  // A new run would download into a fresh staging directory, just as Actions does.
-  rmSync(`${services.reuseRoot}/reuse-123`, { recursive: true, force: true });
-  assert.equal(await reuse("release", services), true);
-  assert.equal(siteDigest(services.siteDirectory), built.candidate.siteSha256);
+  assert.doesNotThrow(() => verifyCandidate(built.directory, { siteDirectory: built.site }));
+  writeFileSync(`${built.site}/assets/main.js`, "corrupted");
+  assert.throws(() => verifyCandidate(built.directory, { siteDirectory: built.site }), /Site artifact digest mismatch/);
 });
 test("lock read errors preserve their cause and malformed JSON is not called a missing lock", (t) => {
   const root = fixture(t);
