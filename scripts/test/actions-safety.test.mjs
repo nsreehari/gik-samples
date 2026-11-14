@@ -5,7 +5,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { resolve } from "node:path";
 import test from "node:test";
 import {
-  fingerprint, git, policyIdentity, reuse, selectedScope, sha256, siteDigest, verifyCandidate, verifySite,
+  componentsPackage, fingerprint, git, policyIdentity, reuse, selectedScope, sha256, siteDigest, verifyCandidate, verifySite,
 } from "../actions-evidence.mjs";
 import { checkLocks } from "../check-locks.mjs";
 import { previewErrorStatus } from "../static-preview.mjs";
@@ -35,7 +35,7 @@ function candidateFixture(t) {
   writeFileSync(`${site}/index.html`, "<html>verified</html>");
   writeFileSync(`${site}/assets/main.js`, "export {};");
   writeFileSync(`${site}/.nojekyll`, "");
-  const pkg = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
+  const pkg = { ...componentsPackage(), exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts" } } };
   writeFileSync(`${directory}/package/package.json`, JSON.stringify(pkg));
   for (const target of Object.values(pkg.exports).flatMap(Object.values)) {
     writeFileSync(`${directory}/package/${target.slice(2)}`, "export {};");
@@ -339,12 +339,14 @@ test("unrelated provenance commits, repository/workflow mismatch and source API 
     provenance(old, "attacker/repo"), provenance(old, undefined, ".github/workflows/untrusted.yml"), provenance("main"),
   ]) assert.throws(() => assertReleasedProvenance(attestation, release), /expected repository/);
 });
-test("release fallback keeps the full build; site binding is checked before artifact upload and metadata cannot cancel source CI", () => {
+test("Pages binds the source-built site before collecting archives; metadata cannot cancel mandatory source CI", () => {
   const release = readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8").replace(/\r\n/g, "\n");
-  const fallback = release.slice(release.indexOf("- name: Validate and pack once"), release.indexOf("- name: Re-attest promoted"));
-  assert.match(fallback, /\n +npm run build\n/);
-  assert.doesNotMatch(fallback, /npm run build -- --site-only/);
-  assert.ok(release.indexOf("run: node scripts/actions-evidence.mjs hashes") < release.indexOf("name: site-build"));
+  assert.match(release, /npm run build -- --site-only/);
+  assert.match(release, /EXPECTED_SITE_SHA256: \$\{\{ needs\.site\.outputs\.sha256 \}\}/);
+  assert.match(release, /siteDigest\("src\/browser-host\/dist"\)/);
+  assert.match(release, /verifySite\("src\/browser-host\/dist", process\.env\.EXPECTED_SITE_SHA256\)/);
+  assert.ok(release.indexOf('siteDigest("src/browser-host/dist")') < release.indexOf("name: site-build"));
+  assert.ok(release.indexOf('verifySite("src/browser-host/dist"') < release.indexOf("run: node scripts/collect-pages-packages.mjs"));
   const lanes = readFileSync(new URL("../../.github/workflows/validation-lane.yml", import.meta.url), "utf8");
   assert.ok(lanes.indexOf("node scripts/actions-evidence.mjs verify-site") < lanes.indexOf("- name: Upload site"));
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");

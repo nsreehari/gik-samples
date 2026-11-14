@@ -17,9 +17,6 @@ function run(command, args) {
   });
 }
 
-await Promise.all(["gik-components", "gik-service-providers"].map((workspace) =>
-  run(process.execPath, [npmCli, "run", "build", "--workspace", workspace])));
-
 await Promise.all([
   run(process.execPath, [npmCli, "exec", "--", "tsx", "scripts/validate-bootstrap.ts"]),
   ...(siteOnly ? [] : [run(process.execPath, [npmCli, "run", "finbook:build"])]),

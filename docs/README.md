@@ -14,10 +14,10 @@ Documentation is static and can be opened without starting Studio's runtime.
 | --- | --- |
 | Choose and run a sample; understand host prerequisites | [Sample guide](samples.md) |
 | Install or extract the reference app | [Finbook README](../apps/finbook/README.md) |
-| Use a component, provider, or authoring tool | [Components README](../packages/components/README.md) and [Storybook](https://nsreehari.github.io/gik-samples/storybook/) |
+| Use a component, provider, or authoring tool | [Components](https://github.com/nsreehari/gik-components), [Service Providers](https://github.com/nsreehari/gik-service-providers) and [Storybook](https://nsreehari.github.io/gik-samples/storybook/) |
 | Install local tools, pair Studio, or apply a reviewed plan | [MCP companion README](../packages/mcp-server/README.md) |
 | Install, build, and validate the repository | [Validation](../VALIDATION.md) |
-| Publish Components or refresh Pages downloads | [Releasing](../RELEASING.md) |
+| Find library release ownership or refresh Pages downloads | [Releasing](../RELEASING.md) |
 | Contribute, request support, or report a vulnerability | [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security](../SECURITY.md) |
 | Understand a sample design decision | [Architecture decisions](decisions/README.md) |
 | Choose public core packages and understand runtime contracts | [Core documentation](https://github.com/nsreehari/generative-interaction-kernel/blob/master/docs/README.md) |

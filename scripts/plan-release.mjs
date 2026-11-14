@@ -4,13 +4,27 @@ import { isDeepStrictEqual } from "node:util";
 import { git, verifyCandidate } from "./actions-evidence.mjs";
 import { validateCoreVersions } from "./collect-pages-packages.mjs";
 
+function librariesAt(commit, runGit) {
+  const root = JSON.parse(runGit("show", `${commit}:package.json`));
+  const libraries = {};
+  for (const [name, directory] of [["gik-components", "packages/components"], ["gik-service-providers", "packages/service-providers"]]) {
+    const dependency = root.dependencies?.[name];
+    const legacy = dependency === `file:${directory}`;
+    const version = legacy ? JSON.parse(runGit("show", `${commit}:${directory}/package.json`)).version : dependency;
+    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) throw new Error(`Exact source version required for ${name}`);
+    libraries[name] = { version, lockPath: legacy ? directory : `node_modules/${name}`, legacy };
+  }
+  return { root, libraries };
+}
+
 export function releaseInputsAt(commit, runGit = git) {
   try {
-    const root = JSON.parse(runGit("show", `${commit}:package.json`));
-    const components = JSON.parse(runGit("show", `${commit}:packages/components/package.json`));
+    const { root, libraries } = librariesAt(commit, runGit);
     const lock = JSON.parse(runGit("show", `${commit}:package-lock.json`));
-    if (lock.lockfileVersion !== 3 || lock.packages?.[""]?.version !== root.version
-      || lock.packages?.["packages/components"]?.version !== components.version) throw new Error("Stale source lock");
+    if (lock.lockfileVersion !== 3 || lock.packages?.[""]?.version !== root.version) throw new Error("Stale source lock");
+    for (const { version, lockPath } of Object.values(libraries)) {
+      if (lock.packages?.[lockPath]?.version !== version) throw new Error("Stale source library lock");
+    }
     for (const key of ["dependencies", "devDependencies", "optionalDependencies"]) {
       if (!isDeepStrictEqual(lock.packages[""][key] || {}, root[key] || {})) throw new Error("Stale source lock constraints");
     }
@@ -38,21 +52,20 @@ export function planRelease({ event, kind, releaseRef, sha }, runGit = git) {
       throw new Error("Rollback requires a pinned Components tag or full commit SHA");
     }
   } else if (kind === "push") {
-    const before = JSON.parse(runGit("show", `${event.before}:packages/components/package.json`));
-    const after = JSON.parse(runGit("show", `${event.after}:packages/components/package.json`));
-    // The release event owns both publishing and Pages for version-changing merges.
-    pages = before.version === after.version;
+    const after = librariesAt(event.after, runGit).libraries["gik-components"];
+    if (after.legacy) pages = librariesAt(event.before, runGit).libraries["gik-components"].version === after.version;
   } else throw new Error("Unsupported release event");
   const commit = runGit("rev-parse", `${ref}^{commit}`);
-  const pkg = JSON.parse(runGit("show", `${commit}:packages/components/package.json`));
-  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(pkg.version)) throw new Error("Invalid package version");
+  const { libraries } = librariesAt(commit, runGit);
+  const pkg = libraries["gik-components"];
   runGit("merge-base", "--is-ancestor", commit, "origin/main");
   if (publish) {
     if (event.release.tag_name !== `components-v${pkg.version}`
       || event.release.prerelease !== pkg.version.includes("-")
       || commit !== runGit("rev-parse", "origin/main")) throw new Error("Release tag, channel or main mismatch");
   }
-  return { commit, version: pkg.version, channel, pages, publish };
+  if (!pkg.legacy) publish = false;
+  return { commit, version: pkg.version, providers_version: libraries["gik-service-providers"].version, channel, pages, publish };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv[2] === "promote") {

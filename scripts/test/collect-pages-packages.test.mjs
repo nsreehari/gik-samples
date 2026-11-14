@@ -20,14 +20,15 @@ async function fixture(t) {
       dist: { tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`, integrity },
     });
   };
-  return { outputDirectory, bytes, fetcher };
+  return { outputDirectory, bytes, fetcher, serviceProvidersVersion: "0.3.0" };
 }
 
-test("collects all 11 exact npm archives with index, source metadata, and verifiable checksums", async (t) => {
+test("collects all 12 exact npm archives with index, source metadata, and verifiable checksums", async (t) => {
   const options = await fixture(t);
-  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0" });
-  assert.equal(manifest.packages.length, 11);
-  assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.0");
+  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.2" });
+  assert.equal(manifest.packages.length, 12);
+  assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.2");
+  assert.equal(manifest.packages.find(({ name }) => name === "gik-service-providers").version, "0.3.0");
   const checksums = await readFile(join(options.outputDirectory, "SHA256SUMS"), "utf8");
   const index = await readFile(join(options.outputDirectory, "index.html"), "utf8");
   assert.ok(index.includes('href="../docs/"'));
@@ -56,6 +57,20 @@ test("rejects mutable selectors instead of silently publishing a different relea
   await assert.rejects(collectPagesPackages({
     ...options, componentsVersion: "latest",
   }), /valid Components release version/);
+});
+test("requires an exact provider version and rejects provider tampering before writing any archives", async (t) => {
+  const options = await fixture(t);
+  for (const serviceProvidersVersion of [undefined, "latest", "^0.3.0"]) {
+    await assert.rejects(collectPagesPackages({
+      ...options, componentsVersion: "0.3.2", serviceProvidersVersion,
+    }), /valid Service Providers release version/);
+  }
+  await assert.rejects(collectPagesPackages({
+    ...options, componentsVersion: "0.3.2",
+    fetcher: (url) => url.includes("gik-service-providers") && url.endsWith(".tgz")
+      ? new Response("tampered provider archive") : options.fetcher(url),
+  }), /Integrity verification failed for gik-service-providers/);
+  assert.deepEqual(await readdir(options.outputDirectory), []);
 });
 test("pinned rollback core versions override current tooling defaults and reject incomplete or mutable maps", async (t) => {
   const options = await fixture(t);

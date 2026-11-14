@@ -122,24 +122,44 @@ export function changedFiles(base, head) {
     .split("\0").filter(Boolean);
 }
 
+export function assertNpmConsumers(root, libraryPaths) {
+  for (const name of ["gik-components", "gik-service-providers"]) {
+    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(root.dependencies?.[name] ?? "")) {
+      throw new Error(`${name} must use an exact published npm version`);
+    }
+  }
+  if (libraryPaths.length || root.workspaces?.some((path) => ["packages/components", "packages/service-providers"].includes(path))) {
+    throw new Error("Library implementation belongs in the standalone repositories");
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
   const files = event.pull_request
     ? changedFiles(event.pull_request.base.sha, event.pull_request.head.sha)
     : null;
   const result = files ? classifyChanges(files) : { full: true, finbook: true, mcp: true, pages: true };
+  const headCommit = event.pull_request?.head.sha ?? "HEAD";
+  if (git("ls-tree", "--name-only", headCommit, "package.json")) {
+    const root = JSON.parse(git("show", `${headCommit}:package.json`));
+    if (root.dependencies?.["gik-components"] !== "file:packages/components") {
+      assertNpmConsumers(root, git("ls-tree", "-r", "--name-only", headCommit, "--", "packages/components", "packages/service-providers").split("\n").filter(Boolean));
+    }
+  }
   if (event.pull_request) {
     const path = "packages/components/package.json";
-    const base = JSON.parse(git("show", `${event.pull_request.base.sha}:${path}`));
-    const head = JSON.parse(git("show", `${event.pull_request.head.sha}:${path}`));
-    const releaseRequired = needsComponentsRelease(files, base, head);
-    if ((releaseRequired || head.version !== base.version)
-      && !isManualPrerelease(base.version, head.version, event.pull_request.labels.map(({ name }) => name))) {
-      if (head.version !== base.version) assertComponentsVersionIncrease(base.version, head.version);
-      if (releaseRequired) {
-        const expected = nextComponentsVersion(base.version, event.pull_request.labels.map(({ name }) => name));
-        if (head.version !== expected) {
-          throw new Error(`Components must be ${expected}; wait for the version bot or update this PR's manifest`);
+    if (git("ls-tree", "--name-only", event.pull_request.head.sha, path)) {
+      const base = JSON.parse(git("show", `${event.pull_request.base.sha}:${path}`));
+      const head = JSON.parse(git("show", `${event.pull_request.head.sha}:${path}`));
+      const releaseRequired = needsComponentsRelease(files, base, head);
+      if ((releaseRequired || head.version !== base.version)
+        && !isManualPrerelease(base.version, head.version, event.pull_request.labels.map(({ name }) => name))) {
+        if (head.version !== base.version) assertComponentsVersionIncrease(base.version, head.version);
+        if (releaseRequired) {
+          const expected = nextComponentsVersion(base.version, event.pull_request.labels.map(({ name }) => name));
+          if (head.version !== expected) {
+            throw new Error(`Components must be ${expected}; wait for the version bot or update this PR's manifest`);
+          }
         }
       }
     }

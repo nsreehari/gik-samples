@@ -29,6 +29,7 @@ async function fetchPublished(url, fetcher, pause) {
 
 export async function collectPagesPackages({
   componentsVersion,
+  serviceProvidersVersion,
   versions = coreVersions,
   outputDirectory,
   fetcher = fetch,
@@ -38,10 +39,15 @@ export async function collectPagesPackages({
   if (!isVersion(componentsVersion)) {
     throw new Error("A valid Components release version is required");
   }
+  if (!isVersion(serviceProvidersVersion)) {
+    throw new Error("A valid Service Providers release version is required");
+  }
   const packages = [];
   const downloads = [];
   validateCoreVersions(versions);
-  for (const [name, requestedVersion] of Object.entries({ ...versions, "gik-components": componentsVersion })) {
+  for (const [name, requestedVersion] of Object.entries({
+    ...versions, "gik-components": componentsVersion, "gik-service-providers": serviceProvidersVersion,
+  })) {
     const metadataUrl = `https://registry.npmjs.org/${name}/${requestedVersion}`;
     const metadata = await (await fetchPublished(metadataUrl, fetcher, pause)).json();
     if (metadata.name !== name || !isVersion(metadata.version)
@@ -98,11 +104,12 @@ export async function collectPagesPackages({
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const components = JSON.parse(await readFile(
-    new URL("../packages/components/package.json", import.meta.url), "utf8",
+  const consumer = JSON.parse(await readFile(
+    new URL("../package.json", import.meta.url), "utf8",
   ));
   await collectPagesPackages({
-    componentsVersion: process.env.PAGES_COMPONENTS_VERSION || components.version,
+    componentsVersion: process.env.PAGES_COMPONENTS_VERSION || consumer.dependencies["gik-components"],
+    serviceProvidersVersion: process.env.PAGES_SERVICE_PROVIDERS_VERSION || consumer.dependencies["gik-service-providers"],
     versions: process.env.PAGES_CORE_VERSIONS_JSON ? JSON.parse(process.env.PAGES_CORE_VERSIONS_JSON) : coreVersions,
     outputDirectory: fileURLToPath(new URL("../src/browser-host/dist/vendor/", import.meta.url)),
   });

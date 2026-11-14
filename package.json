@@ -3,10 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": [
-    "packages/components",
-    "packages/service-providers"
-  ],
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --dev",
@@ -25,7 +21,7 @@
     "finbook:build": "npm run build --prefix apps/finbook",
     "finbook:dev": "npm run dev --prefix apps/finbook",
     "finbook:server": "npm run dev:server --prefix apps/finbook",
-    "typecheck:studio": "tsc -p packages/components/tsconfig.json --noEmit && npm run typecheck --workspace gik-service-providers && tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit",
+    "typecheck:studio": "tsc -p src/browser-host/tsconfig.json --noEmit && tsc -p src/headless/tsconfig.json --noEmit && tsc -p src/testing/tsconfig.json --noEmit && tsc -p storybook/tsconfig.json --noEmit",
     "typecheck": "npm run typecheck:studio && npm run typecheck --prefix apps/finbook"
   },
   "dependencies": {
@@ -34,13 +30,13 @@
     "gik-agent-lifecycle-exp": ">=0.3.0",
     "gik-blueprint": ">=0.5.0",
     "gik-blueprint-agent-host": ">=0.2.1",
-    "gik-components": "file:packages/components",
+    "gik-components": "0.3.2",
     "gik-controlface": ">=0.7.0",
     "gik-durable-runtime": ">=0.9.0",
     "gik-evaluators": ">=0.4.0",
     "gik-kernel": ">=0.4.1",
     "gik-react": ">=0.5.0",
-    "gik-service-providers": "file:packages/service-providers",
+    "gik-service-providers": "0.3.0",
     "@xyflow/react": "^12.11.2",
     "mermaid": "^11.16.0",
     "react": "^18.3.1",
@@ -70,7 +66,6 @@
     "rollup": "4.62.2",
     "sirv": "^3.0.2",
     "storybook": "10.6.2",
-    "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^6.3.5",

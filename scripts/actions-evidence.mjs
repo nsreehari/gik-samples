@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync, appendFileSync, cpSync, copyFil
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
+import { collectPagesPackages } from "./collect-pages-packages.mjs";
 
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
@@ -26,6 +27,11 @@ export function inputs() {
   };
 }
 export const fingerprint = () => sha256(JSON.stringify(inputs()));
+export function componentsPackage() {
+  const version = JSON.parse(readFileSync("package.json", "utf8")).dependencies["gik-components"];
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) throw new Error("Components consumer requires an exact npm version");
+  return { name: "gik-components", version };
+}
 export const selectedScope = (outputs) => JSON.stringify(Object.fromEntries(
   ["full", "finbook", "mcp"].map((key) => [key, outputs[key] === "true"])));
 export function hasHeadApproval(reviews, head) {
@@ -81,7 +87,7 @@ export function inspectTarball(path, expected) {
   if (details.split(/\r?\n/).some((line) => /^[lh]/.test(line))) throw new Error("Tarball links forbidden");
   const actual = JSON.parse(execFileSync("tar", ["-xOf", path, "package/package.json"], { encoding: "utf8" }));
   for (const key of ["name", "version", "exports", "dependencies", "peerDependencies"]) {
-    if (!isDeepStrictEqual(actual[key], expected[key])) throw new Error(`Packed ${key} differs from source`);
+    if (Object.hasOwn(expected, key) && !isDeepStrictEqual(actual[key], expected[key])) throw new Error(`Packed ${key} differs from source`);
   }
   const leaves = (value) => typeof value === "string" ? [value]
     : value && typeof value === "object" ? Object.values(value).flatMap(leaves) : [];
@@ -97,7 +103,7 @@ export function inspectTarball(path, expected) {
 export function verifyCandidate(directory, { allowSameTree = false, siteDirectory } = {}) {
   const manifestBytes = readFileSync(`${directory}/candidate.json`);
   const manifest = JSON.parse(manifestBytes);
-  const expected = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
+  const expected = componentsPackage();
   if (manifest.format !== "gik-samples-candidate/2" || !/^[a-f0-9]{40}$/.test(manifest.commit || "")
     || !/^[a-f0-9]{64}$/.test(manifest.siteSha256 || "")
     || manifest.fingerprint !== fingerprint()
@@ -124,19 +130,21 @@ export function verifyCandidate(directory, { allowSameTree = false, siteDirector
   if (siteDirectory !== undefined) verifySite(siteDirectory, manifest.siteSha256);
   return manifest;
 }
-export function writeCandidate() {
+export async function writeCandidate() {
   const path = ".artifacts/candidate";
   mkdirSync(path, { recursive: true });
-  const expected = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
-  if (!process.env.npm_execpath || execFileSync(process.execPath, [process.env.npm_execpath, "--version"],
-    { encoding: "utf8" }).trim() !== "11.19.0") throw new Error("Pack with the pinned npm 11.19.0 CLI");
-  const result = JSON.parse(execFileSync(process.execPath, [process.env.npm_execpath,
-    "pack", "--workspace", "gik-components", "--ignore-scripts", "--json", "--pack-destination", path],
-  { encoding: "utf8" }))[0];
-  // pack --ignore-scripts consumes the already validated build; prepack remains intact for developers.
-  const bytes = readFileSync(`${path}/${result.filename}`);
+  const expected = componentsPackage();
+  const root = JSON.parse(readFileSync("package.json", "utf8"));
+  const manifest = await collectPagesPackages({
+    componentsVersion: expected.version, serviceProvidersVersion: root.dependencies["gik-service-providers"],
+    outputDirectory: "src/browser-host/dist/vendor",
+  });
+  const published = manifest.packages.find(({ name }) => name === expected.name);
+  const locked = JSON.parse(readFileSync("package-lock.json", "utf8")).packages["node_modules/gik-components"];
+  if (locked?.version !== expected.version || locked.integrity !== published.integrity) throw new Error("Components archive differs from committed npm lock");
+  const bytes = readFileSync(`src/browser-host/dist/vendor/${published.file}`);
   writeFileSync(`${path}/gik-components.tgz`, bytes);
-  inspectTarball(`${path}/gik-components.tgz`, expected);
+  inspectTarball(`${path}/gik-components.tgz`, JSON.parse(readFileSync("node_modules/gik-components/package.json", "utf8")));
   writeFileSync(`${path}/candidate.json`, JSON.stringify({
     format: "gik-samples-candidate/2", commit: git("rev-parse", "HEAD"),
     tree: git("rev-parse", "HEAD^{tree}"), fingerprint: fingerprint(),
@@ -277,7 +285,7 @@ export async function reuse(mode, {
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const command = process.argv[2];
-  if (command === "pack") writeCandidate();
+  if (command === "pack") await writeCandidate();
   else if (command === "verify") verifyCandidate(".artifacts/candidate", { allowSameTree: process.env.ALLOW_SAME_TREE === "true" });
   else if (command === "verify-site") verifyCandidate(".artifacts/candidate", { siteDirectory: "src/browser-host/dist" });
   else if (command === "hashes") {

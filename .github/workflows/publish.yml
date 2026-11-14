@@ -1,21 +1,18 @@
-name: Release
+name: Deploy Samples Pages
 on:
   push:
     branches: [main]
     paths:
       - "src/**"
       - "storybook/**"
-      - "packages/components/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/**"
       - ".github/workflows/**"
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       release_ref:
-        description: Immutable components-v tag or full commit SHA for Pages rollback (never main)
+        description: Immutable historical components-v tag or full commit SHA for Pages rollback (never main)
         required: true
         type: string
 permissions:
@@ -26,9 +23,7 @@ jobs:
     outputs:
       commit: ${{ steps.plan.outputs.commit }}
       version: ${{ steps.plan.outputs.version }}
-      channel: ${{ steps.plan.outputs.channel }}
-      pages: ${{ steps.plan.outputs.pages }}
-      publish: ${{ steps.plan.outputs.publish }}
+      providers_version: ${{ steps.plan.outputs.providers_version }}
       core_versions: ${{ steps.plan.outputs.core_versions }}
     steps:
       - uses: actions/checkout@v5
@@ -44,158 +39,13 @@ jobs:
         run: |
           node scripts/check-locks.mjs
           node scripts/plan-release.mjs
-  validate:
-    name: Validate Components release
+  site:
+    name: Build npm-backed site
     needs: plan
-    if: needs.plan.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      tarball_sha256: ${{ steps.attest.outputs.tarball_sha256 }}
-      manifest_sha256: ${{ steps.attest.outputs.manifest_sha256 }}
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    env:
-      VITE_BASE: /gik-samples/
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.plan.outputs.commit }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - name: Opt-in promotion of reviewed same-input PR evidence
-        id: reuse
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REUSE_ENABLED: ${{ vars.GIK_SAMPLES_REUSE_PR_ARTIFACTS }}
-          REVIEWED_POLICY: ${{ vars.GIK_SAMPLES_POLICY_SHA256 }}
-        run: node scripts/actions-evidence.mjs reuse release
-      - uses: actions/cache@v4
-        if: steps.reuse.outputs.reused != 'true'
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-release-${{ hashFiles('**/package-lock.json', '**/package.json') }}
-          restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-release-
-      - name: Validate and pack once without privileged credentials
-        if: steps.reuse.outputs.reused != 'true'
-        run: |
-          npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
-          npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --no-audit --no-fund
-          git diff --exit-code -- package-lock.json apps/finbook/package-lock.json
-          npm run build
-          npm run typecheck
-          npm test
-          npm run test:distribution
-          npm exec --yes --package=npm@11.19.0 -- npm exec -- node scripts/actions-evidence.mjs pack
-      - name: Re-attest promoted candidate to the release source
-        if: steps.reuse.outputs.reused == 'true'
-        run: node scripts/plan-release.mjs promote
-      - name: Verify actual archive and complete source identity
-        id: attest
-        run: node scripts/actions-evidence.mjs hashes
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-candidate
-          path: |
-            .artifacts/candidate/candidate.json
-            .artifacts/candidate/gik-components.tgz
-          if-no-files-found: error
-          retention-days: 14
-          include-hidden-files: true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: site-build
-          path: src/browser-host/dist
-          if-no-files-found: error
-          retention-days: 14
-          include-hidden-files: true
-  publish:
-    name: Publish and verify exact Components archive
-    needs: [plan, validate]
-    if: needs.plan.outputs.publish == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: npm-publish
-    concurrency:
-      group: components-publication
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      VITE_BASE: /gik-samples/
-      EXPECTED_TARBALL_SHA256: ${{ needs.validate.outputs.tarball_sha256 }}
-      EXPECTED_MANIFEST_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
-      REQUIRE_DIGEST_HANDOFF: "true"
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.plan.outputs.commit }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-candidate
-          path: .artifacts/candidate
-      - name: Reverify tag and main immediately before publish
-        env:
-          EXPECTED_SHA: ${{ needs.plan.outputs.commit }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG" main
-          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_SHA"
-          test "$(git rev-parse origin/main)" = "$EXPECTED_SHA"
-          node scripts/actions-evidence.mjs verify
-      - name: Publish verified bytes without build, repack or lifecycle scripts
-        env:
-          CHANNEL: ${{ needs.plan.outputs.channel }}
-        run: node scripts/publish-candidate.mjs
-  verify-registry:
-    name: Clean npm consumer verification
-    needs: [plan, validate, publish]
-    if: needs.plan.outputs.publish == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    env:
-      EXPECTED_TARBALL_SHA256: ${{ needs.validate.outputs.tarball_sha256 }}
-      EXPECTED_MANIFEST_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
-      REQUIRE_DIGEST_HANDOFF: "true"
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.plan.outputs.commit }}
-          persist-credentials: false
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-candidate
-          path: .artifacts/candidate
-      - run: node scripts/actions-evidence.mjs verify
-      - name: Clean registry consumer and signature/provenance verification without publication authority
-        env:
-          COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
-        run: node scripts/verify-components-registry.mjs
-  site:
-    name: Build site only when no validated release site exists
-    needs: plan
-    if: needs.plan.outputs.pages == 'true' && needs.plan.outputs.publish != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+      sha256: ${{ steps.build.outputs.sha256 }}
     env:
       VITE_BASE: /gik-samples/
     steps:
@@ -206,15 +56,18 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          package-manager-cache: false
       - uses: actions/cache@v4
         with:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-${{ hashFiles('**/package-lock.json', '**/package.json') }}
           restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-
-      - run: |
+      - id: build
+        run: |
           npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
           git diff --exit-code -- package-lock.json
           npm run build -- --site-only
+          node --input-type=module -e 'import {siteDigest} from "./scripts/actions-evidence.mjs"; import {appendFileSync} from "node:fs"; appendFileSync(process.env.GITHUB_OUTPUT, "sha256=" + siteDigest("src/browser-host/dist") + "\n");'
       - uses: actions/upload-artifact@v4
         with:
           name: site-build
@@ -222,16 +75,12 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   collect-pages:
-    name: Collect exact registry archives after successful publication
-    needs: [plan, validate, publish, verify-registry, site]
-    if: >-
-      always() && needs.plan.result == 'success' && needs.plan.outputs.pages == 'true' &&
-      ((needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' &&
-      needs.publish.result == 'success' && needs.verify-registry.result == 'success') ||
-      (needs.plan.outputs.publish != 'true' && needs.site.result == 'success'))
+    name: Verify site and collect exact npm archives
+    needs: [plan, site]
     runs-on: ubuntu-latest
     env:
       VITE_BASE: /gik-samples/
+      EXPECTED_SITE_SHA256: ${{ needs.site.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -240,14 +89,18 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          package-manager-cache: false
       - uses: actions/download-artifact@v4
         with:
           name: site-build
           path: src/browser-host/dist
-      - name: Collect exact published versions (no mutable latest)
+      - name: Verify source-job digest before modifying or deploying the site
+        run: node --input-type=module -e 'import {verifySite} from "./scripts/actions-evidence.mjs"; verifySite("src/browser-host/dist", process.env.EXPECTED_SITE_SHA256);'
+      - name: Collect exact source-pinned versions without mutable latest
         run: node scripts/collect-pages-packages.mjs
         env:
           PAGES_COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
+          PAGES_SERVICE_PROVIDERS_VERSION: ${{ needs.plan.outputs.providers_version }}
           PAGES_CORE_VERSIONS_JSON: ${{ needs.plan.outputs.core_versions }}
       - name: Smoke-test assembled artifact
         run: node scripts/smoke-pages.mjs

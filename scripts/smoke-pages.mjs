@@ -106,9 +106,11 @@ try {
     const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
     if (!manifestResponse.ok) throw new Error(`Package manifest returned HTTP ${manifestResponse.status}`);
     const manifest = await manifestResponse.json();
-    if (manifest.format !== "gik-pages-packages/1" || manifest.packages?.length !== 11
-      || new Set(manifest.packages.map(({ name }) => name)).size !== 11) {
-      throw new Error("Pages must expose all eleven released GIK packages");
+    if (manifest.format !== "gik-pages-packages/1" || manifest.packages?.length !== 12
+      || new Set(manifest.packages.map(({ name }) => name)).size !== 12
+      || !manifest.packages.some(({ name }) => name === "gik-components")
+      || !manifest.packages.some(({ name }) => name === "gik-service-providers")) {
+      throw new Error("Pages must expose all twelve released GIK packages, including Components and Service Providers");
     }
     for (const entry of manifest.packages) {
       const response = await fetch(new URL(entry.file, vendorUrl));
@@ -126,7 +128,7 @@ try {
         throw new Error(`Package download index ${file} is incomplete`);
       }
     }
-    console.log(`All 11 package downloads and checksums passed at ${vendorUrl}`);
+    console.log(`All 12 package downloads and checksums passed at ${vendorUrl}`);
   }
   const html = await dumpPage();
   if (!html.includes("Generative Interaction Kernel")) {

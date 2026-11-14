@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 export function checkLocks(root = ".") {
   for (const [directory, workspaces] of [
-    [".", ["packages/components", "packages/service-providers"]],
+    [".", []],
     ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
     ["packages/mcp-server", []],
   ]) {

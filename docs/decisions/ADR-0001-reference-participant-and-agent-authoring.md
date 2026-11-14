@@ -107,6 +107,6 @@ claim that materialization establishes permission to execute a candidate.
 - [Context backend](../../src/service-kinds/context-store/runtime.ts)
   and [host storage binding](../../src/shared/blueprint-storage.ts).
 - [Response workspace composition](../../src/service-kinds/agent-response-workspace.ts)
-  and [Foundry provider](../../packages/service-providers/src/foundry.ts).
+  and [Foundry provider](https://github.com/nsreehari/gik-service-providers/blob/main/src/foundry.ts).
 - [Browser service host](../../src/browser-host/src/runtime/service-host.ts)
   and [Blueprint lifecycle policies](../../src/browser-host/src/runtime/blueprint-agent-lifecycle.ts).
