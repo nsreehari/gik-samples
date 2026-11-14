@@ -90,6 +90,7 @@ export function providersVersion(files, base, head, labels) {
   const exports = Object.keys(head.exports ?? {}).sort();
   const requiredExports = ["./gmail", "./scheduler"];
   const knownExports = new Set([
+    "./foundry",
     "./github-context-store",
     ...requiredExports,
   ]);

@@ -75,6 +75,9 @@ test("providers have a guarded first version, independent future bumps and no ag
     exports: { ...manifest.exports, "./unknown": "./dist/unknown.js" },
   }, []), /known individual/);
   assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, expanded, ["release:minor"]), "0.2.0");
+  const foundry = { ...expanded, exports: { ...expanded.exports, "./foundry": "./dist/foundry.js" } };
+  assert.equal(providersVersion(["packages/service-providers/package.json"], expanded, foundry, ["release:minor"]), "0.2.0");
+  assert.throws(() => providersVersion([], foundry, expanded, []), /every published/);
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, []), "0.1.1");
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, ["release:minor"]), "0.2.0");
   assert.equal(providersVersion(["packages/service-providers/test/providers.test.ts"], manifest, manifest, []), null);
