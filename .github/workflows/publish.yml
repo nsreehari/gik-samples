@@ -222,7 +222,7 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   collect-pages:
-    name: Collect exact registry archives after successful publication
+    name: Refresh latest registry archives after successful publication
     needs: [plan, validate, publish, verify-registry, site]
     if: >-
       always() && needs.plan.result == 'success' && needs.plan.outputs.pages == 'true' &&
@@ -244,11 +244,8 @@ jobs:
         with:
           name: site-build
           path: src/browser-host/dist
-      - name: Collect exact published versions (no mutable latest)
+      - name: Mirror latest published packages with verified integrity
         run: node scripts/collect-pages-packages.mjs
-        env:
-          PAGES_COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
-          PAGES_CORE_VERSIONS_JSON: ${{ needs.plan.outputs.core_versions }}
       - name: Smoke-test assembled artifact
         run: node scripts/smoke-pages.mjs
         env:

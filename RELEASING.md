@@ -86,7 +86,7 @@ does not install or bundle the separate Finbook app.
 
 For Components releases, the version-changing push does **not** deploy Pages.
 The release event owns the one canonical path: validate/build/pack, environment
-approval, OIDC publication, clean npm consumer verification, exact-version archive
+approval, OIDC publication, clean npm consumer verification, latest-package archive
 collection, smoke test, deployment. Publication failure prevents Pages deployment.
 There is no post-publication workflow dispatch. Publication and Pages have
 separate concurrency groups; neither cancels an in-flight publish/deployment.
@@ -114,31 +114,37 @@ outputs; the publisher rejects a missing handoff rather than trusting hashes
 contained only inside the downloaded artifact.
 
 Pages runs `npm run pages:collect-packages` after building the site to download
-all ten pinned stable core GIK packages and the selected published Components
-version from public npm into `src/browser-host/dist/vendor/`. The collector verifies
+all ten core GIK packages, the separately published service providers package,
+and Components from public npm into `src/browser-host/dist/vendor/`. Each mirror refresh
+resolves npm's `latest` tag for every supported package, including Components and
+service providers, independently of the site's dependency pins. The collector verifies
 each archive against npm integrity metadata and generates an HTML index,
 `manifest.json` (versions, filenames, original npm URLs, sizes, integrity, and
 SHA-256), and `SHA256SUMS`. Downloads never enter Git or alter dependencies.
 
-The core version set is maintained in `scripts/pages-core-versions.json`.
-Update it when adopting another core release. Missing newly published metadata
+The core package names come from `scripts/pages-core-versions.json`; service
+providers and Components are also mirrored. That file's version values remain
+site release inputs, not mirror download selectors. No version-list update is
+needed to refresh the mirror. Missing newly published metadata
 or tarballs are retried briefly for npm propagation; integrity failures,
 unexpected hosts, and other HTTP errors fail the deployment.
 
 Pages-only dispatches accept a `components-v...` tag or a complete 40-character
-commit SHA, never mutable `main`/`latest`. They collect exact versions declared
-by that ref, which must already exist on npm. Dispatch the workflow from current
+commit SHA, never mutable `main`/`latest`. The site is built from that pinned ref;
+the package mirror still refreshes every package from npm's `latest` tag.
+Dispatch the workflow from current
 `main` so current guards apply, and set `release_ref` to the rollback target.
 The target must be an ancestor of `main`. Rollback never republishes npm.
 Supported rollback refs include a committed root lock matching their manifests
 and `scripts/pages-core-versions.json`; pre-rollout lockless refs fail explicitly
 rather than silently re-resolving a different dependency graph. Site source comes
 from the pinned ref, while collection/smoke tooling comes from the current workflow
-commit. All eleven package versions still come from the pinned ref as validated
-data, not from current defaults.
+commit. The generated mirror manifest records the concrete resolved versions,
+archive sizes, integrity and SHA-256 checksums; it never records `latest` as an
+archive version. A site rollback does not roll back the package mirror.
 
 npm caches contain downloaded packages, never `node_modules`; every job still
-installs against its manifests and lockfiles. All eleven archive integrity
+installs against its manifests and lockfiles. All selected archive integrity
 checks and the dependency-free built-site smoke remain mandatory before deployment.
 
 ## Artifact classes, fingerprints and rollout
