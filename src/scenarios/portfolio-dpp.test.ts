@@ -14,7 +14,7 @@ import { executeQueuedCellSourceEffect } from "gik-blueprint/worker";
 import { materializeSampleBlueprint, resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
 import { createSourceSettlementEvent, openHeadlessDurableBlueprint } from "../headless/blueprint-harness";
 import { createContextStoreServiceKind, DefaultServiceHost, ServiceKindRegistry, type ServiceAgentTool } from "gik-controlface/services";
-import { createFoundryAgentKind } from "../service-kinds/foundry-agent";
+import { createFoundryServiceKind } from "gik-service-providers/foundry";
 import type { DurableStorageConnection } from "../service-kinds/durable-storage";
 import { createContextStoreExecutor, type ContextStoreInvocation } from "../service-kinds/context-store/runtime";
 
@@ -58,7 +58,7 @@ test("simple Foundry reporting excludes host tools when its named agent has no t
     authorizeEndpoint: (kind, endpoint) =>
       kind === "foundry-agent" && endpoint.origin === "https://sz-foundry-proxy.azurewebsites.net",
   });
-  registry.register(createFoundryAgentKind(async (url, init) => {
+  registry.register(createFoundryServiceKind({ fetch: async (url, init) => {
     assert.equal(String(url), "https://sz-foundry-proxy.azurewebsites.net/api/agent/chat");
     const request = JSON.parse(String(init?.body)) as Record<string, Json>;
     requests.push(request);
@@ -71,7 +71,7 @@ test("simple Foundry reporting excludes host tools when its named agent has no t
       conversationId: "report-conversation", responseId: "report-response",
       reply: JSON.stringify(report), toolCalls: [],
     }), { status: 200 });
-  }));
+  } }));
   const agentTools: ServiceAgentTool[] = ["describe", "compose_response_validate"].map((name) => ({
     name, description: name, inputSchema: {}, lifecycle: "agent",
     handler: () => { throw new Error("The simple report must not invoke host tools"); },

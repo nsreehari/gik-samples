@@ -7,7 +7,7 @@ import { DefaultServiceHost, ServiceKindRegistry, type ServiceRequest } from "gi
 import { InMemoryStateModel, JsonataExpressionProvider, SyncJsonataExpressionProvider, type Json, type OrchestratorEffect } from "gik-kernel";
 import { materializeSampleBlueprint } from "../bootstrap/catalog/blueprint-catalog";
 import { createSourceSettlementEvent, openHeadlessDurableBlueprint } from "../headless/blueprint-harness";
-import { createFoundryAgentKind } from "../service-kinds/foundry-agent";
+import { createFoundryServiceKind } from "gik-service-providers/foundry";
 
 const source = JSON.parse(readFileSync(
   new URL("../bootstrap/blueprints/portfolio-tracker-new/blueprint.json", import.meta.url), "utf8",
@@ -109,7 +109,7 @@ test.each(["matching", "mismatched"])("Foundry intake respects named-agent schem
     authorizeEndpoint: (kind, endpoint) =>
       kind === "foundry-agent" && endpoint.origin === "https://sz-foundry-proxy.azurewebsites.net",
   });
-  registry.register(createFoundryAgentKind(async (url, init) => {
+  registry.register(createFoundryServiceKind({ fetch: async (url, init) => {
     assert.equal(String(url), "https://sz-foundry-proxy.azurewebsites.net/api/agent/chat");
     assert.equal(init?.method, "POST");
     const request = JSON.parse(String(init?.body)) as Record<string, Json>;
@@ -127,7 +127,7 @@ test.each(["matching", "mismatched"])("Foundry intake respects named-agent schem
       conversationId: "intake-conversation", responseId: "intake-response",
       reply: JSON.stringify(updated), toolCalls: [],
     }), { status: 200, headers: { "Content-Type": "application/json" } });
-  }));
+  } }));
   const f = await fixture("foundry", registry);
   const effect = await f.submit();
   await f.session.transition([await f.invoke(effect)]);
