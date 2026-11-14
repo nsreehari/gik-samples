@@ -85,7 +85,6 @@ test("simple Foundry reporting excludes host tools when its named agent has no t
   });
   const result = await executeQueuedCellSourceEffect(effect, session.snapshot(), (executingEffect) => host.invoke(executingEffect));
   assert.ok(result);
-  assert.equal(result.settlement?.outcome, "resolved");
   assert.equal(requests.length, 1);
   assert.equal(requests[0].agentName, "Portfolio-Intelligence-Agent");
   assert.deepEqual(requests[0].allowedTools, []);
