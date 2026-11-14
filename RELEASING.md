@@ -77,7 +77,8 @@ workspace links before npm resolves the exact package pins. The mandatory lock
 guard rejects retained library workspaces or source-linked dependencies, even
 when the root dependency constraints match.
 
-Metadata-only PR events may reuse complete identical-tree successful validation
+Metadata-only PR events (label/body edits and ready-for-review) may reuse complete
+identical-tree successful validation
 evidence. Fingerprints bind the Git tree, workflows/scripts, Node/npm resolver,
 runner platform/image, build base and recipe. Missing or mismatched evidence
 runs fresh validation; caches reuse downloads, not installed dependencies.

@@ -128,7 +128,11 @@ test("absent or expired queried artifacts are explicit cache misses without atte
   assert.equal(state.downloads, 0);
 });
 test("valid evidence reuses; input/scope drift logs fallback rather than silently accepting different validation", async (t) => {
-  const { state, services } = reuseFixture(t);
+  const { root, state, services } = reuseFixture(t);
+  assert.equal(await reuse("metadata", services), true);
+  const event = JSON.parse(readFileSync(`${root}/event.json`, "utf8"));
+  event.action = "ready_for_review";
+  writeFileSync(`${root}/event.json`, JSON.stringify(event));
   assert.equal(await reuse("metadata", services), true);
   state.evidence.scope = selectedScope({ full: "false", finbook: "true", mcp: "false" });
   assert.equal(await reuse("metadata", services), false);
@@ -338,5 +342,5 @@ test("Pages binds the source-built site before collecting archives; metadata can
   const lanes = readFileSync(new URL("../../.github/workflows/validation-lane.yml", import.meta.url), "utf8");
   assert.ok(lanes.indexOf("node scripts/actions-evidence.mjs verify-site") < lanes.indexOf("- name: Upload site"));
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
-  assert.match(ci, /cancel-in-progress: \$\{\{ github\.event\.action != 'labeled' && github\.event\.action != 'unlabeled' && github\.event\.action != 'edited' \}\}/);
+  assert.match(ci, /cancel-in-progress: \$\{\{ github\.event\.action != 'labeled' && github\.event\.action != 'unlabeled' && github\.event\.action != 'edited' && github\.event\.action != 'ready_for_review' \}\}/);
 });

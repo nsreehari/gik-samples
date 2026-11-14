@@ -172,7 +172,7 @@ export async function reuse(mode, {
   if (mode !== "metadata") throw new Error("Unsupported evidence reuse mode; package release promotion was retired");
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
   const repository = process.env.GITHUB_REPOSITORY;
-  if (!["labeled", "unlabeled", "edited"].includes(event.action)) return false;
+  if (!["labeled", "unlabeled", "edited", "ready_for_review"].includes(event.action)) return false;
   if (/^release:/.test(event.label?.name || "")) return false;
   for (const pr of [event.pull_request]) {
     if (pr?.head?.repo?.full_name !== repository) {
