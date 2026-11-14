@@ -22,6 +22,7 @@ Security fixes target the current `main` branch and the live Pages deployment.
 Historical tags and generated archives are retained for reference and do not
 receive guaranteed backports.
 
-External `gik-*` packages are consumed from npm; `gik-components` uses the
-repository's local workspace directory. Changes to dependency manifests,
+All `gik-*` libraries are consumed from npm, including Components and Service
+Providers. Pages archives are integrity-verified downloads, not source or
+dependency substitutes. Changes to dependency manifests,
 workflows, endpoint configuration, or security policy always require human review.

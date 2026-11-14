@@ -13,12 +13,12 @@ Community-facing components, Blueprint samples, and the browser App Host for the
 | --- | --- |
 | [Documentation](docs/README.md) | Learning paths, documentation ownership, and navigation |
 | [Samples](docs/samples.md) | Example selection, prerequisites, host boundaries, and continuous-awareness demo |
-| [gik-components](packages/components/README.md) | Public projection catalogs, React adapters, explicit providers, and component authoring tools |
-| [gik-service-providers](packages/service-providers/README.md) | Individually imported cron/Gmail providers with host-owned setup and execution authority |
+| [gik-components](https://github.com/nsreehari/gik-components) | Public projection catalogs, React adapters, explicit providers, and component authoring tools |
+| [gik-service-providers](https://github.com/nsreehari/gik-service-providers) | Individually imported Foundry, cron, Gmail and GitHub context providers with host-owned authority |
 | [MCP companion](packages/mcp-server/README.md) | Standalone local tooling, pairing, credentials, provisioning, and MCP transports |
 | [Finbook](apps/finbook/README.md) | Reference application setup, composition, and extraction constraints |
 | [Validation](VALIDATION.md) | The repository-wide install/build/test sequence and CI-only option |
-| [Releasing](RELEASING.md) | Components publication and generated Pages package downloads |
+| [Releasing](RELEASING.md) | Independent library ownership and generated Pages package downloads |
 | [Architecture decisions](docs/decisions/README.md) | Sample design rationale and boundaries, not another package API catalog |
 
 Core package APIs live in the
@@ -58,11 +58,18 @@ and components consume through well-defined props and events.
 - [Released GIK package downloads](https://nsreehari.github.io/gik-samples/vendor/)
 
 Pages includes versioned npm tarballs for the ten stable core GIK packages and
-the released `gik-components` version. `/vendor/` is a download directory, not
+the exact `gik-components` and `gik-service-providers` versions. `/vendor/` is a download directory, not
 an npm registry. [Releasing](RELEASING.md#pages-package-downloads) owns archive
 verification, manifest contents, and post-publication refresh behavior.
 
 ## Development
+
+Studio and Storybook consume npm packages, not library source aliases. The
+two standalone repositories own library implementations, unit tests and
+publication. In the corporate environment, run all installs, builds,
+typechecks, tests and npm registry access only through CI.
+
+The following commands describe runner/non-corporate development only:
 
 ```sh
 npm install --no-audit --no-fund

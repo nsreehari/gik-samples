@@ -1,8 +1,8 @@
 # Validation
 
 Run the steps in the order below; each step assumes the previous one succeeded.
-With explicit maintainer approval, use the PR CI workflow to run validation
-entirely on GitHub-hosted runners instead of installing or building locally.
+In the corporate environment, run validation entirely on GitHub-hosted runners.
+Do not install, build, typecheck, test or access npmjs locally.
 CI uses public npm and does not change the local corporate registry mirror.
 
 Use Node.js 24.
@@ -38,8 +38,8 @@ succeeded, rejecting failed, cancelled or inappropriately skipped lanes.
 npm caches reuse downloads, not installed dependencies. Metadata-only events can
 reuse complete, identical-tree successful evidence; missing evidence runs normal
 validation. See [fingerprints and rollout](RELEASING.md#artifact-classes-fingerprints-and-rollout).
-Components release inputs also require the expected patch/minor/major version
-in the existing implementation PR; see [release automation](RELEASING.md#automatic-stable-releases).
+Library implementation and unit-test validation belong to the two standalone
+repositories; Samples validates actual npm consumers and downloadable archives.
 
 ## 1. Install dependencies
 
@@ -49,9 +49,8 @@ npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --no-a
 npm exec --yes --package=npm@11.19.0 -- npm install --prefix packages/mcp-server --no-audit --no-fund
 ```
 
-All external GIK packages resolve from published npm versions. `gik-components`
-uses the local source directory through `file:` dependencies for Studio;
-Finbook and its browser host use the published package. This repository
+All GIK libraries resolve from published npm versions. Studio, Storybook and
+Finbook consume npm Components and Service Providers without source checkouts. This repository
 requires committed separate npm v3 lockfiles for root, Finbook (including its workspaces)
 and MCP. Do not change dependency ranges while refreshing reproducible resolution.
 Generate and commit all three before rolling out these workflows;
@@ -59,7 +58,8 @@ Generate and commit all three before rolling out these workflows;
 CI retains standard `npm install` and rejects lock drift, rather than switching to
 `npm ci` before Linux optional-dependency behavior has been proven. No global npm
 installation is needed. Finbook retains its separate compatible XYFlow
-archives; there are no vendored GIK archives.
+archives. Pages `/vendor` provides verified official GIK npm archives for
+download; those archives do not replace normal npm dependency resolution.
 
 ### Resolve locks on a GitHub-hosted runner
 
@@ -104,11 +104,11 @@ for required `validate`.
 npm run build
 ```
 
-The build first compiles `gik-components`, validates the bootstrap catalog, and
+The build validates the bootstrap catalog and
 produces the Finbook app, browser app, and Storybook output.
-Bootstrap validation, Finbook, and Storybook run concurrently after Components
-compilation; the browser build waits for all required outputs. Storybook resolves
-local Components source to avoid docgen parsing minified distribution bundles.
+Bootstrap validation, Finbook, and Storybook run concurrently; the browser build
+waits for all required outputs. Storybook resolves published Components bundles
+and disables react-docgen rather than redirecting imports to source.
 Autodocs and accessibility support remain enabled. Studio and extracted Finbook
 still validate their normal built/published package entry points.
 
@@ -118,7 +118,7 @@ still validate their normal built/published package entry points.
 npm run typecheck
 ```
 
-Runs `tsc --noEmit` for the components package, the browser host, the headless
+Runs `tsc --noEmit` for the browser host, the headless
 host, the testing helpers, Storybook, and Finbook.
 
 ## 4. Test

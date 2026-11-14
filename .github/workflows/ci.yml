@@ -10,7 +10,7 @@ on:
         default: false
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' && github.event.action != 'edited' }}
+  cancel-in-progress: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' && github.event.action != 'edited' && github.event.action != 'ready_for_review' }}
 permissions:
   contents: read
 jobs:

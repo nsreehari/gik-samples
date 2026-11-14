@@ -5,16 +5,15 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { resolve } from "node:path";
 import test from "node:test";
 import {
-  eligibleValidationRun, fingerprint, git, hasHeadApproval, inspectTarball, policyIdentity, reuse, sha256, verifyCandidate,
+  componentsPackage, eligibleValidationRun, fingerprint, git, inspectTarball, policyIdentity, reuse, sha256, verifyCandidate,
 } from "../actions-evidence.mjs";
 import { assertLanes } from "../validate-lanes.mjs";
 import {
   assertVerificationRun, DEFAULT_GIK_VERIFICATION_JOB, newer, updateManifest, validateManifest, waitForVerificationRun,
 } from "../verified-gik-update.mjs";
 import { serveFile } from "../static-preview.mjs";
-import { assertProvenance } from "../npm-provenance.mjs";
+import { assertProvenance, shouldPublish } from "../npm-provenance.mjs";
 import { checkLocks } from "../check-locks.mjs";
-import { shouldPublish } from "../publish-candidate.mjs";
 import { planRelease, releaseInputsAt } from "../plan-release.mjs";
 import { coreVersions } from "../collect-pages-packages.mjs";
 
@@ -50,7 +49,7 @@ test("required aggregate rejects failed, cancelled and inappropriately skipped s
     studio: { result: "skipped" }, finbook: { result: "skipped" },
   }));
 });
-test("release promotion is off by default, rejects unreviewed policy and does not reuse release-intent metadata", async (t) => {
+test("retired release promotion is rejected and release-intent metadata is not reused", async (t) => {
   const directory = fixture(t);
   const keys = ["GITHUB_EVENT_PATH", "REUSE_ENABLED", "REVIEWED_POLICY"];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -59,10 +58,10 @@ test("release promotion is off by default, rejects unreviewed policy and does no
     writeFileSync(process.env.GITHUB_EVENT_PATH, "{}");
     process.env.REUSE_ENABLED = "false";
     process.env.REVIEWED_POLICY = policyIdentity();
-    assert.equal(await reuse("release"), false);
+    await assert.rejects(reuse("release"), /promotion was retired/);
     process.env.REUSE_ENABLED = "true";
     process.env.REVIEWED_POLICY = "not-the-reviewed-policy";
-    assert.equal(await reuse("release"), false);
+    await assert.rejects(reuse("release"), /promotion was retired/);
     writeFileSync(process.env.GITHUB_EVENT_PATH, JSON.stringify({ action: "labeled", label: { name: "release:minor" } }));
     assert.equal(await reuse("metadata"), false);
   } finally {
@@ -86,19 +85,6 @@ test("PR evidence requires the same internal successful workflow run and associa
     { pull_requests: [{ number: 43 }] },
   ]) assert.equal(eligibleValidationRun({ ...run, ...patch }, pr, repository, "456"), false);
   assert.equal(eligibleValidationRun(run, pr, repository, "123"), false);
-});
-test("release promotion needs a current trusted human approval, not a stale, dismissed or bot review", () => {
-  const head = "b".repeat(40);
-  const approved = { user: { id: 1, type: "User" }, author_association: "OWNER", state: "APPROVED", commit_id: head };
-  assert.equal(hasHeadApproval([approved], head), true);
-  assert.equal(hasHeadApproval([{ ...approved, commit_id: "c".repeat(40) }], head), false);
-  assert.equal(hasHeadApproval([{ ...approved, user: { id: 1, type: "Bot" } }], head), false);
-  assert.equal(hasHeadApproval([{ ...approved, author_association: "NONE" }], head), false);
-  for (const state of ["DISMISSED", "CHANGES_REQUESTED"]) {
-    assert.equal(hasHeadApproval([approved, { ...approved, state }], head), false);
-  }
-  assert.equal(hasHeadApproval([approved, { ...approved, user: { id: 2, type: "User" }, state: "CHANGES_REQUESTED" }], head), false);
-  assert.equal(hasHeadApproval(Array(100).fill(approved), head), false);
 });
 test("upstream manifest rejects shell data, mutable versions, duplicate packages and non-registry archives", () => {
   assert.doesNotThrow(() => validateManifest(manifest));
@@ -172,7 +158,7 @@ test("the actual packed archive must contain every declared export and match the
 });
 test("candidate verification rejects source, byte and independently handed-off digest mismatches", (t) => {
   const directory = fixture(t);
-  const pkg = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
+  const pkg = { ...componentsPackage(), exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts" } } };
   mkdirSync(`${directory}/package/dist`, { recursive: true });
   writeFileSync(`${directory}/package/package.json`, JSON.stringify(pkg));
   for (const target of Object.values(pkg.exports).flatMap(Object.values)) {
@@ -244,7 +230,7 @@ test("resolution guard rejects absent, stale and mismatched workspace locks with
   const directory = fixture(t);
   assert.throws(() => checkLocks(directory), /Missing reproducible lock/);
   for (const [prefix, workspaces] of [
-    ["", ["packages/components", "packages/service-providers"]], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
+    ["", []], ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
     ["packages/mcp-server", []],
   ]) {
     const packages = {};
@@ -259,7 +245,23 @@ test("resolution guard rejects absent, stale and mismatched workspace locks with
   assert.doesNotThrow(() => checkLocks(directory));
   const lock = `${directory}/package-lock.json`;
   const value = JSON.parse(readFileSync(lock, "utf8"));
-  value.packages["packages/components"].version = "1.0.1";
+  const source = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
+  source.dependencies["gik-components"] = "0.3.2";
+  value.packages[""].dependencies["gik-components"] = "0.3.2";
+  const published = { version: "0.3.2", resolved: "https://registry.npmjs.org/gik-components/-/gik-components-0.3.2.tgz", integrity: "sha512-fixture" };
+  value.packages["node_modules/gik-components"] = published;
+  writeFileSync(`${directory}/package.json`, JSON.stringify(source));
+  writeFileSync(lock, JSON.stringify(value));
+  assert.doesNotThrow(() => checkLocks(directory));
+  value.packages["node_modules/gik-components"] = { link: true, resolved: "packages/components" };
+  writeFileSync(lock, JSON.stringify(value));
+  assert.throws(() => checkLocks(directory), /not a source link/);
+  value.packages["node_modules/gik-components"] = published;
+  value.packages["packages/components"] = { version: "0.3.2" };
+  writeFileSync(lock, JSON.stringify(value));
+  assert.throws(() => checkLocks(directory), /Removed library workspace/);
+  delete value.packages["packages/components"];
+  value.packages[""].version = "1.0.1";
   writeFileSync(lock, JSON.stringify(value));
   assert.throws(() => checkLocks(directory), /workspace version/);
 });
@@ -294,14 +296,16 @@ test("one canonical release owns version-changing pushes, pins rollback and chec
   const runGit = (command, ref) => {
     if (command === "rev-parse") return sha;
     if (command === "merge-base") return "";
-    if (command === "show") return JSON.stringify({ version: ref.startsWith("before:") ? "0.3.0" : "0.3.1" });
+    if (command === "show") return JSON.stringify(ref.endsWith(":package.json") ? {
+      dependencies: { "gik-components": "file:packages/components", "gik-service-providers": "file:packages/service-providers" },
+    } : { version: ref.startsWith("before:") ? "0.3.0" : "0.3.1" });
     throw new Error("Unexpected git call");
   };
   assert.equal(planRelease({ kind: "push", sha, event: { before: "before", after: "after" } }, runGit).pages, false);
   assert.equal(planRelease({ kind: "push", sha, event: { before: "same", after: "after" } }, runGit).pages, true);
   const event = { release: { tag_name: "components-v0.3.1", draft: false, prerelease: false } };
   assert.deepEqual(planRelease({ kind: "release", sha, event }, runGit),
-    { commit: sha, version: "0.3.1", channel: "latest", pages: true, publish: true });
+    { commit: sha, version: "0.3.1", providers_version: "0.3.1", channel: "latest", pages: true, publish: true });
   assert.throws(() => planRelease({ kind: "release", sha, event: { release: { ...event.release, prerelease: true } } }, runGit));
   assert.throws(() => planRelease({ kind: "release", sha, event }, (command, ref) =>
     command === "rev-parse" && ref === "origin/main" ? "b".repeat(40) : runGit(command, ref)));
@@ -312,11 +316,15 @@ test("one canonical release owns version-changing pushes, pins rollback and chec
 });
 test("rollback collection uses exact pinned source constraints and core versions, never current mutable package selection", () => {
   const documents = {
-    "package.json": { version: "0.0.0", dependencies: { react: "^18.3.1" } },
+    "package.json": { version: "0.0.0", dependencies: { react: "^18.3.1",
+      "gik-components": "file:packages/components", "gik-service-providers": "file:packages/service-providers" } },
     "packages/components/package.json": { version: "0.3.1" },
+    "packages/service-providers/package.json": { version: "0.2.1" },
     "package-lock.json": { lockfileVersion: 3, packages: {
-      "": { version: "0.0.0", dependencies: { react: "^18.3.1" } },
+      "": { version: "0.0.0", dependencies: { react: "^18.3.1",
+        "gik-components": "file:packages/components", "gik-service-providers": "file:packages/service-providers" } },
       "packages/components": { version: "0.3.1" },
+      "packages/service-providers": { version: "0.2.1" },
     } },
     "scripts/pages-core-versions.json": { ...coreVersions, "gik-kernel": "0.99.0" },
   };
@@ -327,6 +335,27 @@ test("rollback collection uses exact pinned source constraints and core versions
   documents["package-lock.json"].packages["packages/components"].version = "0.3.1";
   documents["scripts/pages-core-versions.json"]["gik-kernel"] = "latest";
   assert.throws(() => releaseInputsAt(manifest.commit, readGit), /exact structured core versions/);
+});
+test("npm consumer version updates deploy Pages without publishing libraries or reading their source", () => {
+  const sha = "a".repeat(40);
+  const root = { version: "0.0.0", dependencies: { "gik-components": "0.3.3", "gik-service-providers": "0.3.0" } };
+  const lock = { lockfileVersion: 3, packages: {
+    "": root, "node_modules/gik-components": { version: "0.3.3" }, "node_modules/gik-service-providers": { version: "0.3.0" },
+  } };
+  const runGit = (command, ref) => {
+    if (command === "rev-parse") return sha;
+    if (command === "merge-base") return "";
+    const path = ref.slice(ref.indexOf(":") + 1);
+    if (path === "package.json") return JSON.stringify(root);
+    if (path === "package-lock.json") return JSON.stringify(lock);
+    if (path === "scripts/pages-core-versions.json") return JSON.stringify(coreVersions);
+    throw new Error(`Must not read library sources: ${path}`);
+  };
+  assert.deepEqual(planRelease({ kind: "push", sha, event: { after: sha } }, runGit),
+    { commit: sha, version: "0.3.3", providers_version: "0.3.0", channel: "latest", pages: true, publish: false });
+  assert.deepEqual(releaseInputsAt(sha, runGit), coreVersions);
+  lock.packages["node_modules/gik-service-providers"].version = "0.2.1";
+  assert.throws(() => releaseInputsAt(sha, runGit), /matching committed root lock/);
 });
 test("maintenance lock generation has manual/reusable entrypoints, stays read-only and uploads only three locks", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/dependency-locks.yml", import.meta.url), "utf8").replace(/\r\n/g, "\n");
@@ -349,18 +378,12 @@ test("registered CI lock bootstrap is explicit-manual-only and cannot bypass PR 
   assert.match(ci, /plan:\s+if: github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true/);
   assert.match(ci, /name: validate\s+if: always\(\) && \(github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true\)/);
 });
-test("release DAG gates mirror collection on publication; validation uses isolated, mandatory lanes", () => {
+test("Pages mirrors latest npm archives without library publication; validation uses mandatory lanes", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
-  assert.match(workflow, /needs: \[plan, validate, publish, verify-registry, site\]/);
-  assert.match(workflow, /needs\.publish\.result == 'success'/);
-  assert.match(workflow, /needs\.verify-registry\.result == 'success'/);
+  assert.match(workflow, /needs: \[plan, site\]/);
   assert.match(workflow, /run: node scripts\/collect-pages-packages\.mjs/);
-  assert.doesNotMatch(workflow, /PAGES_COMPONENTS_VERSION|PAGES_CORE_VERSIONS_JSON/);
-  assert.match(workflow, /run: node scripts\/publish-candidate\.mjs/);
-  const publisher = readFileSync(new URL("../publish-candidate.mjs", import.meta.url), "utf8");
-  assert.match(publisher, /"publish", "\.artifacts\/candidate\/gik-components\.tgz", "--ignore-scripts"/);
-  assert.doesNotMatch(workflow, /workflow run publish|npm publish --workspace/);
-  assert.match(workflow, /group: components-publication[\s\S]*?cancel-in-progress: false/);
+  assert.doesNotMatch(workflow, /PAGES_COMPONENTS_VERSION|PAGES_SERVICE_PROVIDERS_VERSION|PAGES_CORE_VERSIONS_JSON/);
+  assert.doesNotMatch(workflow, /npm-publish|run: node scripts\/publish-candidate|npm publish|release:\s/);
   assert.match(workflow, /group: pages-deployment/);
   assert.match(workflow, /deploy-pages:\s+name: Deploy Pages\s+needs: collect-pages\s+if: always\(\) && needs\.collect-pages\.result == 'success'/);
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");

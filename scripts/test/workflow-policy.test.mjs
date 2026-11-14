@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion, providerPublicationMode, providersVersion } from "../workflow-policy.mjs";
+import { assertNpmConsumers, classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion, providerPublicationMode, providersVersion } from "../workflow-policy.mjs";
+
+test("Samples pins both npm libraries and rejects restored source workspaces or aliases", () => {
+  const root = { dependencies: { "gik-components": "0.3.2", "gik-service-providers": "0.3.0" } };
+  assert.doesNotThrow(() => assertNpmConsumers(root, []));
+  assert.throws(() => assertNpmConsumers({ dependencies: { ...root.dependencies, "gik-components": "file:packages/components" } }, []), /exact published npm version/);
+  assert.throws(() => assertNpmConsumers(root, ["packages/components/src/shared/index.ts"]), /standalone repositories/);
+  assert.throws(() => assertNpmConsumers({ ...root, workspaces: ["packages/service-providers"] }, []), /standalone repositories/);
+});
 
 test("documentation avoids installs, while runtime, shared policy and unknown inputs fail closed", () => {
   assert.deepEqual(classifyChanges(["README.md", "docs/samples.md"]), {
@@ -93,14 +101,14 @@ test("providers have a guarded first version, independent future bumps and no ag
   assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, { ...manifest, version: "0.1.1" }, []), null);
 });
 
-test("first publication releases the ordinary concurrency slot and requires explicit protected bootstrap", () => {
+test("historical bootstrap policy remains explicit while Samples library release controllers are retired", () => {
   assert.equal(providerPublicationMode(false, false), "bootstrap-required");
   assert.equal(providerPublicationMode(true, false), "publish");
   assert.throws(() => providerPublicationMode(false, true, ""), /explicit/);
   assert.equal(providerPublicationMode(false, true, "PUBLISH gik-service-providers"), "bootstrap");
-  const workflow = readFileSync(new URL("../../.github/workflows/release-service-providers.yml", import.meta.url), "utf8");
-  assert.match(workflow, /ready: \$\{\{ steps\.publication\.outputs\.ready \}\}/);
-  assert.match(workflow, /publish:\s+needs: validate\s+if: needs\.validate\.outputs\.ready == 'true'/);
+  for (const workflow of ["release-components", "release-service-providers", "version-components", "version-service-providers", "bootstrap-first-components-publish"]) {
+    assert.equal(existsSync(new URL(`../../.github/workflows/${workflow}.yml`, import.meta.url)), false);
+  }
 });
 
 test("PR classification validates manifest-only catch-up versions in a detached checkout", () => {

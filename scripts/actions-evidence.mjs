@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync, appendFileSync, cpSync, copyFileSync, lstatSync, readdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, appendFileSync, copyFileSync, lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
+import { collectPagesPackages, coreVersions } from "./collect-pages-packages.mjs";
 
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
@@ -26,18 +27,13 @@ export function inputs() {
   };
 }
 export const fingerprint = () => sha256(JSON.stringify(inputs()));
+export function componentsPackage() {
+  const version = JSON.parse(readFileSync("package.json", "utf8")).dependencies["gik-components"];
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) throw new Error("Components consumer requires an exact npm version");
+  return { name: "gik-components", version };
+}
 export const selectedScope = (outputs) => JSON.stringify(Object.fromEntries(
   ["full", "finbook", "mcp"].map((key) => [key, outputs[key] === "true"])));
-export function hasHeadApproval(reviews, head) {
-  if (reviews.length >= 100) return false;
-  const latest = new Map();
-  for (const review of reviews) {
-    if (review.user?.type !== "User" || !["OWNER", "MEMBER", "COLLABORATOR"].includes(review.author_association)) continue;
-    if (["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(review.state)) latest.set(review.user.id, review);
-  }
-  return ![...latest.values()].some((review) => review.state === "CHANGES_REQUESTED")
-    && [...latest.values()].some((review) => review.state === "APPROVED" && review.commit_id === head);
-}
 export function eligibleValidationRun(run, pr, repository, currentRun) {
   return String(run.id) !== String(currentRun) && run.event === "pull_request"
     && run.status === "completed" && run.conclusion === "success" && run.head_sha === pr.head.sha
@@ -81,7 +77,7 @@ export function inspectTarball(path, expected) {
   if (details.split(/\r?\n/).some((line) => /^[lh]/.test(line))) throw new Error("Tarball links forbidden");
   const actual = JSON.parse(execFileSync("tar", ["-xOf", path, "package/package.json"], { encoding: "utf8" }));
   for (const key of ["name", "version", "exports", "dependencies", "peerDependencies"]) {
-    if (!isDeepStrictEqual(actual[key], expected[key])) throw new Error(`Packed ${key} differs from source`);
+    if (Object.hasOwn(expected, key) && !isDeepStrictEqual(actual[key], expected[key])) throw new Error(`Packed ${key} differs from source`);
   }
   const leaves = (value) => typeof value === "string" ? [value]
     : value && typeof value === "object" ? Object.values(value).flatMap(leaves) : [];
@@ -97,7 +93,7 @@ export function inspectTarball(path, expected) {
 export function verifyCandidate(directory, { allowSameTree = false, siteDirectory } = {}) {
   const manifestBytes = readFileSync(`${directory}/candidate.json`);
   const manifest = JSON.parse(manifestBytes);
-  const expected = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
+  const expected = componentsPackage();
   if (manifest.format !== "gik-samples-candidate/2" || !/^[a-f0-9]{40}$/.test(manifest.commit || "")
     || !/^[a-f0-9]{64}$/.test(manifest.siteSha256 || "")
     || manifest.fingerprint !== fingerprint()
@@ -124,19 +120,22 @@ export function verifyCandidate(directory, { allowSameTree = false, siteDirector
   if (siteDirectory !== undefined) verifySite(siteDirectory, manifest.siteSha256);
   return manifest;
 }
-export function writeCandidate() {
+export async function writeCandidate() {
   const path = ".artifacts/candidate";
   mkdirSync(path, { recursive: true });
-  const expected = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
-  if (!process.env.npm_execpath || execFileSync(process.execPath, [process.env.npm_execpath, "--version"],
-    { encoding: "utf8" }).trim() !== "11.19.0") throw new Error("Pack with the pinned npm 11.19.0 CLI");
-  const result = JSON.parse(execFileSync(process.execPath, [process.env.npm_execpath,
-    "pack", "--workspace", "gik-components", "--ignore-scripts", "--json", "--pack-destination", path],
-  { encoding: "utf8" }))[0];
-  // pack --ignore-scripts consumes the already validated build; prepack remains intact for developers.
-  const bytes = readFileSync(`${path}/${result.filename}`);
+  const expected = componentsPackage();
+  const root = JSON.parse(readFileSync("package.json", "utf8"));
+  const manifest = await collectPagesPackages({
+    componentsVersion: expected.version,
+    versions: { ...coreVersions, "gik-service-providers": root.dependencies["gik-service-providers"] },
+    outputDirectory: "src/browser-host/dist/vendor",
+  });
+  const published = manifest.packages.find(({ name }) => name === expected.name);
+  const locked = JSON.parse(readFileSync("package-lock.json", "utf8")).packages["node_modules/gik-components"];
+  if (locked?.version !== expected.version || locked.integrity !== published.integrity) throw new Error("Components archive differs from committed npm lock");
+  const bytes = readFileSync(`src/browser-host/dist/vendor/${published.file}`);
   writeFileSync(`${path}/gik-components.tgz`, bytes);
-  inspectTarball(`${path}/gik-components.tgz`, expected);
+  inspectTarball(`${path}/gik-components.tgz`, JSON.parse(readFileSync("node_modules/gik-components/package.json", "utf8")));
   writeFileSync(`${path}/candidate.json`, JSON.stringify({
     format: "gik-samples-candidate/2", commit: git("rev-parse", "HEAD"),
     tree: git("rev-parse", "HEAD^{tree}"), fingerprint: fingerprint(),
@@ -169,36 +168,16 @@ function runArtifacts(readApi, repository, runId) {
 }
 export async function reuse(mode, {
   readApi = api, download = downloadArtifact, log = console.log, reuseRoot = ".artifacts",
-  candidateDirectory = ".artifacts/candidate", siteDirectory = "src/browser-host/dist",
 } = {}) {
+  if (mode !== "metadata") throw new Error("Unsupported evidence reuse mode; package release promotion was retired");
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
   const repository = process.env.GITHUB_REPOSITORY;
-  const release = mode === "release";
-  if (release && (process.env.REUSE_ENABLED !== "true"
-    || process.env.REVIEWED_POLICY !== policyIdentity())) {
-    log("Reuse fallback: release promotion disabled or reviewed policy differs");
-    return false;
-  }
-  if (!release && !["labeled", "unlabeled", "edited"].includes(event.action)) return false;
-  if (!release && /^release:/.test(event.label?.name || "")) return false;
-  const prs = release
-    ? readApi(`repos/${repository}/commits/${git("rev-parse", "HEAD")}/pulls`)
-    : [event.pull_request];
-  for (const pr of prs) {
+  if (!["labeled", "unlabeled", "edited", "ready_for_review"].includes(event.action)) return false;
+  if (/^release:/.test(event.label?.name || "")) return false;
+  for (const pr of [event.pull_request]) {
     if (pr?.head?.repo?.full_name !== repository) {
       log("Reuse fallback: PR repository identity differs");
       continue;
-    }
-    if (release) {
-      if (!pr.merged_at || pr.merge_commit_sha !== git("rev-parse", "HEAD")) {
-        log("Reuse fallback: PR merge identity differs");
-        continue;
-      }
-      const reviews = readApi(`repos/${repository}/pulls/${pr.number}/reviews?per_page=100`);
-      if (!hasHeadApproval(reviews, pr.head.sha)) {
-        log("Reuse fallback: current trusted human head approval is absent");
-        continue;
-      }
     }
     const runs = readApi(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${pr.head.sha}&status=success&per_page=30`).workflow_runs;
     for (const run of runs) {
@@ -206,7 +185,7 @@ export async function reuse(mode, {
         log(`Reuse fallback: CI run ${run.id} identity is ineligible`);
         continue;
       }
-      const names = release ? ["release-candidate", "site-build"] : ["validation-evidence"];
+      const names = ["validation-evidence"];
       const artifacts = runArtifacts(readApi, repository, run.id);
       let missing = false;
       for (const name of names) {
@@ -220,53 +199,21 @@ export async function reuse(mode, {
       if (missing) continue;
       const directory = `${reuseRoot}/reuse-${run.id}`;
       download(run.id, repository, names[0], directory);
-      if (release) {
-        const identity = JSON.parse(readFileSync(`${directory}/candidate.json`, "utf8"));
-        if (typeof identity.format !== "string" || !/^[a-f0-9]{64}$/.test(identity.fingerprint || "")) {
-          throw new Error("Malformed candidate identity evidence");
-        }
-        if (identity.format === "gik-samples-candidate/2" && (!/^[a-f0-9]{40}$/.test(identity.commit || "")
-          || !/^[a-f0-9]{40}$/.test(identity.tree || "") || typeof identity.name !== "string"
-          || typeof identity.version !== "string" || !/^[a-f0-9]{64}$/.test(identity.siteSha256 || ""))) {
-          throw new Error("Malformed candidate source/site identity");
-        }
-        const expected = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
-        if (identity.format !== "gik-samples-candidate/2" || identity.fingerprint !== fingerprint()
-          || identity.tree !== git("rev-parse", "HEAD^{tree}") || identity.name !== expected.name || identity.version !== expected.version) {
-          log(`Reuse fallback: CI run ${run.id} candidate input identity differs`);
-          continue;
-        }
-        const candidate = verifyCandidate(directory, { allowSameTree: true });
-        const commit = readApi(`repos/${repository}/commits/${candidate.commit}`);
-        if (commit.parents.length !== 2 || commit.parents[1].sha !== pr.head.sha
-          || commit.commit.tree.sha !== inputs().tree) {
-          log(`Reuse fallback: CI run ${run.id} synthetic merge identity differs`);
-          continue;
-        }
-        const stagedSite = `${directory}/site-build`;
-        download(run.id, repository, "site-build", stagedSite);
-        verifySite(stagedSite, candidate.siteSha256);
-        mkdirSync(candidateDirectory, { recursive: true });
-        for (const file of ["candidate.json", "gik-components.tgz"]) copyFileSync(join(directory, file), join(candidateDirectory, file));
-        cpSync(stagedSite, siteDirectory, { recursive: true });
-        verifySite(siteDirectory, candidate.siteSha256);
-      } else {
-        const evidence = JSON.parse(readFileSync(`${directory}/validation.json`, "utf8"));
-        if (typeof evidence.format !== "string" || !/^[a-f0-9]{64}$/.test(evidence.fingerprint || "")
-          || typeof evidence.scope !== "string") throw new Error("Malformed validation evidence");
-        const scope = JSON.parse(evidence.scope);
-        if (!scope || Object.keys(scope).sort().join(",") !== "finbook,full,mcp"
-          || Object.values(scope).some((value) => typeof value !== "boolean")) throw new Error("Malformed validation scope");
-        if (evidence.fingerprint !== fingerprint() || evidence.format !== "gik-samples-validation/1") {
-          log(`Reuse fallback: CI run ${run.id} validation input identity differs`);
-          continue;
-        }
-        if (!isDeepStrictEqual(scope, JSON.parse(selectedScope(JSON.parse(process.env.VALIDATION_SCOPE || "{}"))))) {
-          log(`Reuse fallback: CI run ${run.id} selected validation scope differs`);
-          continue;
-        }
-        if (evidence.validated !== true) throw new Error("Matching validation evidence is incomplete");
+      const evidence = JSON.parse(readFileSync(`${directory}/validation.json`, "utf8"));
+      if (typeof evidence.format !== "string" || !/^[a-f0-9]{64}$/.test(evidence.fingerprint || "")
+        || typeof evidence.scope !== "string") throw new Error("Malformed validation evidence");
+      const scope = JSON.parse(evidence.scope);
+      if (!scope || Object.keys(scope).sort().join(",") !== "finbook,full,mcp"
+        || Object.values(scope).some((value) => typeof value !== "boolean")) throw new Error("Malformed validation scope");
+      if (evidence.fingerprint !== fingerprint() || evidence.format !== "gik-samples-validation/1") {
+        log(`Reuse fallback: CI run ${run.id} validation input identity differs`);
+        continue;
       }
+      if (!isDeepStrictEqual(scope, JSON.parse(selectedScope(JSON.parse(process.env.VALIDATION_SCOPE || "{}"))))) {
+        log(`Reuse fallback: CI run ${run.id} selected validation scope differs`);
+        continue;
+      }
+      if (evidence.validated !== true) throw new Error("Matching validation evidence is incomplete");
       log(`Reused ${mode} evidence from CI run ${run.id}`);
       appendFileSync(process.env.GITHUB_STEP_SUMMARY,
         `Reused ${mode} evidence: https://github.com/${repository}/actions/runs/${run.id}\n`);
@@ -277,7 +224,7 @@ export async function reuse(mode, {
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const command = process.argv[2];
-  if (command === "pack") writeCandidate();
+  if (command === "pack") await writeCandidate();
   else if (command === "verify") verifyCandidate(".artifacts/candidate", { allowSameTree: process.env.ALLOW_SAME_TREE === "true" });
   else if (command === "verify-site") verifyCandidate(".artifacts/candidate", { siteDirectory: "src/browser-host/dist" });
   else if (command === "hashes") {

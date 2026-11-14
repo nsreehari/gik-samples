@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 export function checkLocks(root = ".") {
   for (const [directory, workspaces] of [
-    [".", ["packages/components", "packages/service-providers"]],
+    [".", []],
     ["apps/finbook", ["reference-app-host/browser-host", "mcp-server"]],
     ["packages/mcp-server", []],
   ]) {
@@ -25,6 +25,18 @@ export function checkLocks(root = ".") {
       for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
         if (!isDeepStrictEqual(entry[section] || {}, pkg[section] || {})) {
           throw new Error(`Stale ${section} lock: ${directory}/${workspace}`);
+        }
+      }
+      if (directory === "." && workspace === "") {
+        for (const [name, legacy] of [["gik-components", "packages/components"], ["gik-service-providers", "packages/service-providers"]]) {
+          if (lock.packages[legacy]) throw new Error(`Removed library workspace remains locked: ${legacy}`);
+          const version = pkg.dependencies?.[name];
+          if (version === undefined) continue;
+          const installed = lock.packages[`node_modules/${name}`];
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version) || !installed || installed.link || installed.version !== version
+            || !installed.integrity || !installed.resolved?.startsWith("https://registry.npmjs.org/")) {
+            throw new Error(`Expected exact integrity-pinned npm library, not a source link: ${name}`);
+          }
         }
       }
     }
