@@ -75,7 +75,7 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   collect-pages:
-    name: Verify site and collect exact npm archives
+    name: Verify site and refresh latest npm archives
     needs: [plan, site]
     runs-on: ubuntu-latest
     env:
@@ -96,12 +96,8 @@ jobs:
           path: src/browser-host/dist
       - name: Verify source-job digest before modifying or deploying the site
         run: node --input-type=module -e 'import {verifySite} from "./scripts/actions-evidence.mjs"; verifySite("src/browser-host/dist", process.env.EXPECTED_SITE_SHA256);'
-      - name: Collect exact source-pinned versions without mutable latest
+      - name: Mirror latest published packages with verified integrity
         run: node scripts/collect-pages-packages.mjs
-        env:
-          PAGES_COMPONENTS_VERSION: ${{ needs.plan.outputs.version }}
-          PAGES_SERVICE_PROVIDERS_VERSION: ${{ needs.plan.outputs.providers_version }}
-          PAGES_CORE_VERSIONS_JSON: ${{ needs.plan.outputs.core_versions }}
       - name: Smoke-test assembled artifact
         run: node scripts/smoke-pages.mjs
         env:

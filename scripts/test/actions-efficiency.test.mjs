@@ -378,11 +378,11 @@ test("registered CI lock bootstrap is explicit-manual-only and cannot bypass PR 
   assert.match(ci, /plan:\s+if: github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true/);
   assert.match(ci, /name: validate\s+if: always\(\) && \(github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true\)/);
 });
-test("Pages consumes exact npm archives without library publication; validation uses mandatory lanes", () => {
+test("Pages mirrors latest npm archives without library publication; validation uses mandatory lanes", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /needs: \[plan, site\]/);
-  assert.match(workflow, /PAGES_COMPONENTS_VERSION: \$\{\{ needs\.plan\.outputs\.version \}\}/);
-  assert.match(workflow, /PAGES_SERVICE_PROVIDERS_VERSION: \$\{\{ needs\.plan\.outputs\.providers_version \}\}/);
+  assert.match(workflow, /run: node scripts\/collect-pages-packages\.mjs/);
+  assert.doesNotMatch(workflow, /PAGES_COMPONENTS_VERSION|PAGES_SERVICE_PROVIDERS_VERSION|PAGES_CORE_VERSIONS_JSON/);
   assert.doesNotMatch(workflow, /npm-publish|run: node scripts\/publish-candidate|npm publish|release:\s/);
   assert.match(workflow, /group: pages-deployment/);
   assert.match(workflow, /deploy-pages:\s+name: Deploy Pages\s+needs: collect-pages\s+if: always\(\) && needs\.collect-pages\.result == 'success'/);

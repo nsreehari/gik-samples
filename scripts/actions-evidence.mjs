@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync, appendFileSync, copyFileSync, l
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { collectPagesPackages } from "./collect-pages-packages.mjs";
+import { collectPagesPackages, coreVersions } from "./collect-pages-packages.mjs";
 
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
@@ -126,7 +126,8 @@ export async function writeCandidate() {
   const expected = componentsPackage();
   const root = JSON.parse(readFileSync("package.json", "utf8"));
   const manifest = await collectPagesPackages({
-    componentsVersion: expected.version, serviceProvidersVersion: root.dependencies["gik-service-providers"],
+    componentsVersion: expected.version,
+    versions: { ...coreVersions, "gik-service-providers": root.dependencies["gik-service-providers"] },
     outputDirectory: "src/browser-host/dist/vendor",
   });
   const published = manifest.packages.find(({ name }) => name === expected.name);

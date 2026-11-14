@@ -28,9 +28,12 @@ operations must run only in CI.
 deploy consumer changes, including library dependency updates; they never
 publish npm packages. Library publication and Pages deployment are independent.
 
-The collector downloads twelve official npm archives: ten exact core package
-versions from `scripts/pages-core-versions.json`, plus the exact Components and
-Service Providers versions in the source consumer manifest and committed lock.
+The collector downloads twelve official npm archives: ten core packages,
+Components and Service Providers. Every Pages mirror refresh resolves npm's
+`latest` tag independently of the site's dependency pins. Core package names
+come from `scripts/pages-core-versions.json`; its version values remain site
+release inputs, not mirror selectors. No version-list update is needed to
+refresh the mirror.
 It verifies registry identity, HTTPS registry origin and strong SRI before
 writing anything. Only npm visibility 404 responses receive bounded retries;
 authorization, identity and integrity errors fail explicitly.
@@ -43,7 +46,7 @@ or repacked substitute archives are vendored.
 
 The readonly site job hashes the complete built site before upload. The
 readonly assembly job verifies that independently handed-off digest before
-adding source-pinned archives, then browser-smokes the assembled artifact and
+refreshing the latest-package mirror, then browser-smokes the assembled artifact and
 checks every archive's served bytes and download indexes. Only the protected
 `github-pages` deployment job receives Pages write/OIDC authority.
 
@@ -57,8 +60,11 @@ Modern source refs select library versions from exact npm dependencies and
 locked `node_modules` entries. Historical workspace-era refs may select their
 two tracked library manifests and matching workspace lock entries. This is
 explicit historical metadata compatibility, not a current source-link fallback.
-The current reviewed collector receives all versions from that pinned source;
-it never substitutes current mutable package selection.
+These pinned versions govern the site build, not the mirror downloads. The
+current reviewed collector still refreshes all packages from npm's `latest`
+tag. The mirror manifest records concrete versions and verified archive
+identities, never `latest` as an archive version. A site rollback does not roll
+back the package mirror.
 
 ## Artifact classes, fingerprints and rollout
 

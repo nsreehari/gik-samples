@@ -14,18 +14,21 @@ async function fixture(t) {
   const fetcher = async (url) => {
     const parsed = new URL(url);
     if (parsed.pathname.endsWith(".tgz")) return new Response(bytes);
-    const [, name, version] = parsed.pathname.split("/");
+    const [, name, selector] = parsed.pathname.split("/");
+    const version = selector === "latest" ? (name === "gik-service-providers" ? "0.3.0" : "1.2.3") : selector;
     return Response.json({
       name, version,
       dist: { tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`, integrity },
     });
   };
-  return { outputDirectory, bytes, fetcher, serviceProvidersVersion: "0.3.0" };
+  return { outputDirectory, bytes, fetcher };
 }
 
-test("collects all 12 exact npm archives with index, source metadata, and verifiable checksums", async (t) => {
+test("collects all 12 explicitly selected npm archives with index, source metadata, and verifiable checksums", async (t) => {
   const options = await fixture(t);
-  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.2" });
+  const manifest = await collectPagesPackages({
+    ...options, componentsVersion: "0.3.2", versions: { ...coreVersions, "gik-service-providers": "0.3.0" },
+  });
   assert.equal(manifest.packages.length, 12);
   assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.2");
   assert.equal(manifest.packages.find(({ name }) => name === "gik-service-providers").version, "0.3.0");
@@ -52,33 +55,64 @@ test("rejects tampered archives without producing a success manifest", async (t)
   assert.deepEqual(await readdir(options.outputDirectory), []);
 });
 
-test("rejects mutable selectors instead of silently publishing a different release", async (t) => {
+test("rejects unsupported selectors instead of silently publishing a different release", async (t) => {
   const options = await fixture(t);
   await assert.rejects(collectPagesPackages({
-    ...options, componentsVersion: "latest",
+    ...options, componentsVersion: "next",
   }), /valid Components release version/);
 });
-test("requires an exact provider version and rejects provider tampering before writing any archives", async (t) => {
-  const options = await fixture(t);
-  for (const serviceProvidersVersion of [undefined, "latest", "^0.3.0"]) {
-    await assert.rejects(collectPagesPackages({
-      ...options, componentsVersion: "0.3.2", serviceProvidersVersion,
-    }), /valid Service Providers release version/);
-  }
-  await assert.rejects(collectPagesPackages({
-    ...options, componentsVersion: "0.3.2",
-    fetcher: (url) => url.includes("gik-service-providers") && url.endsWith(".tgz")
-      ? new Response("tampered provider archive") : options.fetcher(url),
-  }), /Integrity verification failed for gik-service-providers/);
-  assert.deepEqual(await readdir(options.outputDirectory), []);
-});
-test("pinned rollback core versions override current tooling defaults and reject incomplete or mutable maps", async (t) => {
+test("explicit core versions override latest defaults and reject incomplete or unsupported maps", async (t) => {
   const options = await fixture(t);
   const versions = { ...coreVersions, "gik-kernel": "0.99.0" };
   const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions });
   assert.equal(manifest.packages.find(({ name }) => name === "gik-kernel").version, "0.99.0");
-  for (const invalid of [{}, { ...versions, "gik-kernel": "latest" }, { ...versions, "gik-unexpected": "1.0.0" }]) {
+  for (const invalid of [{}, { ...versions, "gik-kernel": "next" }, { ...versions, "gik-unexpected": "1.0.0" }]) {
     await assert.rejects(collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions: invalid }), /complete exact core/);
+  }
+});
+
+test("an explicit core-only collection does not inject providers", async (t) => {
+  const options = await fixture(t);
+  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions: coreVersions });
+  assert.equal(manifest.packages.length, 11);
+  assert.equal(manifest.packages.some(({ name }) => name === "gik-service-providers"), false);
+});
+
+test("explicit provider versions are honored and provider integrity failure blocks all output", async (t) => {
+  const options = await fixture(t);
+  const versions = { ...coreVersions, "gik-service-providers": "0.2.0" };
+  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0", versions });
+  assert.equal(manifest.packages.find(({ name }) => name === "gik-service-providers").version, "0.2.0");
+  await assert.rejects(collectPagesPackages({
+    ...options, componentsVersion: "0.3.0", versions: { ...versions, "gik-service-providers": "next" },
+  }), /complete exact core/);
+  const empty = await fixture(t);
+  await assert.rejects(collectPagesPackages({
+    ...empty, componentsVersion: "0.3.0",
+    fetcher: (url) => url.includes("/gik-service-providers/") && url.endsWith(".tgz")
+      ? new Response("tampered provider archive") : empty.fetcher(url),
+  }), /Integrity verification failed for gik-service-providers/);
+  assert.deepEqual(await readdir(empty.outputDirectory), []);
+});
+
+test("default mirror resolves latest for every package and records concrete archive identities", async (t) => {
+  const options = await fixture(t);
+  const metadataRequests = [];
+  const manifest = await collectPagesPackages({
+    ...options,
+    fetcher: (url) => {
+      if (!url.endsWith(".tgz")) metadataRequests.push(url);
+      return options.fetcher(url);
+    },
+  });
+  assert.equal(metadataRequests.length, 12);
+  assert.ok(metadataRequests.every((url) => url.endsWith("/latest")));
+  assert.ok(metadataRequests.includes("https://registry.npmjs.org/gik-service-providers/latest"));
+  assert.ok(metadataRequests.includes("https://registry.npmjs.org/gik-components/latest"));
+  for (const entry of manifest.packages) {
+    assert.notEqual(entry.version, "latest");
+    assert.equal(entry.file, `${entry.name}-${entry.version}.tgz`);
+    assert.equal(entry.sha256, createHash("sha256").update(options.bytes).digest("hex"));
   }
 });
 
@@ -106,7 +140,7 @@ test("rejects mismatched registry versions and non-npm tarball hosts", async (t)
     (metadata) => { metadata.dist.tarball = "https://example.com/archive.tgz"; },
   ]) {
     await assert.rejects(collectPagesPackages({
-      ...options, componentsVersion: "0.3.0",
+      ...options, componentsVersion: "0.3.0", versions: coreVersions,
       fetcher: async (url) => {
         const metadata = await (await options.fetcher(url)).json();
         mutate(metadata);
