@@ -70,11 +70,22 @@ test("providers have a guarded first version, independent future bumps and no ag
   assert.throws(() => providersVersion([], null, { ...manifest, version: "1.0.0" }, []), /First/);
   assert.throws(() => providersVersion([], null, { ...manifest, exports: { ...manifest.exports, ".": "./dist/index.js" } }, []), /individual/);
   assert.throws(() => providersVersion([], expanded, manifest, []), /every published/);
-  assert.throws(() => providersVersion([], manifest, {
-    ...manifest,
-    exports: { ...manifest.exports, "./unknown": "./dist/unknown.js" },
-  }, []), /known individual/);
+  for (const entry of ["./provider/*", "./", "./../internal"]) {
+    assert.throws(() => providersVersion([], manifest, {
+      ...manifest,
+      exports: { ...manifest.exports, [entry]: "./dist/provider.js" },
+    }, []), /individual/);
+  }
+  for (const entry of ["./future-provider", "./vendor/new-provider"]) {
+    assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, {
+      ...manifest,
+      exports: { ...manifest.exports, [entry]: "./dist/provider.js" },
+    }, ["release:minor"]), "0.2.0");
+  }
   assert.equal(providersVersion(["packages/service-providers/package.json"], manifest, expanded, ["release:minor"]), "0.2.0");
+  const foundry = { ...expanded, exports: { ...expanded.exports, "./foundry": "./dist/foundry.js" } };
+  assert.equal(providersVersion(["packages/service-providers/package.json"], expanded, foundry, ["release:minor"]), "0.2.0");
+  assert.throws(() => providersVersion([], foundry, expanded, []), /every published/);
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, []), "0.1.1");
   assert.equal(providersVersion(["packages/service-providers/src/gmail.ts"], manifest, manifest, ["release:minor"]), "0.2.0");
   assert.equal(providersVersion(["packages/service-providers/test/providers.test.ts"], manifest, manifest, []), null);
