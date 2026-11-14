@@ -349,6 +349,12 @@ Form renders a schema-driven committed object editor and emits `save` with `{ va
 table renders a committed row editor and emits `save` with `{ rows }`. Both keep draft state local;
 explicit event handlers own persistence and external effects.
 
+File input accepts optional `maxFileSize` in bytes. It checks every selected file before
+reading contents or emitting `select`; if any file exceeds the limit, the entire selection
+is rejected with a local alert and the previous selection remains unchanged. Read failures
+also show an alert. Both upload and drag/drop use this check. Omit the option to retain the
+existing unlimited behavior; backend request validation should still enforce its own limit.
+
 Form accepts an optional `title` and independent `saveVisibility` / `discardVisibility`
 (`"dirty"` by default, `"always"`, or `"never"`). An always-visible Save remains disabled for an
 unchanged draft unless `allowPristineSave: true`; use both options for repeatable submissions that

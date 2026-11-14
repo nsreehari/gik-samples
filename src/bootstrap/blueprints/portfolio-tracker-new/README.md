@@ -6,6 +6,9 @@ alone works too. Select the AI provider in the sample launch settings, then use
 **Update portfolio** in the holdings area.
 Intake requires a configured AI connection even when intelligence reports use
 the mock model. Notes are limited to 4,000 characters.
+The file input rejects files over 100,000 bytes before reading their contents or
+sending a selection event. It displays an error and preserves any previously
+selected file and typed note. The service also validates the size on submission.
 Foundry intake selects the dedicated `Portfolio-Intake-Agent`. The existing
 `Portfolio-Intelligence-Agent` remains responsible for reports; its response
 schema is not compatible with holdings reconciliation.

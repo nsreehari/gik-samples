@@ -5025,6 +5025,7 @@
               "label": "Drop a portfolio file or click to upload",
               "variant": "dropzone",
               "readAs": "text",
+              "maxFileSize": 100000,
               "accept": ".csv,.json,.txt"
             },
             "bindings": {

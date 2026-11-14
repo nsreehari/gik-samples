@@ -3758,6 +3758,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "accept": {
           "type": "string"
         },
+        "maxFileSize": {
+          "type": "integer",
+          "minimum": 1
+        },
         "multiple": {
           "type": "boolean"
         },
@@ -3879,7 +3883,8 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       "constraints": [
         "Use text for textual documents",
         "Use base64 only when binary content must cross the event boundary",
-        "Use metadata when content stays browser-owned"
+        "Use metadata when content stays browser-owned",
+        "Set maxFileSize in bytes to reject an oversized selection before reading or emitting any files. Rejection preserves the previous selection and displays a local error."
       ],
       "example": {
         "capability": "primitive:file-input",
