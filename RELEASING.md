@@ -66,6 +66,10 @@ Required CI validation keeps isolated Studio, extracted Finbook and MCP lanes.
 Studio tests npm consumers, the actual provider archive and all twelve vendor
 downloads. Library unit tests run in their owning repositories, not twice here.
 Missing/stale root, Finbook or MCP locks block validation.
+When migrating an existing lock, the CI generator removes obsolete library
+workspace links before npm resolves the exact package pins. The mandatory lock
+guard rejects retained library workspaces or source-linked dependencies, even
+when the root dependency constraints match.
 
 Metadata-only PR events may reuse complete identical-tree successful validation
 evidence. Fingerprints bind the Git tree, workflows/scripts, Node/npm resolver,
