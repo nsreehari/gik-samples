@@ -60,7 +60,7 @@ test.each(["button", "dropzone"])("file input rejects an oversized batch before 
     return selected;
   };
   let renderer!: TestRenderer.ReactTestRenderer;
-  const props = { variant, readAs: "text", multiple: true, maxFileSize: 10 };
+  const props = { variant, readAs: "text", multiple: true, maxFileSize: 100000 };
   const onSelect: React.ComponentProps<typeof FileInput>["emit"] = (_name, payload) => {
     if (payload) events.push(payload);
   };
@@ -73,23 +73,23 @@ test.each(["button", "dropzone"])("file input rejects an oversized batch before 
   await act(async () => {
     renderer = TestRenderer.create(<FileInput node={node("primitive:file-input", props)} emit={onSelect} children={undefined} />);
   });
-  await select([file(10)]);
+  await select([file(100000)]);
   assert.equal(events.length, 1);
   assert.equal(reads, 1);
-  await select([file(5), file(11)]);
+  await select([file(50000), file(100001)]);
   assert.equal(events.length, 1);
   assert.equal(reads, 1);
-  assert.match(renderer.root.findByProps({ role: "alert" }).props.children, /at most 10 bytes/);
+  assert.match(renderer.root.findByProps({ role: "alert" }).props.children, /at most 100000 bytes/);
   await act(async () => {
     renderer.update(<FileInput node={node("primitive:file-input", { ...props, readAs: "base64" })} emit={onSelect} children={undefined} />);
   });
-  await select([file(11)]);
+  await select([file(100001)]);
   assert.equal(events.length, 1);
   assert.equal(reads, 1);
   await act(async () => {
     renderer.update(<FileInput node={node("primitive:file-input", props)} emit={onSelect} children={undefined} />);
   });
-  await select([file(10)]);
+  await select([file(100000)]);
   assert.equal(events.length, 2);
   assert.equal(reads, 2);
   assert.throws(() => renderer.root.findByProps({ role: "alert" }));
