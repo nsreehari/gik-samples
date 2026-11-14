@@ -5,11 +5,12 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const coreVersions = JSON.parse(await readFile(new URL("./pages-core-versions.json", import.meta.url), "utf8"));
-export function validateCoreVersions(versions) {
+export function validateCoreVersions(versions, allowLatest = false) {
   if (!versions || typeof versions !== "object" || Array.isArray(versions)
-    || Object.keys(versions).sort().join("\n") !== Object.keys(coreVersions).sort().join("\n")
-    || Object.values(versions).some((version) => typeof version !== "string"
-      || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))) {
+    || Object.keys(versions).filter((name) => !allowLatest || name !== "gik-service-providers").sort().join("\n")
+      !== Object.keys(coreVersions).sort().join("\n")
+    || Object.values(versions).some((version) => !(allowLatest && version === "latest")
+      && (typeof version !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)))) {
     throw new Error("Pages requires the complete exact core package version set");
   }
   return versions;
@@ -28,24 +29,24 @@ async function fetchPublished(url, fetcher, pause) {
 }
 
 export async function collectPagesPackages({
-  componentsVersion,
-  versions = coreVersions,
+  componentsVersion = "latest",
+  versions = Object.fromEntries([...Object.keys(coreVersions), "gik-service-providers"].map((name) => [name, "latest"])),
   outputDirectory,
   fetcher = fetch,
   pause = delay,
 }) {
   const isVersion = (value) => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value);
-  if (!isVersion(componentsVersion)) {
+  if (componentsVersion !== "latest" && !isVersion(componentsVersion)) {
     throw new Error("A valid Components release version is required");
   }
   const packages = [];
   const downloads = [];
-  validateCoreVersions(versions);
+  validateCoreVersions(versions, true);
   for (const [name, requestedVersion] of Object.entries({ ...versions, "gik-components": componentsVersion })) {
     const metadataUrl = `https://registry.npmjs.org/${name}/${requestedVersion}`;
     const metadata = await (await fetchPublished(metadataUrl, fetcher, pause)).json();
     if (metadata.name !== name || !isVersion(metadata.version)
-      || metadata.version !== requestedVersion) {
+      || (requestedVersion !== "latest" && metadata.version !== requestedVersion)) {
       throw new Error(`Registry metadata does not match ${name}@${requestedVersion}`);
     }
     const version = metadata.version;
@@ -98,12 +99,7 @@ export async function collectPagesPackages({
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const components = JSON.parse(await readFile(
-    new URL("../packages/components/package.json", import.meta.url), "utf8",
-  ));
   await collectPagesPackages({
-    componentsVersion: process.env.PAGES_COMPONENTS_VERSION || components.version,
-    versions: process.env.PAGES_CORE_VERSIONS_JSON ? JSON.parse(process.env.PAGES_CORE_VERSIONS_JSON) : coreVersions,
     outputDirectory: fileURLToPath(new URL("../src/browser-host/dist/vendor/", import.meta.url)),
   });
 }

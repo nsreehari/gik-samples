@@ -349,16 +349,17 @@ test("registered CI lock bootstrap is explicit-manual-only and cannot bypass PR 
   assert.match(ci, /plan:\s+if: github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true/);
   assert.match(ci, /name: validate\s+if: always\(\) && \(github\.event_name != 'workflow_dispatch' \|\| inputs\.generate_locks != true\)/);
 });
-test("release DAG gates exact collection on publication; validation uses isolated, mandatory lanes", () => {
+test("release DAG gates mirror collection on publication; validation uses isolated, mandatory lanes", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /needs: \[plan, validate, publish, verify-registry, site\]/);
   assert.match(workflow, /needs\.publish\.result == 'success'/);
   assert.match(workflow, /needs\.verify-registry\.result == 'success'/);
-  assert.match(workflow, /PAGES_COMPONENTS_VERSION: \$\{\{ needs\.plan\.outputs\.version \}\}/);
+  assert.match(workflow, /run: node scripts\/collect-pages-packages\.mjs/);
+  assert.doesNotMatch(workflow, /PAGES_COMPONENTS_VERSION|PAGES_CORE_VERSIONS_JSON/);
   assert.match(workflow, /run: node scripts\/publish-candidate\.mjs/);
   const publisher = readFileSync(new URL("../publish-candidate.mjs", import.meta.url), "utf8");
   assert.match(publisher, /"publish", "\.artifacts\/candidate\/gik-components\.tgz", "--ignore-scripts"/);
-  assert.doesNotMatch(workflow, /workflow run publish|PAGES_COMPONENTS_VERSION:.*latest|npm publish --workspace/);
+  assert.doesNotMatch(workflow, /workflow run publish|npm publish --workspace/);
   assert.match(workflow, /group: components-publication[\s\S]*?cancel-in-progress: false/);
   assert.match(workflow, /group: pages-deployment/);
   assert.match(workflow, /deploy-pages:\s+name: Deploy Pages\s+needs: collect-pages\s+if: always\(\) && needs\.collect-pages\.result == 'success'/);
