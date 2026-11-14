@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { parseFoundryJsonReply } from "./index";
-import { createFoundryProxy, FoundryProxyError } from "./foundry-proxy";
+import { parseFoundryJsonReply, createFoundryProxy, FoundryProxyError } from "../src/foundry";
 
 test("Foundry JSON response mode parses a complete artifact", () => {
   assert.deepEqual(

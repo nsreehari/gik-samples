@@ -8,11 +8,12 @@ npm install gik-service-providers
 import { createSchedulerServiceKind } from "gik-service-providers/scheduler";
 import { createGmailServiceKind } from "gik-service-providers/gmail";
 import { createGitHubContextStoreServiceKind } from "gik-service-providers/github-context-store";
+import { createFoundryServiceKind } from "gik-service-providers/foundry";
 ```
 
 There is deliberately **no package-root export or index barrel**. Applications
 explicitly import and register the providers they choose. Gmail does not import
-Croner or scheduler code. Both use the published `gik-controlface/services`
+Croner or scheduler code. Providers use the published `gik-controlface/services`
 contracts; there are no private sibling-checkout dependencies.
 
 ## Ownership and setup
@@ -164,6 +165,46 @@ This provider stores only bounded, non-sensitive context. It is not a token
 vault, GitHub event archive, durable-runtime journal, or substitute for host
 authorization. Actions artifacts and Copilot Memory have different retention
 and consistency semantics and are not silently used as fallbacks.
+
+## Foundry
+
+Kind `foundry-agent`, version `1`, connects to a host-admitted Foundry proxy:
+
+```json
+{
+  "endpoint": "https://your-foundry-proxy.example",
+  "agent": "Your-Named-Agent",
+  "credentialRef": "foundry/access-key",
+  "agentTools": []
+}
+```
+
+Register `createFoundryServiceKind()` explicitly. The host resolves the access
+key and authorizes the endpoint; neither the Blueprint nor the provider stores
+credentials. Rejected credentials produce the existing typed dependency error
+and invalidate the host credential. Native operation validators or an explicit
+request `responseSchema` select structured output; the proxy retains named-agent
+schema admission. Conversation continuation, scoped capability discovery,
+host-executed lifecycle tools, output-token limits and transport errors retain
+the same service behavior as the sample adapter.
+
+Set `agentTools: []` for a tool-free named agent. Omission selects available host
+tools, which must also be configured on that named agent. Semantic authoring
+services retain their declared tool support; a credential does not grant tool
+execution authority.
+
+Blueprint-specific response-workspace validation belongs to the host. When a
+request supplies `authoringWorkspace`, register an `openResponseWorkspace`
+callback that validates the supplied spec and returns `readProposal`/`close`
+hooks. The provider executes only supplied host tools, returns the host's
+validated JSON proposal, rejects missing proposals, and closes the workspace
+on success or failure. A workspace request without that host callback fails
+explicitly. The sample registration wires its existing Blueprint workspace;
+the provider does not import sample catalogs, Components or Blueprint helpers.
+
+The subpath also exports the proxy transport, its typed errors/request types,
+and JSON reply parsing used by the host adapters. This is bounded chat/tool-turn
+execution, not a Dots connector or long-lived agent Sense.
 
 ## Distribution and release
 

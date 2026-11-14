@@ -2,7 +2,7 @@ import type { Json } from "gik-kernel";
 import { serviceConfig } from "gik-controlface/services";
 import type { WorkerServiceInvocation } from "../worker-service-kind";
 import { executeMcpServiceInvocation } from "../mcp/runtime";
-import { parseAgentJsonReply } from "../agent-json-response";
+import { parseAgentJsonReply } from "gik-service-providers/foundry";
 
 type McpResult = {
   text?: Json;

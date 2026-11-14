@@ -56,7 +56,9 @@ submission. Its note is read-only while the captured submission is processing.
 
 This reuses `primitive:file-input` and `primitive:form`, the existing Foundry or
 Copilot service adapters, and ordinary declarative events and settlements. The
-DPP's context bindings retain the accepted changes, note, filename and summary;
+host imports the Foundry adapter from `gik-service-providers/foundry`; its
+agent names, endpoints and tool selection remain native Blueprint configuration.
+The DPP's context bindings retain the accepted changes, note, filename and summary;
 raw uploaded text is not retained in the context store. Inputs are sent to the
 configured AI connection only when submitted. No brokerage transactions occur.
 

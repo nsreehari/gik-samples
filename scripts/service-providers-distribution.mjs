@@ -53,8 +53,10 @@ async function consumer(packageSpec, signatureAudit = false) {
 import { createGmailServiceKind, type GmailConnection } from "gik-service-providers/gmail";
 import { createSchedulerServiceKind } from "gik-service-providers/scheduler";
 import { createGitHubContextStoreServiceKind, type GitHubContextStoreConnection } from "gik-service-providers/github-context-store";
+import { createFoundryServiceKind, type FoundryResponseWorkspace } from "gik-service-providers/foundry";
 import type { ServiceKindFactory } from "gik-controlface/services";
-const kinds: ServiceKindFactory[] = [createGmailServiceKind(), createSchedulerServiceKind(), createGitHubContextStoreServiceKind()];
+const workspace: FoundryResponseWorkspace = { readProposal: () => ({ report: true }), close: () => {} };
+const kinds: ServiceKindFactory[] = [createGmailServiceKind(), createSchedulerServiceKind(), createGitHubContextStoreServiceKind(), createFoundryServiceKind({ openResponseWorkspace: () => workspace })];
 const connection: GmailConnection = { request: async () => new Response("{}") };
 const github: GitHubContextStoreConnection = { request: async () => new Response("{}") };
 console.log(kinds.length, connection, github);
@@ -63,6 +65,12 @@ console.log(kinds.length, connection, github);
     run(process.execPath, ["--input-type=module", "-e", `
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
+const foundryIsolation = registerHooks({ resolve(specifier, context, next) {
+  if (specifier === "croner" || specifier.startsWith("croner/") || /^gik-service-providers\\/(gmail|scheduler|github-context-store)$/.test(specifier) || /\\/(gmail|scheduler|github-context-store)\\.js$/.test(specifier)) throw new Error("Foundry eagerly loaded another provider");
+  return next(specifier, context);
+} });
+const foundry = await import("gik-service-providers/foundry");
+foundryIsolation.deregister();
 const isolation = registerHooks({ resolve(specifier, context, next) {
   if (specifier === "croner" || specifier.endsWith("/scheduler.js")) throw new Error("Gmail eagerly loaded scheduler code");
   return next(specifier, context);
@@ -74,6 +82,27 @@ const github = await import("gik-service-providers/github-context-store");
 assert.equal(gmail.createGmailServiceKind().manifest.id, "gmail");
 assert.equal(scheduler.createSchedulerServiceKind().manifest.id, "cron-scheduler");
 assert.equal(github.createGitHubContextStoreServiceKind().manifest.id, "github-context-store");
+assert.equal(foundry.createFoundryServiceKind().manifest.id, "foundry-agent");
+const { ServiceKindRegistry } = await import("gik-controlface/services");
+const registry = new ServiceKindRegistry({
+  hostCapabilities: ["foundry-executor", "credential-resolver"],
+  resolveCredential: async () => "consumer-test-key",
+  authorizeEndpoint: () => true,
+});
+registry.register(foundry.createFoundryServiceKind({ fetch: async (_url, init) => {
+  const request = JSON.parse(init.body);
+  assert.equal(request.agentName, "consumer");
+  assert.deepEqual(request.allowedTools, []);
+  return Response.json({ conversationId: "consumer", responseId: "response", reply: '{"markdown":"Packaged report"}', toolCalls: [] });
+} }));
+const adapter = await registry.materialize({ blueprintId: "consumer", blueprintRevision: "1", serviceId: "foundry" }, {
+  kind: "foundry-agent", version: "1",
+  config: { endpoint: "https://foundry.example", credentialRef: "consumer/key", agent: "consumer", agentTools: [], responseMode: "json" },
+  operations: { report: { operation: "chat", contract: "report/v1" } },
+});
+assert.deepEqual((await adapter.execute({
+  id: "consumer-request", service: "foundry", operation: "chat", input: { message: "Report" }, createdAt: "now",
+}, {})).output, { markdown: "Packaged report" });
 await assert.rejects(import("gik-service-providers"), { code: "ERR_PACKAGE_PATH_NOT_EXPORTED" });
 `], { cwd: temporary });
   } finally { rmSync(temporary, { recursive: true, force: true }); }

@@ -3,11 +3,17 @@ import {
   ServiceKindRegistry,
   type ServiceKindFactory,
 } from "gik-controlface/services";
+import { createFoundryServiceKind } from "gik-service-providers/foundry";
 
 import { copilotAgentKind } from "./copilot-agent";
 import { createDeterministicAgentKind, type DeterministicServiceHandler } from "./deterministic-agent";
 import { createDurableStorageKind, type DurableStorageConnection } from "./durable-storage";
-import { foundryAgentKind } from "./foundry-agent";
+import {
+  closeAgentResponseWorkspace,
+  openAgentResponseWorkspace,
+  parseAgentResponseWorkspaceSpec,
+  readAgentResponseProposal,
+} from "./agent-response-workspace";
 import { httpServiceKind } from "./http-service";
 import { mcpServiceKind } from "./mcp";
 
@@ -29,7 +35,17 @@ export function createSampleServiceKindRegistry(
     createDeterministicAgentKind(options.deterministicHandlers ?? {}),
     createDurableStorageKind(options.durableStorageConnections ?? {}),
     createContextStoreServiceKind(),
-    foundryAgentKind,
+    createFoundryServiceKind({
+      openResponseWorkspace: (requestId, value) => {
+        const spec = parseAgentResponseWorkspaceSpec(value);
+        if (!spec) throw new Error("Foundry authoringWorkspace must declare a response workspace");
+        openAgentResponseWorkspace(requestId, spec);
+        return {
+          readProposal: () => readAgentResponseProposal(requestId),
+          close: () => closeAgentResponseWorkspace(requestId),
+        };
+      },
+    }),
     copilotAgentKind,
     mcpServiceKind,
     httpServiceKind,

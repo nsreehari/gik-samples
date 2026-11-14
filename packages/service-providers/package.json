@@ -28,10 +28,15 @@
     "./github-context-store": {
       "types": "./dist/github-context-store.d.ts",
       "import": "./dist/github-context-store.js"
+    },
+    "./foundry": {
+      "types": "./dist/foundry.d.ts",
+      "import": "./dist/foundry.js"
     }
   },
   "dependencies": {
     "croner": "^9.1.0",
+    "gik-agent-lifecycle-exp": ">=0.3.0",
     "gik-controlface": ">=0.7.0",
     "gik-kernel": ">=0.4.1"
   },

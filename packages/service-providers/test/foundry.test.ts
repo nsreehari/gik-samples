@@ -4,15 +4,113 @@ import type {
 	ServiceAgentTool,
 	ServiceAgentToolExecutionContext,
 } from "gik-controlface/services";
+import { ServiceKindRegistry, UnsatisfiedServiceDependencyError, type ServiceRequest } from "gik-controlface/services";
+import type { Json, NativeServiceDeclaration } from "gik-kernel";
 import type { AgentTool } from "gik-agent-lifecycle-exp";
 
 import {
 	createRequestAgentTools,
+	createFoundryServiceKind,
 	filterDescribeResult,
 	instructionsWithGuardrailCorrection,
 	selectAgentTools,
 	scopeDescribeArgs,
-} from "./index";
+} from "../src/foundry";
+
+const foundryDeclaration: NativeServiceDeclaration = {
+	kind: "foundry-agent", version: "1",
+	config: { endpoint: "https://foundry.example", credentialRef: "foundry/key", agent: "report", responseMode: "json" },
+	operations: { report: { operation: "chat", contract: "report/v1" } },
+};
+const foundryRequest = (input: Json): ServiceRequest => ({
+	id: "request-1", service: "foundry", operation: "chat", input,
+	providerId: "foundry-agent", capabilityId: "report/v1", createdAt: "now",
+});
+const foundryRegistry = (credential: unknown = "test-key") => new ServiceKindRegistry({
+	hostCapabilities: ["foundry-executor", "credential-resolver"],
+	resolveCredential: async () => credential,
+	authorizeEndpoint: () => true,
+});
+
+test("Foundry provider continues lifecycle tool calls through host handlers", async () => {
+	const requests: Record<string, Json>[] = [];
+	const registry = foundryRegistry();
+	registry.register(createFoundryServiceKind({ fetch: async (_url, init) => {
+		requests.push(JSON.parse(String(init?.body)) as Record<string, Json>);
+		return Response.json({
+			conversationId: "conversation", responseId: `response-${requests.length}`,
+			reply: requests.length === 1 ? "" : '{"markdown":"Host tools completed."}',
+			toolCalls: requests.length === 1 ? [{ callId: "call", name: "describe", arguments: "{}" }] : [],
+		});
+	} }));
+	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
+	const result = await adapter.execute(foundryRequest({ message: "Report" }), {
+		agentTools: [{
+			name: "describe", description: "Describe", inputSchema: { type: "object" }, lifecycle: "agent",
+			handler: (_args, context) => {
+				assert.equal(context.requestId, "request-1");
+				assert.equal(context.service, "foundry");
+				return { ok: true };
+			},
+		}],
+	});
+	assert.deepEqual(result.output, { markdown: "Host tools completed." });
+	assert.equal(requests.length, 2);
+	assert.deepEqual(requests[0].allowedTools, ["describe"]);
+	assert.deepEqual(requests[1].allowedTools, ["describe"]);
+	assert.deepEqual(requests[1].toolOutputs, [{ callId: "call", output: '{"ok":true}' }]);
+});
+
+test.each(["proposal", "missing-proposal", "transport-error"])("Foundry host response workspace closes after %s", async (outcome) => {
+	const spec = { scaffold: {}, slots: [] };
+	const expected = { accepted: true };
+	let proposal: unknown;
+	let closed = 0;
+	const registry = foundryRegistry();
+	registry.register(createFoundryServiceKind({
+		openResponseWorkspace: (requestId, workspaceSpec) => {
+			assert.equal(requestId, "request-1");
+			assert.deepEqual(workspaceSpec, spec);
+			return { readProposal: () => proposal, close: () => { closed += 1; } };
+		},
+		fetch: async (_url, init) => {
+			assert.deepEqual(JSON.parse(String(init?.body)).allowedTools, ["publish"]);
+			if (outcome === "transport-error") throw new Error("Transport unavailable");
+			return Response.json({
+				conversationId: "conversation", responseId: "response", reply: "{}",
+				toolCalls: outcome === "proposal" ? [{ callId: "call", name: "publish", arguments: "{}" }] : [],
+			});
+		},
+	}));
+	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
+	const execute = () => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: spec }), {
+		agentTools: [{
+			name: "publish", description: "Publish", inputSchema: { type: "object" }, lifecycle: "agent",
+			handler: () => { proposal = expected; return { stored: true }; },
+		}],
+	});
+	if (outcome === "proposal") assert.deepEqual((await execute()).output, expected);
+	else await assert.rejects(execute, outcome === "transport-error" ? /Transport unavailable/ : /without setting a validated response proposal/);
+	assert.equal(closed, 1);
+});
+
+test("Foundry authoring refuses a missing host workspace without making a request", async () => {
+	const registry = foundryRegistry();
+	registry.register(createFoundryServiceKind({ fetch: async () => assert.fail("No request without a host workspace") }));
+	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
+	await assert.rejects(() => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: {} }), {}), /requires a host response workspace/);
+});
+
+test.each([null, {}, 42])("Foundry rejects an invalid resolved credential: %j", async (credential) => {
+	const registry = foundryRegistry(credential);
+	registry.register(createFoundryServiceKind({ fetch: async () => assert.fail("No request with an invalid credential") }));
+	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
+	await assert.rejects(() => adapter.execute(foundryRequest({ message: "Report" }), {}), (error) => {
+		assert.ok(error instanceof UnsatisfiedServiceDependencyError);
+		assert.equal(error.message, "Foundry access is required");
+		return true;
+	});
+});
 
 test("Foundry correction retries include response validation issues", () => {
 	const instructions = instructionsWithGuardrailCorrection(

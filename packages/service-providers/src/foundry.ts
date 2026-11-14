@@ -12,14 +12,26 @@ import {
 } from "gik-controlface/services";
 import { executeAgentFunctionCall, type AgentTool } from "gik-agent-lifecycle-exp";
 import { createFoundryProxy, FoundryProxyError, type FoundryChatResponseSchema } from "./foundry-proxy";
-import manifestJson from "./manifest.json";
-import { parseAgentJsonReply } from "../agent-json-response";
-import {
-	closeAgentResponseWorkspace,
-	openAgentResponseWorkspace,
-	parseAgentResponseWorkspaceSpec,
-	readAgentResponseProposal,
-} from "../agent-response-workspace";
+import manifestJson from "./foundry-manifest.json";
+import { parseAgentJsonReply } from "./agent-json-response";
+import { isJson, text } from "./values";
+
+export { createFoundryProxy, FoundryProxyError } from "./foundry-proxy";
+export type {
+	FoundryProxyOptions, FoundryChatRequest, FoundryChatResponse, FoundryChatResponseSchema,
+	FoundryToolCall, FoundryToolOutput,
+} from "./foundry-proxy";
+export { parseAgentJsonReply } from "./agent-json-response";
+
+export interface FoundryResponseWorkspace {
+	readProposal(): unknown;
+	close(): void;
+}
+
+export interface FoundryServiceKindOptions {
+	fetch?: typeof globalThis.fetch;
+	openResponseWorkspace?: (requestId: string, spec: Json) => FoundryResponseWorkspace;
+}
 
 interface ScopedDescribeTool extends ServiceAgentTool {
 	scopeToCapabilities?: (acceptedCapabilities: readonly string[] | undefined) => Promise<AgentTool>;
@@ -173,7 +185,7 @@ export function parseFoundryJsonReply(reply: string): Json {
 	return parseAgentJsonReply("Foundry agent", reply);
 }
 
-export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): ServiceKindFactory {
+export function createFoundryServiceKind(options: FoundryServiceKindOptions = {}): ServiceKindFactory {
 	return {
 	manifest,
 	validate: (declaration, context) => {
@@ -218,7 +230,7 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 		const operations = [...new Set(Object.values(declaration.operations).map(({ operation }) => operation))];
 		const resolveAccessKey = async () => {
 			try {
-				return String(await context.resolveCredential!(credentialRef));
+				return text(await context.resolveCredential!(credentialRef), "Foundry access key");
 			} catch (error) {
 				throw new UnsatisfiedServiceDependencyError(
 					"Foundry access is required",
@@ -230,7 +242,7 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 		const client = async () => createFoundryProxy({
 			baseUrl: endpoint,
 			key: await resolveAccessKey(),
-			fetch,
+			fetch: options.fetch,
 		});
 		const providerId = `foundry-agent:${context.identity?.serviceId ?? "anonymous"}`;
 		return {
@@ -259,8 +271,13 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 			},
 			execute: async (request, adapterContext) => {
 				const input = record(request.input);
-				const responseWorkspace = parseAgentResponseWorkspaceSpec(input.authoringWorkspace);
-				if (responseWorkspace) openAgentResponseWorkspace(request.id, responseWorkspace);
+				let responseWorkspace: FoundryResponseWorkspace | undefined;
+				if (input.authoringWorkspace !== undefined) {
+					if (!options.openResponseWorkspace) {
+						throw new Error("Foundry authoringWorkspace requires a host response workspace");
+					}
+					responseWorkspace = options.openResponseWorkspace(request.id, input.authoringWorkspace);
+				}
 				try {
 					if (request.operation === "check-access") {
 						await (await client()).checkAccess();
@@ -335,7 +352,7 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 								};
 							}
 						}));
-						if (responseWorkspace && readAgentResponseProposal(request.id)) {
+						if (responseWorkspace && responseWorkspace.readProposal()) {
 							break;
 						}
 						response = await foundry.chat({
@@ -347,9 +364,11 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 							toolOutputs: outputs,
 						});
 					}
-					let structuredOutput: Json | undefined = responseWorkspace
-						? readAgentResponseProposal(request.id) as unknown as Json | undefined
-						: undefined;
+					const proposal = responseWorkspace?.readProposal();
+					if (proposal !== undefined && !isJson(proposal)) {
+						throw new Error("Foundry host response proposal must be JSON");
+					}
+					let structuredOutput: Json | undefined = proposal;
 					if (responseWorkspace && !structuredOutput) {
 						throw new Error("Foundry agent completed without setting a validated response proposal");
 					}
@@ -383,12 +402,10 @@ export function createFoundryAgentKind(fetch?: typeof globalThis.fetch): Service
 					}
 					throw error;
 				} finally {
-					if (responseWorkspace) closeAgentResponseWorkspace(request.id);
+					responseWorkspace?.close();
 				}
 			},
 		};
 	},
 	};
 }
-
-export const foundryAgentKind = createFoundryAgentKind();
