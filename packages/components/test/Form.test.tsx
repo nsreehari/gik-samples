@@ -150,7 +150,7 @@ test("form definition exposes a closed authoring contract", () => {
   assert.equal(formDefinition.validate(trial.props).ok, true);
   assert.equal(formDefinition.validate({ ...trial.props, validationContext: { catalog: { ids: ["existing"] } } }).ok, true);
   assert.equal(formDefinition.validate({ ...trial.props, unknown: true }).ok, false);
-  assert.deepEqual(formDefinition.events, ["save"]);
+  assert.deepEqual(formDefinition.events, ["save", "action-requested"]);
   assert.equal(formDefinition.describe().dataProp, "value");
   assert.ok(formDefinition.describe().authoring.rules.length > 0);
 });
@@ -275,4 +275,94 @@ test("a tracked save that fails keeps the draft editable and shows the host's er
   assert.ok(renderer!.root.findByProps({ children: "Server unavailable" }));
 
   await act(async () => renderer!.unmount());
+});
+
+test("always-visible Save requires pristine permission and remains usable alongside asynchronous success feedback", async () => {
+  const saved: (Record<string, unknown> | null)[] = [];
+  const emit: React.ComponentProps<typeof Form>["emit"] = (_name, payload) => { saved.push(payload ?? null); };
+  const baseProps = {
+    fields: { properties: { note: { type: "string" } } }, value: { note: "" },
+    saveVisibility: "always", discardVisibility: "always", saving: false, saveError: "",
+  };
+  let renderer!: TestRenderer.ReactTestRenderer;
+  const update = async (props: Record<string, unknown>) => {
+    await act(async () => {
+      renderer.update(<Form node={node(props)} emit={emit}>{null}</Form>);
+    });
+  };
+  await act(async () => {
+    renderer = TestRenderer.create(<Form node={node(baseProps)} emit={emit}>{null}</Form>);
+  });
+  assert.equal(renderer.root.findByProps({ children: "Save" }).props.disabled, true);
+  assert.equal(renderer.root.findByProps({ children: "Discard" }).props.disabled, true);
+  await act(async () => renderer.root.findByType("form").props.onSubmit({ preventDefault() {} }));
+  assert.equal(saved.length, 0);
+  const repeatable = { ...baseProps, allowPristineSave: true };
+  await update(repeatable);
+  await act(async () => renderer.root.findByType("form").props.onSubmit({ preventDefault() {} }));
+  await update({ ...repeatable, saving: true });
+  assert.equal(renderer.root.findByProps({ children: "Saving…" }).props.disabled, true);
+  await update(repeatable);
+  assert.ok(renderer.root.findByProps({ children: "Saved" }));
+  assert.equal(renderer.root.findByProps({ children: "Save" }).props.disabled, false);
+  await act(async () => renderer.root.findByType("form").props.onSubmit({ preventDefault() {} }));
+  assert.deepEqual(saved, [{ values: { note: "" } }, { values: { note: "" } }]);
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  await update({ ...repeatable, saving: true });
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  assert.equal(renderer.root.findByProps({ children: "Saving…" }).props.disabled, true);
+  await update({ ...repeatable, saveError: "Server unavailable" });
+  assert.throws(() => renderer.root.findByProps({ children: "Saved" }));
+  assert.ok(renderer.root.findByProps({ children: "Server unavailable" }));
+  assert.equal(renderer.root.findByProps({ children: "Save" }).props.disabled, false);
+  await act(async () => renderer.unmount());
+});
+
+test("named actions do not commit a draft and respect disabled, saving and read-only state", async () => {
+  const events: { name: string; payload?: Record<string, unknown> }[] = [];
+  const emit: React.ComponentProps<typeof Form>["emit"] = (name, payload) => { events.push({ name, payload }); };
+  const baseProps = {
+    title: "Review inputs",
+    fields: { properties: { name: { type: "string", minLength: 1 } }, required: ["name"] },
+    value: { name: "" }, saveVisibility: "never", discardVisibility: "never",
+    actions: [
+      { id: "inspect", label: "Inspect", payload: { target: "draft" } },
+      { id: "unavailable", label: "Unavailable", disabled: true },
+    ],
+  };
+  let renderer!: TestRenderer.ReactTestRenderer;
+  await act(async () => {
+    renderer = TestRenderer.create(<Form node={node(baseProps)} emit={emit}>{null}</Form>);
+  });
+  assert.equal(renderer.root.findByType("form").props["aria-label"], "Review inputs");
+  assert.throws(() => renderer.root.findByProps({ children: "Save" }));
+  assert.throws(() => renderer.root.findByProps({ children: "Discard" }));
+  await act(async () => {
+    renderer.root.findByProps({ children: "Inspect" }).props.onClick();
+    renderer.root.findByProps({ children: "Unavailable" }).props.onClick();
+    renderer.root.findByType("form").props.onSubmit({ preventDefault() {} });
+  });
+  assert.deepEqual(events, [{ name: "action-requested", payload: { actionId: "inspect", payload: { target: "draft" } } }]);
+  await act(async () => {
+    renderer.update(<Form node={node({ ...baseProps, saving: true })} emit={emit}>{null}</Form>);
+  });
+  assert.equal(renderer.root.findByProps({ children: "Inspect" }).props.disabled, true);
+  await act(async () => renderer.root.findByProps({ children: "Inspect" }).props.onClick());
+  assert.equal(events.length, 1);
+  await act(async () => {
+    renderer.update(<Form node={node({ ...baseProps, readOnly: true })} emit={emit}>{null}</Form>);
+  });
+  assert.throws(() => renderer.root.findByProps({ children: "Inspect" }));
+  await act(async () => renderer.unmount());
+});
+
+test("form validates named action identity and visibility configuration", () => {
+  const props = {
+    fields: { properties: {} }, value: {}, saveVisibility: "always", allowPristineSave: true,
+    actions: [{ id: "inspect", label: "Inspect" }],
+  };
+  assert.equal(formDefinition.validate(props).ok, true);
+  assert.equal(formDefinition.validate({ ...props, saveVisibility: "sometimes" }).ok, false);
+  assert.equal(formDefinition.validate({ ...props, actions: [...props.actions, { id: "inspect", label: "Duplicate" }] }).ok, false);
+  assert.equal(formDefinition.validate({ ...props, actions: [{ id: "inspect" }] }).ok, false);
 });

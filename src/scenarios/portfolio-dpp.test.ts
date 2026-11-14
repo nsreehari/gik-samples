@@ -174,10 +174,10 @@ test("durable portfolio ignores stale retrieval and settles retry-idempotent ing
     "intelligence-model": "mock", "market-prices": "mock", view: "desktop",
   });
   const initial = await session.transition([createBlueprintDurableBootstrapEvent()]);
-  const valued = await session.transition([createSourceSettlementEvent(source(initial.effects, "market-prices.source"), {
+  const previousQuery = source(initial.effects, "portfolio-context.query");
+  await session.transition([createSourceSettlementEvent(source(initial.effects, "market-prices.source"), {
     quotes: { AAPL: { ticker: "AAPL", price: 150 }, MSFT: { ticker: "MSFT", price: 200 } }, provider: "mock",
   })]);
-  const previousQuery = source(valued.effects, "portfolio-context.query");
   const refreshed = await session.transition([{
     node: "portfolio-intelligence--primary--in-intelligence", name: "press", payload: {},
   }]);

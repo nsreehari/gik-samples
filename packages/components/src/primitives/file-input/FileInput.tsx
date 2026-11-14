@@ -14,7 +14,7 @@ import {
 } from "../../shared/definition";
 
 const useStyles = makeStyles({
-  root: { display: "inline-flex" },
+  root: { display: "inline-flex", flexDirection: "column", gap: tokens.spacingVerticalXS },
   dropzone: {
     display: "flex",
     alignItems: "center",
@@ -33,6 +33,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorBrandBackground2,
   },
   disabled: { cursor: "not-allowed", opacity: 0.6 },
+  error: { color: tokens.colorPaletteRedForeground1 },
 });
 
 type ReadMode = "metadata" | "text" | "base64";
@@ -64,20 +65,35 @@ export const FileInput: ProjectionView = ({ node, emit }) => {
   const styles = useStyles();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = React.useState(false);
+  const [error, setError] = React.useState("");
   const disabled = props.bool("disabled");
   const multiple = props.bool("multiple");
   const variant = props.str("variant", "button");
   const readAs = props.str("readAs", "metadata") as ReadMode;
   const accept = props.str("accept", "");
+  const maxFileSize = typeof node.props.maxFileSize === "number" ? node.props.maxFileSize : Number.POSITIVE_INFINITY;
   const label = props.str("label", multiple ? "Choose files" : "Choose file");
 
   const acceptFiles = async (list: FileList | null) => {
     if (disabled) return;
     const selected = Array.from(list ?? []);
-    const files = await Promise.all((multiple ? selected : selected.slice(0, 1)).map((file) => serializeFile(file, readAs)));
-    if (files.length === 0) return;
-    await emit("select", { files, ...(multiple ? {} : { file: files[0] }) });
+    const candidates = multiple ? selected : selected.slice(0, 1);
+    if (candidates.length === 0) return;
     if (inputRef.current) inputRef.current.value = "";
+    setError("");
+    const oversized = candidates.find((file) => file.size > maxFileSize);
+    if (oversized) {
+      setError(`Choose files of at most ${maxFileSize} bytes. "${oversized.name}" is too large.`);
+      return;
+    }
+    let files: Record<string, Json>[];
+    try {
+      files = await Promise.all(candidates.map((file) => serializeFile(file, readAs)));
+    } catch (error) {
+      setError(`Could not read the selected file: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    await emit("select", { files, ...(multiple ? {} : { file: files[0] }) });
   };
   const input = <input ref={inputRef} type="file" hidden accept={accept || undefined} multiple={multiple} disabled={disabled} onChange={(event) => void acceptFiles(event.currentTarget.files)} />;
 
@@ -101,12 +117,14 @@ export const FileInput: ProjectionView = ({ node, emit }) => {
         onDrop={(event) => { event.preventDefault(); setDragActive(false); void acceptFiles(event.dataTransfer.files); }}
       >{label}</div>
       {input}
+      {error ? <span className={styles.error} role="alert">{error}</span> : null}
     </div>;
   }
 
   return <span {...componentRootProps(node, styles.root)}>
     <Button type="button" disabled={disabled} onClick={() => inputRef.current?.click()}>{label}</Button>
     {input}
+    {error ? <span className={styles.error} role="alert">{error}</span> : null}
   </span>;
 };
 
@@ -116,6 +134,7 @@ const schema = {
   properties: {
     label: { type: "string" },
     accept: { type: "string" },
+    maxFileSize: { type: "integer", minimum: 1 },
     multiple: { type: "boolean" },
     disabled: { type: "boolean" },
     variant: { enum: ["button", "dropzone"] },
@@ -158,7 +177,7 @@ const description: ComponentDescription = {
   authoring: {
     useWhen: ["A declarative workflow needs local files or attachments"],
     avoidWhen: ["The host must acquire files without user interaction"],
-    rules: ["Use text for textual documents", "Use base64 only when binary content must cross the event boundary", "Use metadata when content stays browser-owned"],
+    rules: ["Use text for textual documents", "Use base64 only when binary content must cross the event boundary", "Use metadata when content stays browser-owned", "Set maxFileSize in bytes to reject an oversized selection before reading or emitting any files. Rejection preserves the previous selection and displays a local error."],
   },
 };
 

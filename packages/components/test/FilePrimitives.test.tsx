@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import TestRenderer, { act } from "react-test-renderer";
 import { test } from "vitest";
 
 import type { Json, ResolvedNode } from "gik-kernel";
@@ -47,6 +48,66 @@ test("file input renders button and dropzone variants", () => {
   assert.match(button, />Import</);
   assert.match(dropzone, /role="button"/);
   assert.match(dropzone, /multiple/);
+});
+
+test.each(["button", "dropzone"])("file input rejects an oversized batch before reading and permits a boundary-size retry: %s", async (variant) => {
+  let reads = 0;
+  const events: Record<string, unknown>[] = [];
+  const file = (size: number) => {
+    const selected = new File(["x".repeat(size)], `file-${size}.txt`, { type: "text/plain" });
+    Object.defineProperty(selected, "text", { value: async () => { reads += 1; return "x".repeat(size); } });
+    Object.defineProperty(selected, "arrayBuffer", { value: async () => { reads += 1; return new ArrayBuffer(size); } });
+    return selected;
+  };
+  let renderer!: TestRenderer.ReactTestRenderer;
+  const props = { variant, readAs: "text", multiple: true, maxFileSize: 100000 };
+  const onSelect: React.ComponentProps<typeof FileInput>["emit"] = (_name, payload) => {
+    if (payload) events.push(payload);
+  };
+  const select = async (files: File[]) => {
+    await act(async () => {
+      if (variant === "button") renderer.root.findByType("input").props.onChange({ currentTarget: { files } });
+      else renderer.root.findByProps({ role: "button" }).props.onDrop({ preventDefault() {}, dataTransfer: { files } });
+    });
+  };
+  await act(async () => {
+    renderer = TestRenderer.create(<FileInput node={node("primitive:file-input", props)} emit={onSelect} children={undefined} />);
+  });
+  await select([file(100000)]);
+  assert.equal(events.length, 1);
+  assert.equal(reads, 1);
+  await select([file(50000), file(100001)]);
+  assert.equal(events.length, 1);
+  assert.equal(reads, 1);
+  assert.match(renderer.root.findByProps({ role: "alert" }).props.children, /at most 100000 bytes/);
+  await act(async () => {
+    renderer.update(<FileInput node={node("primitive:file-input", { ...props, readAs: "base64" })} emit={onSelect} children={undefined} />);
+  });
+  await select([file(100001)]);
+  assert.equal(events.length, 1);
+  assert.equal(reads, 1);
+  await act(async () => {
+    renderer.update(<FileInput node={node("primitive:file-input", props)} emit={onSelect} children={undefined} />);
+  });
+  await select([file(100000)]);
+  assert.equal(events.length, 2);
+  assert.equal(reads, 2);
+  assert.throws(() => renderer.root.findByProps({ role: "alert" }));
+  await act(async () => renderer.unmount());
+});
+
+test("file input surfaces read errors without emitting a selection", async () => {
+  const selected = new File(["text"], "unreadable.txt");
+  Object.defineProperty(selected, "text", { value: async () => { throw new Error("Read failed"); } });
+  let emitted = false;
+  let renderer!: TestRenderer.ReactTestRenderer;
+  await act(async () => {
+    renderer = TestRenderer.create(<FileInput node={node("primitive:file-input", { readAs: "text" })} emit={() => { emitted = true; }} children={undefined} />);
+  });
+  await act(async () => renderer.root.findByType("input").props.onChange({ currentTarget: { files: [selected] } }));
+  assert.equal(emitted, false);
+  assert.match(renderer.root.findByProps({ role: "alert" }).props.children, /Could not read the selected file: Read failed/);
+  await act(async () => renderer.unmount());
 });
 
 test("file download and list render committed file data", () => {

@@ -2607,6 +2607,54 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
                 "readOnly": {
                   "type": "boolean"
                 },
+                "title": {
+                  "type": "string"
+                },
+                "allowPristineSave": {
+                  "type": "boolean"
+                },
+                "saveVisibility": {
+                  "enum": [
+                    "dirty",
+                    "always",
+                    "never"
+                  ]
+                },
+                "discardVisibility": {
+                  "enum": [
+                    "dirty",
+                    "always",
+                    "never"
+                  ]
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "disabled": {
+                        "type": "boolean"
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                },
                 "layout": {
                   "type": "object",
                   "additionalProperties": false,
@@ -3710,6 +3758,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "accept": {
           "type": "string"
         },
+        "maxFileSize": {
+          "type": "integer",
+          "minimum": 1
+        },
         "multiple": {
           "type": "boolean"
         },
@@ -3831,7 +3883,8 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
       "constraints": [
         "Use text for textual documents",
         "Use base64 only when binary content must cross the event boundary",
-        "Use metadata when content stays browser-owned"
+        "Use metadata when content stays browser-owned",
+        "Set maxFileSize in bytes to reject an oversized selection before reading or emitting any files. Rejection preserves the previous selection and displays a local error."
       ],
       "example": {
         "capability": "primitive:file-input",
@@ -4074,6 +4127,54 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         },
         "readOnly": {
           "type": "boolean"
+        },
+        "title": {
+          "type": "string"
+        },
+        "allowPristineSave": {
+          "type": "boolean"
+        },
+        "saveVisibility": {
+          "enum": [
+            "dirty",
+            "always",
+            "never"
+          ]
+        },
+        "discardVisibility": {
+          "enum": [
+            "dirty",
+            "always",
+            "never"
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "disabled": {
+                "type": "boolean"
+              },
+              "payload": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
         }
       },
       "emits": {
@@ -4092,6 +4193,26 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
               }
             }
           }
+        },
+        "action-requested": {
+          "summary": "The user requests a named action without committing the draft.",
+          "payloadSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actionId"
+            ],
+            "properties": {
+              "actionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "payload": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
         }
       },
       "constraints": [
@@ -4105,7 +4226,10 @@ export const agentFacingComponentCatalog: AgentFacingCapabilityCatalog = {
         "For a save that resolves asynchronously in the host Blueprint (e.g. a durable service invoke), bind `saving`/`saveError` to ordinary Blueprint state the Cell's own behavior manages -- an `assign` sets `saving` true at dispatch, and the operation's `settlement`/`failureSettlement` transform sets it back to false (plus `saveError` on failure) -- rather than relying on the optimistic success shown as soon as `save` is emitted"
       ],
       "notes": [
-        "Editing is draft-based; values are published only through save."
+        "Editing is draft-based; values are published only through save.",
+        "saveVisibility and discardVisibility independently accept dirty (default), always, or never. Visibility does not grant pristine-save permission.",
+        "Use saveVisibility: always with allowPristineSave: true for repeatable submissions that include inputs outside this form.",
+        "Named actions emit action-requested with actionId and optional payload, not the current draft. Read-only hides all actions; saving disables them."
       ],
       "example": {
         "capability": "primitive:form",
