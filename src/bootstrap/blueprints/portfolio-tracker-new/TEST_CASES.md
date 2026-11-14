@@ -85,7 +85,12 @@ owns the general contract; these cases specify the sample's behavior.
 4. Rapid edits settle to the final holdings, quotes, value, and intelligence.
 5. Position values, cost basis, gain/loss, and totals agree to two decimals.
 6. `intelligence-model: simple` uses the existing Foundry
-   `Portfolio-Intelligence-Agent` configuration.
+   `Portfolio-Intelligence-Agent` configuration. This structured Markdown agent
+   has no tools, so its native service explicitly sets `agentTools: []`. Host
+   authoring tools must not enter its outbound allow-list; Foundry rejects
+   references to tools absent from the named agent. The real-adapter regression
+   supplies host tools and verifies a successful report with an empty allow-list.
+   Semantic authoring services retain their tool-enabled configuration.
 7. `intelligence-model: mock` uses the deterministic test-service path to return
    predictable semantic-shaped intelligence for the current portfolio values.
 8. `intelligence-model: semantic` uses one logical

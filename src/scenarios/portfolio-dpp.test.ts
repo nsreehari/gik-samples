@@ -1,17 +1,20 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "vitest";
-import { SyncJsonataExpressionProvider, type Json, type OrchestratorEffect } from "gik-kernel";
+import { InMemoryStateModel, JsonataExpressionProvider, SyncJsonataExpressionProvider, type Json, type OrchestratorEffect } from "gik-kernel";
 import {
   applyBlueprintPatches,
   createBlueprintDurableBootstrapEvent,
+  createBlueprintDurableEffectSettlementEvent,
   createBlueprintDurableTransitionAdapter,
   materializeBlueprint,
   parseBlueprintReference,
 } from "gik-blueprint";
-import { resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
+import { executeQueuedCellSourceEffect } from "gik-blueprint/worker";
+import { materializeSampleBlueprint, resolveSampleBlueprintSource } from "../bootstrap/catalog/blueprint-catalog";
 import { createSourceSettlementEvent, openHeadlessDurableBlueprint } from "../headless/blueprint-harness";
-import { createContextStoreServiceKind, ServiceKindRegistry } from "gik-controlface/services";
+import { createContextStoreServiceKind, DefaultServiceHost, ServiceKindRegistry, type ServiceAgentTool } from "gik-controlface/services";
+import { createFoundryAgentKind } from "../service-kinds/foundry-agent";
 import type { DurableStorageConnection } from "../service-kinds/durable-storage";
 import { createContextStoreExecutor, type ContextStoreInvocation } from "../service-kinds/context-store/runtime";
 
@@ -20,6 +23,78 @@ const blueprint = JSON.parse(readFileSync(
 )).payload;
 const actor = blueprint.cells["portfolio-intelligence"];
 const provider = new SyncJsonataExpressionProvider();
+
+test("simple Foundry reporting excludes host tools when its named agent has no tools", async () => {
+  const context = { "intelligence-model": "simple", "market-prices": "mock", ai: "foundry", view: "desktop" };
+  const session = openHeadlessDurableBlueprint("portfolio-tracker-new", context);
+  const source = (effects: readonly OrchestratorEffect[], id: string) => {
+    const effect = effects.find((effect) => effect.kind === "invoke" && effect.control.sourceId === id);
+    assert.ok(effect, `Expected source '${id}'`);
+    assert.ok(effect.kind === "invoke");
+    return effect;
+  };
+  const initial = await session.transition([createBlueprintDurableBootstrapEvent()]);
+  const initialQuery = source(initial.effects, "portfolio-context.query");
+  const initialQueryInput = provider.eval(initialQuery.control.sourceInputTransform!.expr, initialQuery.control.sourceInputs!) as Record<string, Json>;
+  await session.transition([createSourceSettlementEvent(initialQuery, {
+    scope: "portfolio:portfolio-demo", requestKey: initialQueryInput.requestKey, records: [],
+  })]);
+  const priced = await session.transition([createSourceSettlementEvent(source(initial.effects, "market-prices.source"), {
+    quotes: { AAPL: { ticker: "AAPL", price: 150 }, MSFT: { ticker: "MSFT", price: 200 } }, provider: "mock",
+  })]);
+  const query = source(priced.effects, "portfolio-context.query");
+  const queryInput = provider.eval(query.control.sourceInputTransform!.expr, query.control.sourceInputs!) as Record<string, Json>;
+  const ready = await session.transition([createSourceSettlementEvent(query, {
+    scope: "portfolio:portfolio-demo", requestKey: queryInput.requestKey, records: [],
+  })]);
+  const effect = source(ready.effects, "portfolio-intelligence.source");
+  const declaration = materializeSampleBlueprint("portfolio-tracker-new", context)
+    .payload.terminalBlueprint.payload.services!["portfolio-intelligence"];
+  const requests: Record<string, Json>[] = [];
+  const report = { markdown: "# Portfolio report\nThe supplied portfolio value is 900." };
+  const registry = new ServiceKindRegistry({
+    hostCapabilities: ["foundry-executor", "credential-resolver"],
+    resolveCredential: async () => "test-credential",
+    authorizeEndpoint: (kind, endpoint) =>
+      kind === "foundry-agent" && endpoint.origin === "https://sz-foundry-proxy.azurewebsites.net",
+  });
+  registry.register(createFoundryAgentKind(async (url, init) => {
+    assert.equal(String(url), "https://sz-foundry-proxy.azurewebsites.net/api/agent/chat");
+    const request = JSON.parse(String(init?.body)) as Record<string, Json>;
+    requests.push(request);
+    if (!Array.isArray(request.allowedTools) || request.allowedTools.length > 0) {
+      return new Response(JSON.stringify({
+        error: "Tool choice 'function' not found in 'tools' parameter. (invalid_request_error)",
+      }), { status: 400 });
+    }
+    return new Response(JSON.stringify({
+      conversationId: "report-conversation", responseId: "report-response",
+      reply: JSON.stringify(report), toolCalls: [],
+    }), { status: 200 });
+  }));
+  const agentTools: ServiceAgentTool[] = ["describe", "compose_response_validate"].map((name) => ({
+    name, description: name, inputSchema: {}, lifecycle: "agent",
+    handler: () => { throw new Error("The simple report must not invoke host tools"); },
+  }));
+  const state = new InMemoryStateModel(["portfolio"]);
+  state.apply([{ op: "set", path: "portfolio", value: session.snapshot().portfolio }]);
+  const host = new DefaultServiceHost({
+    blueprintId: "portfolio-tracker-new", blueprintRevision: "1",
+    registry, declarations: { "portfolio-intelligence": declaration }, state, agentTools,
+    expression: new JsonataExpressionProvider(),
+  });
+  const result = await executeQueuedCellSourceEffect(effect, session.snapshot(), (executingEffect) => host.invoke(executingEffect));
+  assert.ok(result);
+  assert.equal(result.settlement?.outcome, "resolved");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].agentName, "Portfolio-Intelligence-Agent");
+  assert.deepEqual(requests[0].allowedTools, []);
+  await session.transition([createBlueprintDurableEffectSettlementEvent(crypto.randomUUID(), result, effect)]);
+  const portfolio = session.snapshot().portfolio as Record<string, Json>;
+  const intelligence = portfolio.intelligence;
+  assert.ok(intelligence && typeof intelligence === "object" && !Array.isArray(intelligence));
+  assert.equal(intelligence.markdown, report.markdown);
+});
 
 test("portfolio DPP keeps stable scope across valuations, gates stale evidence, and authors retry-stable records", () => {
   const [query, ingest] = actor.dpp.context.sources;

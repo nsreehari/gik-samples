@@ -2818,7 +2818,8 @@
         "config": {
           "endpoint": "https://sz-foundry-proxy.azurewebsites.net",
           "agent": "Portfolio-Intelligence-Agent",
-          "credentialRef": "foundry-agent/access-key"
+          "credentialRef": "foundry-agent/access-key",
+          "agentTools": []
         },
         "scope": "per-blueprint"
       },
