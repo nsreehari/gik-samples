@@ -98,7 +98,7 @@ registry.register(foundry.createFoundryServiceKind({ fetch: async (_url, init) =
 const adapter = await registry.materialize({ blueprintId: "consumer", blueprintRevision: "1", serviceId: "foundry" }, {
   kind: "foundry-agent", version: "1",
   config: { endpoint: "https://foundry.example", credentialRef: "consumer/key", agent: "consumer", agentTools: [], responseMode: "json" },
-  operations: { report: { operation: "chat", contract: "report/v1" } },
+  operations: { report: { operation: "chat", contract: "report/v1", settlement: { transform: { kind: "jsonata", expr: "$" } } } },
 });
 assert.deepEqual((await adapter.execute({
   id: "consumer-request", service: "foundry", operation: "chat", input: { message: "Report" }, createdAt: "now",

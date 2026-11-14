@@ -20,7 +20,7 @@ import {
 const foundryDeclaration: NativeServiceDeclaration = {
 	kind: "foundry-agent", version: "1",
 	config: { endpoint: "https://foundry.example", credentialRef: "foundry/key", agent: "report", responseMode: "json" },
-	operations: { report: { operation: "chat", contract: "report/v1" } },
+	operations: { report: { operation: "chat", contract: "report/v1", settlement: { transform: { kind: "jsonata", expr: "$" } } } },
 };
 const foundryRequest = (input: Json): ServiceRequest => ({
 	id: "request-1", service: "foundry", operation: "chat", input,
@@ -48,6 +48,7 @@ test("Foundry provider continues lifecycle tool calls through host handlers", as
 		agentTools: [{
 			name: "describe", description: "Describe", inputSchema: { type: "object" }, lifecycle: "agent",
 			handler: (_args, context) => {
+				assert.ok(context);
 				assert.equal(context.requestId, "request-1");
 				assert.equal(context.service, "foundry");
 				return { ok: true };
@@ -83,7 +84,7 @@ test.each(["proposal", "missing-proposal", "transport-error"])("Foundry host res
 		},
 	}));
 	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
-	const execute = () => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: spec }), {
+	const execute = async () => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: spec }), {
 		agentTools: [{
 			name: "publish", description: "Publish", inputSchema: { type: "object" }, lifecycle: "agent",
 			handler: () => { proposal = expected; return { stored: true }; },
@@ -98,14 +99,14 @@ test("Foundry authoring refuses a missing host workspace without making a reques
 	const registry = foundryRegistry();
 	registry.register(createFoundryServiceKind({ fetch: async () => assert.fail("No request without a host workspace") }));
 	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
-	await assert.rejects(() => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: {} }), {}), /requires a host response workspace/);
+	await assert.rejects(async () => adapter.execute(foundryRequest({ message: "Compose", authoringWorkspace: {} }), {}), /requires a host response workspace/);
 });
 
 test.each([null, {}, 42])("Foundry rejects an invalid resolved credential: %j", async (credential) => {
 	const registry = foundryRegistry(credential);
 	registry.register(createFoundryServiceKind({ fetch: async () => assert.fail("No request with an invalid credential") }));
 	const adapter = await registry.materialize({ blueprintId: "test", blueprintRevision: "1", serviceId: "foundry" }, foundryDeclaration);
-	await assert.rejects(() => adapter.execute(foundryRequest({ message: "Report" }), {}), (error) => {
+	await assert.rejects(async () => adapter.execute(foundryRequest({ message: "Report" }), {}), (error) => {
 		assert.ok(error instanceof UnsatisfiedServiceDependencyError);
 		assert.equal(error.message, "Foundry access is required");
 		return true;
