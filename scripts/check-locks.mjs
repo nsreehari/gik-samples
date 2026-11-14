@@ -33,7 +33,7 @@ export function checkLocks(root = ".") {
           const version = pkg.dependencies?.[name];
           if (version === undefined) continue;
           const installed = lock.packages[`node_modules/${name}`];
-          if (!/^\d+\.\d+\.\d+$/.test(version) || !installed || installed.link || installed.version !== version
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version) || !installed || installed.link || installed.version !== version
             || !installed.integrity || !installed.resolved?.startsWith("https://registry.npmjs.org/")) {
             throw new Error(`Expected exact integrity-pinned npm library, not a source link: ${name}`);
           }

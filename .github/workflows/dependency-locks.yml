@@ -31,7 +31,7 @@ jobs:
           const source = JSON.parse(readFileSync("package.json", "utf8"));
           const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
           for (const [name, legacy] of [["gik-components", "packages/components"], ["gik-service-providers", "packages/service-providers"]]) {
-            if (/^\d+\.\d+\.\d+$/.test(source.dependencies?.[name] ?? "")) {
+            if (/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(source.dependencies?.[name] ?? "")) {
               if (lock.packages[`node_modules/${name}`]?.link) delete lock.packages[`node_modules/${name}`];
               delete lock.packages[legacy];
             }
