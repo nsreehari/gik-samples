@@ -88,15 +88,11 @@ export function needsComponentsRelease(files, baseManifest, headManifest) {
 
 export function providersVersion(files, base, head, labels) {
   const exports = Object.keys(head.exports ?? {}).sort();
-  const requiredExports = ["./gmail", "./scheduler"];
-  const knownExports = new Set([
-    "./github-context-store",
-    ...requiredExports,
-  ]);
   if (head.name !== "gik-service-providers" || head.main || head.types
-    || requiredExports.some((entry) => !exports.includes(entry))
-    || exports.some((entry) => !knownExports.has(entry))) {
-    throw new Error("Service providers must retain known individual exports without a root entry");
+    || exports.length === 0
+    || exports.some((entry) => !entry.startsWith("./") || entry.includes("*") || entry.includes("\\")
+      || entry.slice(2).split("/").some((segment) => !segment || segment === "." || segment === ".."))) {
+    throw new Error("Service providers must declare named individual exports without root or wildcard entries");
   }
   if (base && Object.keys(base.exports ?? {}).some((entry) => !exports.includes(entry))) {
     throw new Error("Service providers must retain every published individual export");
