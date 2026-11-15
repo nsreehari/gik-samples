@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { coreVersions } from "./collect-pages-packages.mjs";
 
 const chrome = process.env.CHROME_PATH;
 const port = 4175;
@@ -106,11 +107,10 @@ try {
     const manifestResponse = await fetch(new URL("manifest.json", vendorUrl));
     if (!manifestResponse.ok) throw new Error(`Package manifest returned HTTP ${manifestResponse.status}`);
     const manifest = await manifestResponse.json();
-    if (manifest.format !== "gik-pages-packages/1" || manifest.packages?.length !== 12
-      || new Set(manifest.packages.map(({ name }) => name)).size !== 12
-      || !manifest.packages.some(({ name }) => name === "gik-components")
-      || !manifest.packages.some(({ name }) => name === "gik-service-providers")) {
-      throw new Error("Pages must expose all twelve released GIK packages, including Components and Service Providers");
+    const expectedNames = [...Object.keys(coreVersions), "gik-service-providers", "gik-components"].sort();
+    if (manifest.format !== "gik-pages-packages/1" || !Array.isArray(manifest.packages)
+      || manifest.packages.map(({ name }) => name).sort().join("\n") !== expectedNames.join("\n")) {
+      throw new Error("Pages must expose every supported GIK package, including service providers");
     }
     for (const entry of manifest.packages) {
       const response = await fetch(new URL(entry.file, vendorUrl));
@@ -128,7 +128,7 @@ try {
         throw new Error(`Package download index ${file} is incomplete`);
       }
     }
-    console.log(`All 12 package downloads and checksums passed at ${vendorUrl}`);
+    console.log(`All ${manifest.packages.length} package downloads and checksums passed at ${vendorUrl}`);
   }
   const html = await dumpPage();
   if (!html.includes("Generative Interaction Kernel")) {
