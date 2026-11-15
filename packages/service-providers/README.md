@@ -9,6 +9,7 @@ import { createSchedulerServiceKind } from "gik-service-providers/scheduler";
 import { createGmailServiceKind } from "gik-service-providers/gmail";
 import { createGitHubContextStoreServiceKind } from "gik-service-providers/github-context-store";
 import { createFoundryServiceKind } from "gik-service-providers/foundry";
+import { createMarketQuotesServiceKind } from "gik-service-providers/market-quotes";
 ```
 
 There is deliberately **no package-root export or index barrel**. Applications
@@ -52,6 +53,37 @@ connection through an operator CLI/deployment tool. Neither provider opens login
 windows or stores refresh tokens. Gmail scopes may require Google's sensitive/
 restricted-scope verification; see [Google's scope guide](https://developers.google.com/workspace/gmail/api/auth/scopes).
 The examples are integration seams, not a bundled OAuth application or token vault.
+
+## Market Quotes
+
+Kind `market-quotes`, version `1`, config:
+
+```json
+{ "providerRef": "quotes/main" }
+```
+
+`providerRef` is a non-secret, host-resolved opaque reference (1-128 letters,
+digits, dots, underscores, slashes or hyphens, beginning with a letter or digit),
+not an arbitrary HTTP URL. Declare `get` with contract `market-quotes/v1`, in
+immediate or queued mode, without a Sense. Input is `{ "symbols": ["ACME", "^TEST"] }`:
+1-20 uppercase symbols, each 1-32 characters matching
+`^[A-Z0-9^][A-Z0-9.^=-]{0,31}$`. Extra fields and malformed symbols are rejected.
+
+[Browser/headless wiring](examples/market-quotes.ts) registers only this provider.
+The host implements `ServiceKindContext.execute`; it receives a
+`MarketQuotesHostRequest` containing `kind`, `providerRef`, validated `input`
+and the invocation's `signal`. The host resolves only its registered references,
+enforces invocation authority, owns transport/credentials and honors cancellation.
+It must also inspect the `market-quotes-host` / `quote-host` dependency using the
+full service identity. Setup, materialization and discovery never invoke transport
+or acquire credentials. Readiness is rechecked for each request and after awaiting
+the host; cancellation or revocation prevents returning a stale successful result.
+Disabling a host provider must also abort its in-flight transport.
+
+Output is the host's finite, acyclic JSON data, returned unchanged as `output`.
+Objects, arrays and JSON scalars are supported; non-JSON values and non-finite
+numbers are rejected. The package does not normalize quote shapes, fetch Yahoo,
+choose HTTP endpoints, cache prices or perform financial calculations.
 
 ## Scheduler
 

@@ -17,6 +17,10 @@
     "examples"
   ],
   "exports": {
+    "./market-quotes": {
+      "types": "./dist/market-quotes.d.ts",
+      "import": "./dist/market-quotes.js"
+    },
     "./scheduler": {
       "types": "./dist/scheduler.d.ts",
       "import": "./dist/scheduler.js"
