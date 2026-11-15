@@ -1,3 +1,10 @@
+export function shouldPublish(metadata, candidate) {
+  if (!metadata) return true;
+  if (metadata.name !== candidate.name || metadata.version !== candidate.version
+    || metadata.dist?.integrity !== candidate.integrity) throw new Error("Existing npm version differs from verified candidate");
+  return false;
+}
+
 export function provenanceSourceCommit(attestations, repository, workflowPath = ".github/workflows/publish.yml") {
   if (![".github/workflows/publish.yml", ".github/workflows/release-service-providers.yml"].includes(workflowPath)) {
     throw new Error("Unsupported publishing workflow");

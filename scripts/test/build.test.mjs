@@ -19,7 +19,7 @@ appendFileSync(process.env.BUILD_CALLS, JSON.stringify(process.argv.slice(2)) + 
     ], { env: { ...process.env, npm_execpath: runner, BUILD_CALLS: calls } });
     const invoked = (await readFile(calls, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
     assert.equal(invoked.some((args) => args.includes("finbook:build")), !siteOnly);
-    assert.ok(invoked.some((args) => args.includes("gik-components")));
+    assert.equal(invoked.some((args) => args.includes("--workspace")), false);
     assert.ok(invoked.some((args) => args.includes("scripts/validate-bootstrap.ts")));
     assert.ok(invoked.some((args) => args.includes("storybook")));
     assert.ok(invoked.some((args) => args.includes("vite")));

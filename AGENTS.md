@@ -4,14 +4,16 @@ These instructions apply to every coding agent working in this repository.
 
 ## Repository
 
-- This is the public samples and Components repository for GIK.
+- This repository owns public GIK samples and their npm-backed Storybook showcase.
 - Use Node.js 24.
-- Install dependencies with `npm install --no-audit --no-fund`.
+- Run installs, builds, typechecks, tests and registry access only in CI for
+  this corporate environment. Never access npmjs from the local machine.
 - Do not resolve GIK packages from sibling checkouts.
-- Keep Studio's `gik-components` on the local workspace package. Finbook and
-  its browser host consume the published npm package so the app is extractable.
-- All external `gik-*` dependencies resolve from published npm packages.
-  Studio uses a local directory dependency for `gik-components`, never a tarball.
+- All `gik-*` libraries resolve from published npm packages, including
+  `gik-components` and `gik-service-providers`. Their implementation and unit
+  tests belong to their respective standalone public repositories.
+- Pages `/vendor` contains integrity-verified official npm archives for
+  download, not source copies or a dependency-resolution fallback.
 
 ## Before editing
 
@@ -50,8 +52,8 @@ These instructions apply to every coding agent working in this repository.
 
 ## Validation
 
-- Build local `gik-components` before checking Studio when its `dist` is absent.
-  Finbook's standalone validation must not require that local build.
+- Validate Studio and standalone Finbook as npm consumers without library
+  source checkouts or workspace builds.
 - Run the smallest relevant tests while developing.
 - Before completing a code change, run:
 

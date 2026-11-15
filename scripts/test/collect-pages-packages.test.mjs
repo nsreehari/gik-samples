@@ -24,11 +24,13 @@ async function fixture(t) {
   return { outputDirectory, bytes, fetcher };
 }
 
-test("collects all 12 exact npm archives including providers with index, source metadata, and verifiable checksums", async (t) => {
+test("collects all 12 explicitly selected npm archives with index, source metadata, and verifiable checksums", async (t) => {
   const options = await fixture(t);
-  const manifest = await collectPagesPackages({ ...options, componentsVersion: "0.3.0" });
+  const manifest = await collectPagesPackages({
+    ...options, componentsVersion: "0.3.2", versions: { ...coreVersions, "gik-service-providers": "0.3.0" },
+  });
   assert.equal(manifest.packages.length, 12);
-  assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.0");
+  assert.equal(manifest.packages.find(({ name }) => name === "gik-components").version, "0.3.2");
   assert.equal(manifest.packages.find(({ name }) => name === "gik-service-providers").version, "0.3.0");
   const checksums = await readFile(join(options.outputDirectory, "SHA256SUMS"), "utf8");
   const index = await readFile(join(options.outputDirectory, "index.html"), "utf8");

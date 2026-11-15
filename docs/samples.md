@@ -22,7 +22,7 @@ Selected Blueprints use `?b=<id>` on the Studio root. The
 shows declared scenarios; it does not provision external services.
 
 Finbook is independent of Studio and consumes published GIK packages, including
-Components. Studio develops against local Components. Dependency ranges belong
+Components. Studio and Storybook also consume npm Components and Service Providers. Dependency versions belong
 in the consumer manifests; setup commands belong in the app/package READMEs.
 
 ## Purpose before DPP machinery

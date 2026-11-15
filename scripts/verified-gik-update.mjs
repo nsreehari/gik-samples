@@ -51,7 +51,7 @@ export function updateManifest(original, packages) {
   for (const section of ["dependencies", "devDependencies", "peerDependencies", "overrides"]) {
     for (const [name, range] of Object.entries(updated[section] || {})) {
       const pkg = packages.find((entry) => entry.name === name);
-      if (!pkg || typeof range !== "string" || range.startsWith("$")) continue;
+      if (!pkg || typeof range !== "string" || range.startsWith("$") || range === "latest") continue;
       const match = /^(>=|\^|~)?(\d+\.\d+\.\d+)$/.exec(range);
       if (!match) throw new Error(`Unsupported published dependency range: ${name}: ${range}`);
       if (newer(pkg.version, match[2])) updated[section][name] = `${match[1] || ""}${pkg.version}`;
@@ -79,7 +79,7 @@ export async function waitForVerificationRun(manifest, readRun = () =>
     await pause(10_000);
   }
 }
-async function verifiedSource(payload) {
+export async function verifiedSource(payload) {
   if (!/^[a-f0-9]{40}$/.test(payload.commit || "") || !/^[a-f0-9]{64}$/.test(payload.manifestSha256 || "")
     || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(payload.tag || "")) throw new Error("Invalid dispatch identity");
   const release = api(`repos/${source}/releases/tags/${encodeURIComponent(payload.tag)}`);

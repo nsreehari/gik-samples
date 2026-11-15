@@ -26,7 +26,7 @@ jobs:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-${{ inputs.lane }}-${{ hashFiles('**/package-lock.json', '**/package.json') }}
           restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-${{ inputs.lane }}-
-      - name: Studio and Components
+      - name: Studio and npm library consumers
         if: inputs.lane == 'studio'
         run: |
           npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
@@ -36,23 +36,13 @@ jobs:
           npm test -- --exclude 'apps/finbook/**'
           node --import tsx src/headless/senses-clock-demo.ts
           npm exec --yes --package=npm@11.19.0 -- npm exec -- node scripts/actions-evidence.mjs pack
-          node scripts/service-providers-distribution.mjs pack
+          node scripts/service-providers-distribution.mjs verify-consumer
           npm run test:pages
           node scripts/actions-evidence.mjs verify-site
         env:
           CHROME_PATH: /usr/bin/google-chrome
-      - name: Upload inspected package candidate
-        if: inputs.lane == 'studio'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-candidate
-          path: |
-            .artifacts/candidate/gik-components.tgz
-            .artifacts/candidate/candidate.json
-          if-no-files-found: error
-          retention-days: 14
-          include-hidden-files: true
-      - name: Upload site without registry downloads
+          CHECK_PACKAGE_DOWNLOADS: "true"
+      - name: Upload site with verified registry archives
         if: inputs.lane == 'studio'
         uses: actions/upload-artifact@v4
         with:

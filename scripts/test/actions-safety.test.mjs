@@ -5,7 +5,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { resolve } from "node:path";
 import test from "node:test";
 import {
-  fingerprint, git, policyIdentity, reuse, selectedScope, sha256, siteDigest, verifyCandidate, verifySite,
+  componentsPackage, fingerprint, git, policyIdentity, reuse, selectedScope, sha256, siteDigest, verifyCandidate, verifySite,
 } from "../actions-evidence.mjs";
 import { checkLocks } from "../check-locks.mjs";
 import { previewErrorStatus } from "../static-preview.mjs";
@@ -35,7 +35,7 @@ function candidateFixture(t) {
   writeFileSync(`${site}/index.html`, "<html>verified</html>");
   writeFileSync(`${site}/assets/main.js`, "export {};");
   writeFileSync(`${site}/.nojekyll`, "");
-  const pkg = JSON.parse(readFileSync("packages/components/package.json", "utf8"));
+  const pkg = { ...componentsPackage(), exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts" } } };
   writeFileSync(`${directory}/package/package.json`, JSON.stringify(pkg));
   for (const target of Object.values(pkg.exports).flatMap(Object.values)) {
     writeFileSync(`${directory}/package/${target.slice(2)}`, "export {};");
@@ -50,7 +50,7 @@ function candidateFixture(t) {
   writeFileSync(`${directory}/candidate.json`, JSON.stringify(candidate));
   return { directory, site, candidate };
 }
-function reuseFixture(t, release = false) {
+function reuseFixture(t) {
   const root = fixture(t), repository = "nsreehari/gik-samples";
   const pr = { number: 42, head: { sha: "b".repeat(40), repo: { full_name: repository } },
     merged_at: "2026-11-13T00:00:00Z", merge_commit_sha: git("rev-parse", "HEAD") };
@@ -61,15 +61,14 @@ function reuseFixture(t, release = false) {
     GITHUB_STEP_SUMMARY: `${root}/summary`, VALIDATION_SCOPE: JSON.stringify(scope),
     REUSE_ENABLED: "true", REVIEWED_POLICY: policyIdentity(),
   });
-  const built = release ? candidateFixture(t) : undefined;
   const state = {
-    artifacts: (release ? ["release-candidate", "site-build"] : ["validation-evidence"])
+    artifacts: ["validation-evidence"]
       .map((name, i) => ({ id: i + 1, name, expired: false })),
     evidence: { format: "gik-samples-validation/1", fingerprint: fingerprint(), scope: selectedScope(scope), validated: true },
     logs: [], downloads: 0,
   };
   const services = {
-    reuseRoot: `${root}/cache`, candidateDirectory: `${root}/promoted`, siteDirectory: `${root}/promoted-site`,
+    reuseRoot: `${root}/cache`,
     log: (message) => state.logs.push(message),
     readApi(resource) {
       if (state.apiError) throw state.apiError;
@@ -95,17 +94,12 @@ function reuseFixture(t, release = false) {
       mkdirSync(directory, { recursive: true });
       if (name === "validation-evidence") {
         writeFileSync(`${directory}/validation.json`, state.rawEvidence || JSON.stringify(state.evidence));
-      } else if (name === "release-candidate") {
-        for (const file of ["candidate.json", "gik-components.tgz"]) {
-          writeFileSync(`${directory}/${file}`, readFileSync(`${built.directory}/${file}`));
-        }
       } else {
-        cpSync(built.site, directory, { recursive: true });
-        if (state.corruptSite) writeFileSync(`${directory}/assets/main.js`, "corrupted");
+        throw new Error(`Unexpected mocked artifact: ${name}`);
       }
     },
   };
-  return { root, state, services, built };
+  return { root, state, services };
 }
 
 test("site proof is deterministic, includes hidden/nested files and rejects added, removed or altered bytes", (t) => {
@@ -134,7 +128,11 @@ test("absent or expired queried artifacts are explicit cache misses without atte
   assert.equal(state.downloads, 0);
 });
 test("valid evidence reuses; input/scope drift logs fallback rather than silently accepting different validation", async (t) => {
-  const { state, services } = reuseFixture(t);
+  const { root, state, services } = reuseFixture(t);
+  assert.equal(await reuse("metadata", services), true);
+  const event = JSON.parse(readFileSync(`${root}/event.json`, "utf8"));
+  event.action = "ready_for_review";
+  writeFileSync(`${root}/event.json`, JSON.stringify(event));
   assert.equal(await reuse("metadata", services), true);
   state.evidence.scope = selectedScope({ full: "false", finbook: "true", mcp: "false" });
   assert.equal(await reuse("metadata", services), false);
@@ -160,21 +158,15 @@ test("API, download, missing advertised files and malformed/matching-incomplete 
   state.evidence.validated = false;
   await assert.rejects(reuse("metadata", services), /incomplete/);
 });
-test("matching candidate corruption is fatal and promotion verifies both staged and restored site bytes", async (t) => {
-  const { state, services, built } = reuseFixture(t, true);
+test("candidate corruption remains fatal after retiring package release promotion", (t) => {
+  const built = candidateFixture(t);
   const path = `${built.directory}/gik-components.tgz`, original = readFileSync(path);
   writeFileSync(path, Buffer.concat([original, Buffer.from("corrupt")]));
-  await assert.rejects(reuse("release", services), /tarball hash mismatch/);
-  assert.equal(existsSync(services.siteDirectory), false);
+  assert.throws(() => verifyCandidate(built.directory), /tarball hash mismatch/);
   writeFileSync(path, original);
-  state.corruptSite = true;
-  await assert.rejects(reuse("release", services), /Site artifact digest mismatch/);
-  assert.equal(existsSync(services.siteDirectory), false);
-  state.corruptSite = false;
-  // A new run would download into a fresh staging directory, just as Actions does.
-  rmSync(`${services.reuseRoot}/reuse-123`, { recursive: true, force: true });
-  assert.equal(await reuse("release", services), true);
-  assert.equal(siteDigest(services.siteDirectory), built.candidate.siteSha256);
+  assert.doesNotThrow(() => verifyCandidate(built.directory, { siteDirectory: built.site }));
+  writeFileSync(`${built.site}/assets/main.js`, "corrupted");
+  assert.throws(() => verifyCandidate(built.directory, { siteDirectory: built.site }), /Site artifact digest mismatch/);
 });
 test("lock read errors preserve their cause and malformed JSON is not called a missing lock", (t) => {
   const root = fixture(t);
@@ -339,14 +331,16 @@ test("unrelated provenance commits, repository/workflow mismatch and source API 
     provenance(old, "attacker/repo"), provenance(old, undefined, ".github/workflows/untrusted.yml"), provenance("main"),
   ]) assert.throws(() => assertReleasedProvenance(attestation, release), /expected repository/);
 });
-test("release fallback keeps the full build; site binding is checked before artifact upload and metadata cannot cancel source CI", () => {
+test("Pages binds the source-built site before collecting archives; metadata cannot cancel mandatory source CI", () => {
   const release = readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8").replace(/\r\n/g, "\n");
-  const fallback = release.slice(release.indexOf("- name: Validate and pack once"), release.indexOf("- name: Re-attest promoted"));
-  assert.match(fallback, /\n +npm run build\n/);
-  assert.doesNotMatch(fallback, /npm run build -- --site-only/);
-  assert.ok(release.indexOf("run: node scripts/actions-evidence.mjs hashes") < release.indexOf("name: site-build"));
+  assert.match(release, /npm run build -- --site-only/);
+  assert.match(release, /EXPECTED_SITE_SHA256: \$\{\{ needs\.site\.outputs\.sha256 \}\}/);
+  assert.match(release, /siteDigest\("src\/browser-host\/dist"\)/);
+  assert.match(release, /verifySite\("src\/browser-host\/dist", process\.env\.EXPECTED_SITE_SHA256\)/);
+  assert.ok(release.indexOf('siteDigest("src/browser-host/dist")') < release.indexOf("name: site-build"));
+  assert.ok(release.indexOf('verifySite("src/browser-host/dist"') < release.indexOf("run: node scripts/collect-pages-packages.mjs"));
   const lanes = readFileSync(new URL("../../.github/workflows/validation-lane.yml", import.meta.url), "utf8");
   assert.ok(lanes.indexOf("node scripts/actions-evidence.mjs verify-site") < lanes.indexOf("- name: Upload site"));
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
-  assert.match(ci, /cancel-in-progress: \$\{\{ github\.event\.action != 'labeled' && github\.event\.action != 'unlabeled' && github\.event\.action != 'edited' \}\}/);
+  assert.match(ci, /cancel-in-progress: \$\{\{ github\.event\.action != 'labeled' && github\.event\.action != 'unlabeled' && github\.event\.action != 'edited' && github\.event\.action != 'ready_for_review' \}\}/);
 });
