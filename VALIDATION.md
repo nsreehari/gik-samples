@@ -71,6 +71,11 @@ changes. It uses Node 24 and npm 11.19.0, runs standard
 root, checks lock/schema/workspace consistency and rejects non-lock tracked edits.
 It uploads **only** the three lockfiles in `dependency-locks`; source commit,
 toolchain and SHA-256 digests are recorded in the job summary.
+For the root graph it also runs `resolve-latest-gik.mjs`, exercising the same
+targeted latest-resolution and registry-identity checks used by normal Pages
+refreshes. Finbook and MCP remain independently locked. PR validation continues
+to reject lock drift; only deployment builds and explicit lock generation refresh
+the root GIK selections.
 
 After review and pushing the implementation branch, a maintainer can run:
 

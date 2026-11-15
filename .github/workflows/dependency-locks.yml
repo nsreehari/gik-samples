@@ -31,7 +31,7 @@ jobs:
           const source = JSON.parse(readFileSync("package.json", "utf8"));
           const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
           for (const [name, legacy] of [["gik-components", "packages/components"], ["gik-service-providers", "packages/service-providers"]]) {
-            if (/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(source.dependencies?.[name] ?? "")) {
+            if (source.dependencies?.[name] === "latest" || /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(source.dependencies?.[name] ?? "")) {
               if (lock.packages[`node_modules/${name}`]?.link) delete lock.packages[`node_modules/${name}`];
               delete lock.packages[legacy];
             }
@@ -39,6 +39,7 @@ jobs:
           writeFileSync("package-lock.json", JSON.stringify(lock, null, 2) + "\n");
           NODE
           npm exec --yes --package=npm@11.19.0 -- npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node scripts/resolve-latest-gik.mjs
           npm exec --yes --package=npm@11.19.0 -- npm install --prefix apps/finbook --package-lock-only --ignore-scripts --no-audit --no-fund
           npm exec --yes --package=npm@11.19.0 -- npm install --prefix packages/mcp-server --package-lock-only --ignore-scripts --no-audit --no-fund
           git diff --exit-code -- . ':!package-lock.json' ':!apps/finbook/package-lock.json' ':!packages/mcp-server/package-lock.json'

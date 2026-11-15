@@ -7,10 +7,10 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { assertNpmConsumers, classifyChanges, isManualPrerelease, needsComponentsRelease, nextComponentsVersion, providerPublicationMode, providersVersion } from "../workflow-policy.mjs";
 
-test("Samples pins both npm libraries and rejects restored source workspaces or aliases", () => {
-  const root = { dependencies: { "gik-components": "0.3.2", "gik-service-providers": "0.3.0" } };
+test("Samples supports latest npm libraries and rejects restored source workspaces or aliases", () => {
+  const root = { dependencies: { "gik-components": "latest", "gik-service-providers": "latest" } };
   assert.doesNotThrow(() => assertNpmConsumers(root, []));
-  assert.throws(() => assertNpmConsumers({ dependencies: { ...root.dependencies, "gik-components": "file:packages/components" } }, []), /exact published npm version/);
+  assert.throws(() => assertNpmConsumers({ dependencies: { ...root.dependencies, "gik-components": "file:packages/components" } }, []), /published npm version/);
   assert.throws(() => assertNpmConsumers(root, ["packages/components/src/shared/index.ts"]), /standalone repositories/);
   assert.throws(() => assertNpmConsumers({ ...root, workspaces: ["packages/service-providers"] }, []), /standalone repositories/);
 });

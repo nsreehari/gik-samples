@@ -10,7 +10,8 @@ function librariesAt(commit, runGit) {
   for (const [name, directory] of [["gik-components", "packages/components"], ["gik-service-providers", "packages/service-providers"]]) {
     const dependency = root.dependencies?.[name];
     const legacy = dependency === `file:${directory}`;
-    const version = legacy ? JSON.parse(runGit("show", `${commit}:${directory}/package.json`)).version : dependency;
+    const version = legacy ? JSON.parse(runGit("show", `${commit}:${directory}/package.json`)).version
+      : dependency === "latest" ? JSON.parse(runGit("show", `${commit}:package-lock.json`)).packages?.[`node_modules/${name}`]?.version : dependency;
     if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) throw new Error(`Exact source version required for ${name}`);
     libraries[name] = { version, lockPath: legacy ? directory : `node_modules/${name}`, legacy };
   }
@@ -46,6 +47,8 @@ export function planRelease({ event, kind, releaseRef, sha }, runGit = git) {
     ref = event.release.tag_name;
     publish = true;
     channel = event.release.prerelease ? "next" : "latest";
+  } else if (kind === "repository_dispatch" || (kind === "workflow_dispatch" && !releaseRef)) {
+    ref = "origin/main";
   } else if (kind === "workflow_dispatch") {
     ref = releaseRef;
     if (!/^(?:[a-f0-9]{40}|components-v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.test(ref || "")) {

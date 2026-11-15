@@ -79,10 +79,9 @@ await assert.rejects(import("gik-service-providers"), { code: "ERR_PACKAGE_PATH_
 
 const command = process.argv[2];
 if (command === "verify-consumer") {
-  const root = JSON.parse(readFileSync("package.json", "utf8"));
   const manifest = source();
-  assert.equal(manifest.version, root.dependencies["gik-service-providers"]);
   const locked = JSON.parse(readFileSync("package-lock.json", "utf8")).packages["node_modules/gik-service-providers"];
+  assert.equal(manifest.version, locked.version);
   const vendor = JSON.parse(readFileSync("src/browser-host/dist/vendor/manifest.json", "utf8"))
     .packages.find(({ name }) => name === "gik-service-providers");
   assert.equal(vendor.version, manifest.version);

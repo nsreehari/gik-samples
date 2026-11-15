@@ -253,6 +253,11 @@ test("resolution guard rejects absent, stale and mismatched workspace locks with
   writeFileSync(`${directory}/package.json`, JSON.stringify(source));
   writeFileSync(lock, JSON.stringify(value));
   assert.doesNotThrow(() => checkLocks(directory));
+  source.dependencies["gik-components"] = "latest";
+  value.packages[""].dependencies["gik-components"] = "latest";
+  writeFileSync(`${directory}/package.json`, JSON.stringify(source));
+  writeFileSync(lock, JSON.stringify(value));
+  assert.doesNotThrow(() => checkLocks(directory));
   value.packages["node_modules/gik-components"] = { link: true, resolved: "packages/components" };
   writeFileSync(lock, JSON.stringify(value));
   assert.throws(() => checkLocks(directory), /not a source link/);
@@ -384,7 +389,7 @@ test("Pages mirrors latest npm archives without library publication; validation 
   assert.match(workflow, /run: node scripts\/collect-pages-packages\.mjs/);
   assert.doesNotMatch(workflow, /PAGES_COMPONENTS_VERSION|PAGES_SERVICE_PROVIDERS_VERSION|PAGES_CORE_VERSIONS_JSON/);
   assert.doesNotMatch(workflow, /npm-publish|run: node scripts\/publish-candidate|npm publish|release:\s/);
-  assert.match(workflow, /group: pages-deployment/);
+  assert.match(workflow, /group: pages-refresh\s+cancel-in-progress: false/);
   assert.match(workflow, /deploy-pages:\s+name: Deploy Pages\s+needs: collect-pages\s+if: always\(\) && needs\.collect-pages\.result == 'success'/);
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(ci, /name: validate\s+if: always\(\)/);

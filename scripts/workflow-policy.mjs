@@ -124,8 +124,8 @@ export function changedFiles(base, head) {
 
 export function assertNpmConsumers(root, libraryPaths) {
   for (const name of ["gik-components", "gik-service-providers"]) {
-    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(root.dependencies?.[name] ?? "")) {
-      throw new Error(`${name} must use an exact published npm version`);
+    if (root.dependencies?.[name] !== "latest" && !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(root.dependencies?.[name] ?? "")) {
+      throw new Error(`${name} must use latest or an exact published npm version`);
     }
   }
   if (libraryPaths.length || root.workspaces?.some((path) => ["packages/components", "packages/service-providers"].includes(path))) {

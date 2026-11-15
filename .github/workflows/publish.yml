@@ -13,10 +13,15 @@ on:
     inputs:
       release_ref:
         description: Immutable historical components-v tag or full commit SHA for Pages rollback (never main)
-        required: true
+        required: false
         type: string
+  repository_dispatch:
+    types: [gik-release-verified, gik-library-release-verified]
 permissions:
   contents: read
+concurrency:
+  group: pages-refresh
+  cancel-in-progress: false
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -25,6 +30,7 @@ jobs:
       version: ${{ steps.plan.outputs.version }}
       providers_version: ${{ steps.plan.outputs.providers_version }}
       core_versions: ${{ steps.plan.outputs.core_versions }}
+      refresh: ${{ steps.mode.outputs.refresh }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -33,6 +39,20 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+      - name: Verify official publication before rebuilding
+        if: github.event_name == 'repository_dispatch'
+        run: node scripts/verify-pages-publication.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - id: mode
+        env:
+          RELEASE_REF: ${{ inputs.release_ref }}
+        run: |
+          if [ -n "$RELEASE_REF" ]; then
+            echo "refresh=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "refresh=true" >> "$GITHUB_OUTPUT"
+          fi
       - id: plan
         env:
           RELEASE_REF: ${{ inputs.release_ref }}
@@ -63,9 +83,20 @@ jobs:
           key: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-${{ hashFiles('**/package-lock.json', '**/package.json') }}
           restore-keys: npm-${{ runner.os }}-${{ runner.arch }}-node24-npm11.19-site-
       - id: build
+        env:
+          REFRESH_LATEST: ${{ needs.plan.outputs.refresh }}
         run: |
+          if [ "$REFRESH_LATEST" = true ]; then
+            node scripts/resolve-latest-gik.mjs
+          fi
           npm exec --yes --package=npm@11.19.0 -- npm install --no-audit --no-fund
-          git diff --exit-code -- package-lock.json
+          if [ "$REFRESH_LATEST" != true ]; then
+            git diff --exit-code -- package-lock.json
+          fi
+          node scripts/check-locks.mjs
+          npm run test:distribution
+          npm run typecheck:studio
+          npm test -- --exclude 'apps/finbook/**'
           npm run build -- --site-only
           node --input-type=module -e 'import {siteDigest} from "./scripts/actions-evidence.mjs"; import {appendFileSync} from "node:fs"; appendFileSync(process.env.GITHUB_OUTPUT, "sha256=" + siteDigest("src/browser-host/dist") + "\n");'
       - uses: actions/upload-artifact@v4
@@ -74,6 +105,14 @@ jobs:
           path: src/browser-host/dist
           if-no-files-found: error
           include-hidden-files: true
+      - name: Retain exact build resolution for audit and rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-resolution
+          path: |
+            package-lock.json
+            .artifacts/latest-gik.json
+          if-no-files-found: error
   collect-pages:
     name: Verify site and refresh latest npm archives
     needs: [plan, site]
@@ -111,9 +150,6 @@ jobs:
     needs: collect-pages
     if: always() && needs.collect-pages.result == 'success'
     runs-on: ubuntu-latest
-    concurrency:
-      group: pages-deployment
-      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

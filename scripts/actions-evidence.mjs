@@ -28,7 +28,7 @@ export function inputs() {
 }
 export const fingerprint = () => sha256(JSON.stringify(inputs()));
 export function componentsPackage() {
-  const version = JSON.parse(readFileSync("package.json", "utf8")).dependencies["gik-components"];
+  const version = JSON.parse(readFileSync("package-lock.json", "utf8")).packages["node_modules/gik-components"]?.version;
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) throw new Error("Components consumer requires an exact npm version");
   return { name: "gik-components", version };
 }
@@ -124,10 +124,13 @@ export async function writeCandidate() {
   const path = ".artifacts/candidate";
   mkdirSync(path, { recursive: true });
   const expected = componentsPackage();
-  const root = JSON.parse(readFileSync("package.json", "utf8"));
+  const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
   const manifest = await collectPagesPackages({
     componentsVersion: expected.version,
-    versions: { ...coreVersions, "gik-service-providers": root.dependencies["gik-service-providers"] },
+    versions: { ...coreVersions, ...Object.fromEntries(Object.keys(coreVersions)
+      .filter((name) => lock.packages[`node_modules/${name}`])
+      .map((name) => [name, lock.packages[`node_modules/${name}`].version])),
+    "gik-service-providers": lock.packages["node_modules/gik-service-providers"].version },
     outputDirectory: "src/browser-host/dist/vendor",
   });
   const published = manifest.packages.find(({ name }) => name === expected.name);
