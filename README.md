@@ -57,14 +57,19 @@ and components consume through well-defined props and events.
 - [Scenario Explorer](https://nsreehari.github.io/gik-samples/scenarios/)
 - [Released GIK package downloads](https://nsreehari.github.io/gik-samples/vendor/)
 
-Pages includes versioned npm tarballs for the ten stable core GIK packages and
-the exact `gik-components` and `gik-service-providers` versions. `/vendor/` is a download directory, not
+Pages includes the latest stable npm tarballs for the ten core GIK packages,
+`gik-components` and `gik-service-providers`, with concrete versions and verified
+archive integrity recorded in its manifest. `/vendor/` is a download directory, not
 an npm registry. [Releasing](RELEASING.md#pages-package-downloads) owns archive
 verification, manifest contents, and post-publication refresh behavior.
 
 ## Development
 
-Studio and Storybook consume npm packages, not library source aliases. The
+Studio and Storybook declare `latest` GIK npm dependencies, not library source
+aliases. Normal Pages builds resolve them afresh in CI; verified stable
+publications from any of the three publisher repositories trigger the same
+site/vendor rebuild and redeployment. Committed locks remain PR-validation
+baselines, and explicit immutable rollback uses the source's committed graph. The
 two standalone repositories own library implementations, unit tests and
 publication. In the corporate environment, run all installs, builds,
 typechecks, tests and npm registry access only through CI.
